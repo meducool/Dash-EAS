@@ -34,16 +34,48 @@
   color: var(--app-text);
 }
 
+// The navbar's own <nav> is the layout box: without this the host element
+// would be the grid item and the sticky sidebar would have no room to stick.
+app-navbar {
+  display: contents;
+}
+
+// The sidebar sets its own width (256px, or 68px folded to the icon rail),
+// so the column simply follows it.
 .app-shell--vertical {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
+}
+
+// Keyboard users: first Tab stop, jumps past the ~25 menu links.
+.skip-link {
+  position: absolute;
+  top: 0.5rem;
+  left: -9999px;
+  z-index: 2000;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--app-primary);
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:focus {
+    left: 0.5rem;
+  }
 }
 
 .main-content {
   min-height: calc(100vh - 72px);
   background: var(--app-background);
   color: var(--app-text);
+
+  &:focus {
+    outline: none;
+  }
 }
 
 .main-content__inner {

@@ -1,8 +1,9 @@
 @if (authService.isAuthenticated()) {
   <div class="app-shell" [class.app-shell--vertical]="menuLayout() === 'vertical'">
+    <button type="button" class="skip-link" (click)="mainContent.focus()">Aller au contenu</button>
     <app-navbar></app-navbar>
 
-    <main class="main-content" [class.main-content--vertical]="menuLayout() === 'vertical'">
+    <main #mainContent tabindex="-1" class="main-content" [class.main-content--vertical]="menuLayout() === 'vertical'">
       <div class="main-content__inner">
         <router-outlet />
       </div>

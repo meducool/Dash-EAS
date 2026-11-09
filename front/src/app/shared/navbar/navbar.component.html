@@ -1,48 +1,87 @@
-<nav class="navbar" [class.navbar--vertical]="menuLayout() === 'vertical'">
+<nav
+  class="navbar"
+  aria-label="Navigation principale"
+  [class.navbar--vertical]="menuLayout() === 'vertical'"
+  [class.navbar--rail]="isRail()"
+>
   <div class="navbar-brand">
     <a routerLink="/dashboard" class="brand-link" (click)="closeMenu()">
       <img [src]="brandLogoUrl()" [alt]="companySettings()?.company_name || 'PNEU.MA'" class="brand-logo">
     </a>
     <button
-      *ngIf="menuLayout() !== 'vertical'"
+      *ngIf="menuLayout() === 'vertical'"
+      type="button"
+      class="rail-toggle"
+      (click)="toggleCollapsed()"
+      [attr.aria-label]="collapsed() ? 'Déplier le menu' : 'Replier le menu'"
+      [attr.title]="collapsed() ? 'Déplier le menu' : 'Replier le menu'"
+    >{{ collapsed() ? '»' : '«' }}</button>
+    <button
+      type="button"
       class="menu-toggle"
       (click)="toggleMenu()"
-      [class.active]="menuOpen"
+      [class.active]="menuOpen()"
+      [attr.aria-expanded]="menuOpen()"
+      aria-controls="navbar-links"
+      aria-label="Menu"
     >
       <span></span><span></span><span></span>
     </button>
   </div>
 
-  <div class="navbar-links" [class.open]="menuOpen || menuLayout() === 'vertical'">
+  <div class="navbar-links" id="navbar-links" [class.open]="menuOpen()">
     <ng-container *ngFor="let item of visibleNavItems()">
-      
+
       <a *ngIf="!item.children"
+         class="nav-item"
          [routerLink]="item.route"
          routerLinkActive="active"
          [routerLinkActiveOptions]="{exact: !!item.exact}"
-         (click)="closeMenu()">{{ item.label }}</a>
+         [attr.title]="isRail() ? item.label : null"
+         (click)="closeMenu()">
+        <span class="nav-icon" aria-hidden="true">{{ item.icon }}</span>
+        <span class="nav-label">{{ item.label }}</span>
+      </a>
 
-      <div class="nav-dropdown" [class.expanded]="isGroupExpanded(item)" *ngIf="item.children && item.children.length > 0">
-        <button class="dropdown-toggle" (click)="toggleGroup(item, $event)">
-          {{ item.label }} <span class="chevron">▾</span>
+      <div class="nav-dropdown"
+           [class.expanded]="isGroupExpanded(item)"
+           [class.has-active]="isGroupActive(item)"
+           *ngIf="item.children && item.children.length > 0">
+        <button type="button"
+                class="nav-item dropdown-toggle"
+                [attr.aria-expanded]="isGroupExpanded(item)"
+                [attr.title]="isRail() ? item.label : null"
+                (click)="toggleGroup(item, $event)">
+          <span class="nav-icon" aria-hidden="true">{{ item.icon }}</span>
+          <span class="nav-label">{{ item.label }}</span>
+          <span class="chevron" aria-hidden="true">▾</span>
         </button>
         <div class="dropdown-menu">
           <a *ngFor="let child of item.children"
+             class="nav-item"
              [routerLink]="child.route"
              routerLinkActive="active"
-             (click)="closeMenu()">{{ child.label }}</a>
+             (click)="closeMenu()">
+            <span class="nav-icon" aria-hidden="true">{{ child.icon }}</span>
+            <span class="nav-label">{{ child.label }}</span>
+          </a>
         </div>
       </div>
-      
+
     </ng-container>
   </div>
 
-  <div class="navbar-user" [class.navbar-user--vertical]="menuLayout() === 'vertical'">
-    <div class="user-avatar" *ngIf="userName()" [title]="userName()">{{ userName().charAt(0).toUpperCase() }}</div>
-    <span class="user-info" *ngIf="userName()">
-      <span class="user-name">{{ userName() }}</span>
-      <span class="user-role" *ngIf="userRole()">{{ userRole() }}</span>
-    </span>
-    <button class="btn-logout" (click)="logout()">Déconnexion</button>
+  <div class="navbar-user">
+    <div class="user-id" *ngIf="userName()">
+      <div class="user-avatar" [title]="userName()">{{ userName().charAt(0).toUpperCase() }}</div>
+      <span class="user-info">
+        <span class="user-name">{{ userName() }}</span>
+        <span class="user-role" *ngIf="userRole()">{{ userRole() }}</span>
+      </span>
+    </div>
+    <button type="button" class="btn-logout" (click)="logout()" aria-label="Déconnexion" [attr.title]="isRail() ? 'Déconnexion' : null">
+      <span class="logout-icon" aria-hidden="true">🚪</span>
+      <span class="logout-label">Déconnexion</span>
+    </button>
   </div>
 </nav>

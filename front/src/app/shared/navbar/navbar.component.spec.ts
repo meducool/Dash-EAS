@@ -17,6 +17,7 @@ describe('NavbarComponent', () => {
   }
 
   beforeEach(() => {
+    localStorage.removeItem('nav_collapsed');
     mockAuthService = {
       user: () => ({ name: 'Test User', roles: [{ name: 'Administrator' }] }),
       hasPermission: vi.fn().mockReturnValue(true),
@@ -30,7 +31,7 @@ describe('NavbarComponent', () => {
   describe('toggleGroup', () => {
     it('opens a closed group and closes it again on a second toggle', () => {
       comp = createComponent();
-      const item = { label: '🏦 Finance', children: [] };
+      const item = { icon: '🏦', label: 'Finance', children: [] };
       const event = { preventDefault: vi.fn() } as unknown as Event;
 
       comp.toggleGroup(item, event);
@@ -42,8 +43,8 @@ describe('NavbarComponent', () => {
 
     it('leaves other groups untouched when toggling one (additive accordion)', () => {
       comp = createComponent();
-      const finance = { label: '🏦 Finance', children: [] };
-      const tiers = { label: '🤝 Tiers', children: [] };
+      const finance = { icon: '🏦', label: 'Finance', children: [] };
+      const tiers = { icon: '🤝', label: 'Tiers', children: [] };
       const event = { preventDefault: vi.fn() } as unknown as Event;
 
       comp.toggleGroup(finance, event);
@@ -58,7 +59,7 @@ describe('NavbarComponent', () => {
     it('expands the group containing the initial route on construction', () => {
       comp = createComponent('/primes');
 
-      const finance = comp.allNavItems.find((i) => i.label === '🏦 Finance')!;
+      const finance = comp.allNavItems.find((i) => i.label === 'Finance')!;
       expect(comp.isGroupExpanded(finance)).toBe(true);
     });
 
@@ -71,8 +72,8 @@ describe('NavbarComponent', () => {
 
     it('expands the newly active group on navigation without collapsing a manually-opened one', () => {
       comp = createComponent('/dashboard');
-      const tiers = comp.allNavItems.find((i) => i.label === '🤝 Tiers')!;
-      const finance = comp.allNavItems.find((i) => i.label === '🏦 Finance')!;
+      const tiers = comp.allNavItems.find((i) => i.label === 'Tiers')!;
+      const finance = comp.allNavItems.find((i) => i.label === 'Finance')!;
       comp.toggleGroup(tiers, { preventDefault: vi.fn() } as unknown as Event);
 
       mockRouter.url = '/primes';
@@ -83,23 +84,83 @@ describe('NavbarComponent', () => {
     });
   });
 
+  describe('icon rail (collapsed sidebar)', () => {
+    it('persists the collapsed choice and restores it on the next load', () => {
+      comp = createComponent();
+      expect(comp.isRail()).toBe(false);
+
+      comp.toggleCollapsed();
+      expect(comp.isRail()).toBe(true);
+      expect(createComponent().isRail()).toBe(true);
+    });
+
+    it('never applies to the horizontal layout', () => {
+      mockSettingsService.getCompanySettings.mockReturnValue(of({ menu_layout: 'horizontal', logo_url: null }));
+      comp = createComponent();
+      comp.toggleCollapsed();
+
+      expect(comp.isRail()).toBe(false);
+    });
+
+    it('unfolds the sidebar on the clicked group instead of toggling it', () => {
+      comp = createComponent('/dashboard');
+      const tiers = comp.allNavItems.find((i) => i.label === 'Tiers')!;
+      comp.toggleCollapsed();
+
+      comp.toggleGroup(tiers, { preventDefault: vi.fn() } as unknown as Event);
+
+      expect(comp.isRail()).toBe(false);
+      expect(comp.isGroupExpanded(tiers)).toBe(true);
+    });
+  });
+
+  describe('isGroupActive', () => {
+    it('flags only the group that contains the current route, and follows navigation', () => {
+      comp = createComponent('/primes');
+      const finance = comp.allNavItems.find((i) => i.label === 'Finance')!;
+      const tiers = comp.allNavItems.find((i) => i.label === 'Tiers')!;
+      expect(comp.isGroupActive(finance)).toBe(true);
+      expect(comp.isGroupActive(tiers)).toBe(false);
+
+      mockRouter.url = '/clients';
+      routerEvents.next(new NavigationEnd(1, '/clients', '/clients'));
+
+      expect(comp.isGroupActive(finance)).toBe(false);
+      expect(comp.isGroupActive(tiers)).toBe(true);
+    });
+  });
+
+  describe('mobile menu', () => {
+    it('closes on navigation and on Escape', () => {
+      comp = createComponent();
+      comp.toggleMenu();
+      expect(comp.menuOpen()).toBe(true);
+      routerEvents.next(new NavigationEnd(1, '/sales', '/sales'));
+      expect(comp.menuOpen()).toBe(false);
+
+      comp.toggleMenu();
+      comp.onEscape();
+      expect(comp.menuOpen()).toBe(false);
+    });
+  });
+
   describe('visibleNavItems', () => {
     it('hides a group entirely when none of its children pass permission checks', () => {
       mockAuthService.hasPermission.mockImplementation((perm: string) => perm !== 'view accounts' && perm !== 'view primes' && perm !== 'view hr-charges' && perm !== 'view reporting');
       comp = createComponent();
 
       const labels = comp.visibleNavItems().map((i) => i.label);
-      expect(labels).not.toContain('🏦 Finance');
+      expect(labels).not.toContain('Finance');
     });
 
     it('keeps a group with only some children filtered out, showing just the visible ones', () => {
       mockAuthService.hasPermission.mockImplementation((perm: string) => perm !== 'view primes');
       comp = createComponent();
 
-      const finance = comp.visibleNavItems().find((i) => i.label === '🏦 Finance');
+      const finance = comp.visibleNavItems().find((i) => i.label === 'Finance');
       expect(finance).toBeTruthy();
-      expect(finance!.children!.map((c) => c.label)).not.toContain('🎯 Primes');
-      expect(finance!.children!.map((c) => c.label)).toContain('🏦 Comptes');
+      expect(finance!.children!.map((c) => c.label)).not.toContain('Primes');
+      expect(finance!.children!.map((c) => c.label)).toContain('Comptes');
     });
   });
 });

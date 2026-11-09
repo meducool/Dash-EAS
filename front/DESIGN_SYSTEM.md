@@ -338,6 +338,20 @@ $shadow-navbar: 0 2px 10px rgba(15, 23, 42, 0.16);      // Sticky navbar
 // Responsive: hamburger menu below 1024px
 ```
 
+The same markup has three presentations (`navbar.component.scss`):
+
+| Presentation | When | Groups |
+|---|---|---|
+| Top bar (56px) | `menu_layout = horizontal`, > 1024px | Popover on hover / focus |
+| Sidebar (256px) or icon rail (68px) | `menu_layout = vertical`, > 1024px | Accordion (`.expanded`) |
+| Bar + drawer (hamburger) | ≤ 1024px, both layouts | Accordion (`.expanded`) |
+
+- Nav entries are `{ icon, label }` — the emoji lives in `.nav-icon` (fixed-width column), the text in `.nav-label`. Never put the emoji inside the label string.
+- **Icon rail**: the « / » button in the sidebar header folds it to icons only (choice kept in `localStorage` under `nav_collapsed`). Labels become `title` tooltips; clicking a group unfolds the sidebar on that group.
+- Active states: top-level link = solid `--app-primary`; child link = `--navbar-hover` tint + 3px primary bar on the left; a folded group containing the current page gets `.has-active`.
+- The app shell column is `auto` — the sidebar owns its width. Don't hard-code 256px/280px elsewhere.
+- Focus: every control shows a `:focus-visible` ring (global rule in `styles.scss`); a "Aller au contenu" skip link is the first Tab stop.
+
 ### Modals
 
 ```scss

@@ -36,6 +36,13 @@ button {
    happen naturally (visibility: hidden would leave blank pages behind).
    Any modal can opt in by tagging its overlay with .print-overlay and its
    content with .print-area. ---- */
+/* ---- Keyboard focus: a visible ring on every control that doesn't define
+   its own (form fields keep their component-level focus style). ---- */
+:focus-visible {
+  outline: 2px solid var(--app-primary, #ff2d37);
+  outline-offset: 2px;
+}
+
 @media print {
   body * {
     display: none !important;
