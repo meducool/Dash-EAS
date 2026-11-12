@@ -15,7 +15,7 @@ class Supplier extends Model
         'phone',
         'email',
         'address',
-        'user_id'
+        'user_id',
     ];
 
     public function user()

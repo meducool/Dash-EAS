@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Carrier extends Model
 {
@@ -14,7 +13,7 @@ class Carrier extends Model
         'name',
         'phone',
         'email',
-        'user_id'
+        'user_id',
     ];
 
     public function user()

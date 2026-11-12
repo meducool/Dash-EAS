@@ -12,6 +12,6 @@ class KpiSnapshot extends Model
 
     protected $casts = [
         'snapshot_date' => 'date',
-        'data'          => 'array',
+        'data' => 'array',
     ];
 }

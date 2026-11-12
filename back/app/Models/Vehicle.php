@@ -18,8 +18,8 @@ class Vehicle extends Model
 
     protected $casts = [
         'circulation_month' => 'integer',
-        'circulation_year'  => 'integer',
-        'is_active'         => 'boolean',
+        'circulation_year' => 'integer',
+        'is_active' => 'boolean',
     ];
 
     public function getDisplayNameAttribute(): string

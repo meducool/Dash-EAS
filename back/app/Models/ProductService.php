@@ -3,11 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductService extends Model
 {
     protected $primaryKey = 'product_id';
+
     public $incrementing = false;
 
     protected $fillable = [
