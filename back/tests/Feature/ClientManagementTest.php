@@ -84,6 +84,46 @@ class ClientManagementTest extends TestCase
             ->assertJsonCount(2, 'data.sales_history');
     }
 
+    public function test_clients_summary_lists_only_clients_with_a_balance(): void
+    {
+        $user = $this->authenticateWithPermissions(['view clients']);
+
+        $owing = Client::create(['name' => 'Client Doit', 'category' => 'Particulier', 'phone' => '0600000101', 'opening_balance' => 50, 'is_active' => true]);
+        $paid = Client::create(['name' => 'Client Solde', 'category' => 'Particulier', 'phone' => '0600000102', 'opening_balance' => 0, 'is_active' => true]);
+        $bigger = Client::create(['name' => 'Client Gros', 'category' => 'Particulier', 'phone' => '0600000103', 'opening_balance' => 0, 'is_active' => true]);
+
+        // Owing: 50 opening + 100 sale (40 paid) → 110. A cancelled sale is not owed.
+        $sale = Sale::create(['client_id' => $owing->id, 'date' => now()->toDateString(), 'total_sale' => 100, 'status' => 'EN COURS']);
+        $payment = Payment::create(['sale_id' => $sale->id, 'amount' => 40, 'date' => now()->toDateString(), 'method' => 'Espèces', 'user_id' => $user->id]);
+        SalePaymentAllocation::create(['payment_id' => $payment->id, 'sale_id' => $sale->id, 'amount' => 40]);
+        Sale::create(['client_id' => $owing->id, 'date' => now()->toDateString(), 'total_sale' => 999, 'status' => 'ANNULE']);
+
+        // Fully paid: not listed.
+        $paidSale = Sale::create(['client_id' => $paid->id, 'date' => now()->toDateString(), 'total_sale' => 80, 'status' => 'LIVRE']);
+        $paidPayment = Payment::create(['sale_id' => $paidSale->id, 'amount' => 80, 'date' => now()->toDateString(), 'method' => 'Espèces', 'user_id' => $user->id]);
+        SalePaymentAllocation::create(['payment_id' => $paidPayment->id, 'sale_id' => $paidSale->id, 'amount' => 80]);
+
+        Sale::create(['client_id' => $bigger->id, 'date' => now()->toDateString(), 'total_sale' => 300, 'status' => 'LIVRE']);
+
+        $response = $this->getJson('/api/clients-summary')->assertOk();
+
+        $this->assertSame([$bigger->id, $owing->id], array_column($response->json('rows'), 'client_id'));
+        $response->assertJsonPath('rows.1.total_unpaid', 110)
+            ->assertJsonPath('rows.1.opening_balance', 50)
+            ->assertJsonPath('rows.1.sales_unpaid', 60)
+            ->assertJsonPath('total', 410);
+
+        // The profile's "solde dû" follows the same rule (cancelled sale excluded).
+        $this->getJson("/api/clients/{$owing->id}/profile")->assertJsonPath('data.outstanding_balance', 110);
+    }
+
+    public function test_clients_summary_requires_view_clients_permission(): void
+    {
+        $this->authenticateWithPermissions([]);
+
+        $this->getJson('/api/clients-summary')->assertForbidden();
+    }
+
     public function test_client_statement_endpoint_returns_summary_sales_payments_and_entries(): void
     {
         $user = $this->authenticateWithPermissions(['view clients']);

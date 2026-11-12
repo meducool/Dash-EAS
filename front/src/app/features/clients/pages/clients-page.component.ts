@@ -1,12 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ClientFormComponent } from '../components/client-form/client-form.component';
 import { ClientService } from '../data-access/client.service';
-import { Client, ClientFilters, ClientPayload } from '../models/client.model';
+import { Client, ClientBalanceRow, ClientFilters, ClientPayload } from '../models/client.model';
 import { AutoRefreshControlComponent } from '../../../shared/auto-refresh-control/auto-refresh-control.component';
 import { CityService } from '../../../core/services/city.service';
+
+type ClientTab = 'comptes' | 'soldes';
 
 @Component({
   selector: 'app-clients-page',
@@ -18,6 +20,24 @@ import { CityService } from '../../../core/services/city.service';
 export class ClientsPageComponent implements OnInit {
   private readonly clientService = inject(ClientService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+
+  /** Two pages in one: the client accounts, and the clients that still owe money. */
+  readonly activeTab = signal<ClientTab>('comptes');
+  readonly balances = signal<ClientBalanceRow[]>([]);
+  readonly balancesTotal = signal(0);
+  readonly loadingBalances = signal(false);
+  readonly balancesError = signal('');
+  readonly balanceSums = computed(() =>
+    this.balances().reduce(
+      (acc, row) => ({
+        opening_balance: acc.opening_balance + row.opening_balance,
+        sales_unpaid: acc.sales_unpaid + row.sales_unpaid,
+        service_unpaid: acc.service_unpaid + row.service_unpaid,
+      }),
+      { opening_balance: 0, sales_unpaid: 0, service_unpaid: 0 },
+    ),
+  );
   private readonly cityService = inject(CityService);
 
   readonly clients = signal<Client[]>([]);
@@ -54,8 +74,49 @@ export class ClientsPageComponent implements OnInit {
   );
 
   ngOnInit(): void {
+    // ?tab=soldes opens the balances directly (bookmarkable, kept on reload).
+    if (this.route.snapshot.queryParamMap.get('tab') === 'soldes') {
+      this.activeTab.set('soldes');
+    }
     this.cityService.getCities().subscribe(cities => this.cities.set(cities));
+    this.refreshAll();
+  }
+
+  /** Auto-refresh and first load: the list and the balances together. */
+  refreshAll(): void {
     this.loadClients();
+    this.loadBalances();
+  }
+
+  loadBalances(): void {
+    this.loadingBalances.set(true);
+    this.balancesError.set('');
+    this.clientService.getBalances().subscribe({
+      next: (res) => {
+        this.balances.set(res.rows ?? []);
+        this.balancesTotal.set(Number(res.total) || 0);
+        this.loadingBalances.set(false);
+      },
+      error: () => {
+        this.balancesError.set('Impossible de charger les soldes clients.');
+        this.loadingBalances.set(false);
+      },
+    });
+  }
+
+  setTab(tab: ClientTab): void {
+    if (this.activeTab() === tab) return;
+    this.activeTab.set(tab);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: tab === 'soldes' ? 'soldes' : null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  viewClientById(id: number): void {
+    this.router.navigate(['/clients', id]);
   }
 
   loadClients(): void {

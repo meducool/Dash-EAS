@@ -13,6 +13,7 @@ import {
   ClientStatementResponse,
   UnpaidSaleRow,
   ClientPaymentPayload,
+  ClientBalancesResponse,
 } from '../models/client.model';
 
 @Injectable({
@@ -21,6 +22,11 @@ import {
 export class ClientService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = `${environment.apiUrl}/clients`;
+
+  /** Clients with a positive balance, largest first. */
+  getBalances(): Observable<ClientBalancesResponse> {
+    return this.http.get<ClientBalancesResponse>(`${environment.apiUrl}/clients-summary`);
+  }
 
   getClients(filters: ClientFilters = {}): Observable<Client[]> {
     return this.http

@@ -2,16 +2,32 @@
   <div class="header">
     <div class="title-section">
       <h1>Clients</h1>
-      <p class="subtitle">Gérez vos clients, leurs coordonnées et leur solde d'ouverture.</p>
+      <p class="subtitle">{{ activeTab() === 'soldes' ? 'Les clients qui vous doivent encore de l\'argent' : 'Gérez vos clients, leurs coordonnées et leur solde d\'ouverture.' }}</p>
     </div>
     <div class="actions">
-      <button class="btn btn-primary" type="button" (click)="openCreateModal()">Nouveau Client</button>
-      <button class="btn btn-secondary" type="button" (click)="exportClients()" [disabled]="isExporting()">
-        {{ isExporting() ? 'Export en cours...' : 'Exporter Excel' }}
-      </button>
-      <app-auto-refresh-control pageKey="clients" (refresh)="loadClients()" />
+      <ng-container *ngIf="activeTab() === 'comptes'">
+        <button class="btn btn-primary" type="button" (click)="openCreateModal()">Nouveau Client</button>
+        <button class="btn btn-secondary" type="button" (click)="exportClients()" [disabled]="isExporting()">
+          {{ isExporting() ? 'Export en cours...' : 'Exporter Excel' }}
+        </button>
+      </ng-container>
+      <app-auto-refresh-control pageKey="clients" (refresh)="refreshAll()" />
     </div>
   </div>
+
+  <nav class="page-tabs" aria-label="Clients">
+    <button type="button" class="page-tab" [class.active]="activeTab() === 'comptes'"
+            [attr.aria-current]="activeTab() === 'comptes' ? 'page' : null" (click)="setTab('comptes')">
+      🧑‍💼 Comptes clients
+    </button>
+    <button type="button" class="page-tab" [class.active]="activeTab() === 'soldes'"
+            [attr.aria-current]="activeTab() === 'soldes' ? 'page' : null" (click)="setTab('soldes')">
+      💰 Soldes clients
+      <span class="page-tab-count" *ngIf="balances().length > 0">{{ balances().length }}</span>
+    </button>
+  </nav>
+
+  <ng-container *ngIf="activeTab() === 'comptes'">
 
   <p class="export-error" *ngIf="exportError()">{{ exportError() }}</p>
 
@@ -143,6 +159,58 @@
         </button>
         <button class="btn-page" [disabled]="currentPage() === lastPage()" (click)="goToPage(currentPage() + 1)">&raquo;</button>
       </div>
+    </div>
+  </div>
+  </ng-container>
+
+  <div class="card table-card balances-card" *ngIf="activeTab() === 'soldes'">
+    <div class="balances-head">
+      <h2 class="section-title">💰 Soldes clients — clients avec un solde à payer</h2>
+      <span class="balances-total" *ngIf="!loadingBalances() && balances().length > 0">
+        Total dû : <strong>{{ balancesTotal() | number:'1.2-2' }} DH</strong>
+      </span>
+    </div>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Téléphone</th>
+            <th class="text-right">Solde initial</th>
+            <th class="text-right">Ventes impayées</th>
+            <th class="text-right">Service Auto impayé</th>
+            <th class="text-right">Total dû</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="loadingBalances()">
+            <td colspan="6" class="text-center py-4"><div class="spinner"></div> Chargement...</td>
+          </tr>
+          <tr *ngIf="!loadingBalances() && balancesError()">
+            <td colspan="6" class="text-center py-4 text-danger">{{ balancesError() }}</td>
+          </tr>
+          <tr *ngIf="!loadingBalances() && !balancesError() && balances().length === 0">
+            <td colspan="6" class="text-center py-4 text-muted">Aucun client n'a de solde à payer.</td>
+          </tr>
+          <tr *ngFor="let row of balances()">
+            <td>
+              <button type="button" class="btn-link link-text" (click)="viewClientById(row.client_id)">{{ row.client_name }}</button>
+            </td>
+            <td>{{ row.phone || '-' }}</td>
+            <td class="text-right">{{ row.opening_balance | number:'1.2-2' }} DH</td>
+            <td class="text-right">{{ row.sales_unpaid | number:'1.2-2' }} DH</td>
+            <td class="text-right">{{ row.service_unpaid | number:'1.2-2' }} DH</td>
+            <td class="text-right fw-semibold">{{ row.total_unpaid | number:'1.2-2' }} DH</td>
+          </tr>
+          <tr class="total-row" *ngIf="!loadingBalances() && balances().length > 0">
+            <td class="fw-semibold" colspan="2">Total ({{ balances().length }} clients)</td>
+            <td class="text-right fw-semibold">{{ balanceSums().opening_balance | number:'1.2-2' }} DH</td>
+            <td class="text-right fw-semibold">{{ balanceSums().sales_unpaid | number:'1.2-2' }} DH</td>
+            <td class="text-right fw-semibold">{{ balanceSums().service_unpaid | number:'1.2-2' }} DH</td>
+            <td class="text-right fw-semibold">{{ balancesTotal() | number:'1.2-2' }} DH</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>

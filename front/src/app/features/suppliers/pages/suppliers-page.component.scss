@@ -20,3 +20,54 @@
   border-top: 2px solid #e8edf3;
   border-bottom: none !important;
 }
+
+
+// ── Onglets : Comptes / Soldes ───────────────────────────────────────────────
+.page-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin: -1rem 0 1.5rem;
+  border-bottom: 1px solid #e8edf3;
+  overflow-x: auto;
+}
+
+.page-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 1.1rem;
+  margin-bottom: -1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: #64748b;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+
+  &:hover { color: #0f172a; }
+  &:focus-visible { outline: 2px solid var(--app-primary); outline-offset: -2px; border-radius: 6px 6px 0 0; }
+
+  &.active {
+    color: var(--app-primary);
+    border-bottom-color: var(--app-primary);
+  }
+}
+
+.page-tab-count {
+  min-width: 1.35rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-primary) 10%, transparent);
+  color: var(--app-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .page-tabs { margin: -0.5rem 0 1rem; }
+}

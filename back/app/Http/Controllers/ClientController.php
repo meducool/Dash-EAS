@@ -19,14 +19,19 @@ class ClientController extends Controller
 {
     public function __construct(
         protected ClientService $clientService
-    ) {
-    }
+    ) {}
 
     public function index(Request $request)
     {
         return ClientResource::collection(
             $this->clientService->paginate($request->all())
         );
+    }
+
+    /** Clients that still owe something, with the breakdown (GET /api/clients-summary). */
+    public function summary(): JsonResponse
+    {
+        return response()->json($this->clientService->balancesByClient());
     }
 
     public function store(StoreClientRequest $request): ClientResource

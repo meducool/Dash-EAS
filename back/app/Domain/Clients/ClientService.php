@@ -3,6 +3,8 @@
 namespace App\Domain\Clients;
 
 use App\Enums\ClientCategory;
+use App\Enums\SaleStatus;
+use App\Enums\ServiceOrderStatus;
 use App\Models\City;
 use App\Models\Client;
 use App\Models\Sale;
@@ -11,6 +13,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ClientService
@@ -300,6 +303,67 @@ class ClientService
         };
     }
 
+    /**
+     * What each client still owes: opening balance + unpaid sales + unpaid
+     * service orders (same rule as the client profile's "solde dû"; cancelled
+     * documents are not owed). Only clients with a positive balance are listed.
+     *
+     * @return array{rows: array<int, array<string, mixed>>, total: float}
+     */
+    public function balancesByClient(): array
+    {
+        $saleAlloc = DB::table('sale_payment_allocations')
+            ->selectRaw('sale_id, SUM(amount) as paid')
+            ->groupBy('sale_id');
+
+        $sales = DB::table('sales')
+            ->leftJoinSub($saleAlloc, 'alloc', 'alloc.sale_id', '=', 'sales.id')
+            ->whereNotNull('sales.client_id')
+            ->where('sales.status', '!=', SaleStatus::ANNULE->value)
+            ->selectRaw('sales.client_id, SUM(GREATEST(COALESCE(sales.total_sale, 0) - COALESCE(alloc.paid, 0), 0)) as unpaid')
+            ->groupBy('sales.client_id');
+
+        $servicePaid = DB::table('service_payments')
+            ->selectRaw('service_order_id, SUM(amount) as paid')
+            ->groupBy('service_order_id');
+
+        $orders = DB::table('service_orders')
+            ->leftJoinSub($servicePaid, 'sp', 'sp.service_order_id', '=', 'service_orders.id')
+            ->whereNotNull('service_orders.client_id')
+            ->where('service_orders.status', '!=', ServiceOrderStatus::ANNULE->value)
+            ->selectRaw('service_orders.client_id, SUM(GREATEST(COALESCE(service_orders.net_amount, 0) - COALESCE(sp.paid, 0), 0)) as unpaid')
+            ->groupBy('service_orders.client_id');
+
+        $total = 'COALESCE(clients.opening_balance, 0) + COALESCE(s.unpaid, 0) + COALESCE(o.unpaid, 0)';
+
+        $raw = DB::table('clients')
+            ->leftJoinSub($sales, 's', 's.client_id', '=', 'clients.id')
+            ->leftJoinSub($orders, 'o', 'o.client_id', '=', 'clients.id')
+            ->selectRaw("clients.id, clients.name, clients.phone,
+                COALESCE(clients.opening_balance, 0) as opening_balance,
+                COALESCE(s.unpaid, 0) as sales_unpaid,
+                COALESCE(o.unpaid, 0) as service_unpaid,
+                ($total) as total_unpaid")
+            ->whereRaw("($total) > 0.004")
+            ->orderByDesc('total_unpaid')
+            ->get();
+
+        $rows = $raw->map(fn ($r) => [
+            'client_id' => (int) $r->id,
+            'client_name' => $r->name,
+            'phone' => $r->phone,
+            'opening_balance' => round((float) $r->opening_balance, 2),
+            'sales_unpaid' => round((float) $r->sales_unpaid, 2),
+            'service_unpaid' => round((float) $r->service_unpaid, 2),
+            'total_unpaid' => round((float) $r->total_unpaid, 2),
+        ])->values()->toArray();
+
+        return [
+            'rows' => $rows,
+            'total' => round(array_sum(array_column($rows, 'total_unpaid')), 2),
+        ];
+    }
+
     protected function calculateOutstandingBalance(Client $client, Collection $sales): float
     {
         return $this->calculateOutstandingBalanceAll($client, $sales, collect());
@@ -308,8 +372,13 @@ class ClientService
     protected function calculateOutstandingBalanceAll(Client $client, Collection $sales, Collection $serviceOrders): float
     {
         $openingBalance = (float) ($client->opening_balance ?? 0);
-        $salesOutstanding = $sales->sum(fn (Sale $sale) => max((float) ($sale->total ?? 0) - $this->salePaidAmount($sale), 0));
+        $salesOutstanding = $sales
+            ->reject(fn (Sale $sale) => $sale->status === SaleStatus::ANNULE->value)
+            ->sum(fn (Sale $sale) => max((float) ($sale->total ?? 0) - $this->salePaidAmount($sale), 0));
         $ordersOutstanding = $serviceOrders->sum(function (ServiceOrder $order) {
+            if ($order->status === ServiceOrderStatus::ANNULE->value) {
+                return 0;
+            }
             $paid = $order->payments ? (float) $order->payments->sum('amount') : 0;
 
             return max((float) ($order->net_amount ?? 0) - $paid, 0);

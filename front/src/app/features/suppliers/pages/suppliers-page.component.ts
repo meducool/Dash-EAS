@@ -1,12 +1,14 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { SupplierService } from '../data-access/supplier.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Supplier, SupplierPayload, PaginatedResponse, SupplierUnpaidRow } from '../models/supplier.model';
 import { SupplierFormComponent } from '../components/supplier-form/supplier-form.component';
 import { AutoRefreshControlComponent } from '../../../shared/auto-refresh-control/auto-refresh-control.component';
+
+type SupplierTab = 'comptes' | 'soldes';
 
 @Component({
   selector: 'app-suppliers-page',
@@ -31,6 +33,9 @@ export class SuppliersPageComponent implements OnInit {
   showForm = signal(false);
   editingSupplier = signal<Supplier | null>(null);
 
+  /** Two pages in one: the supplier accounts, and what is owed to each supplier. */
+  activeTab = signal<SupplierTab>('comptes');
+
   unpaidBySupplier = signal<SupplierUnpaidRow[]>([]);
   loadingUnpaid = signal(false);
 
@@ -49,6 +54,7 @@ export class SuppliersPageComponent implements OnInit {
     private supplierService: SupplierService,
     public authService: AuthService,
     private router: Router,
+    private route: ActivatedRoute,
   ) {}
 
   viewSupplier(supplier: Supplier): void {
@@ -62,7 +68,22 @@ export class SuppliersPageComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // ?tab=soldes opens the balances directly (bookmarkable, kept on reload).
+    if (this.route.snapshot.queryParamMap.get('tab') === 'soldes') {
+      this.activeTab.set('soldes');
+    }
     this.refreshAll();
+  }
+
+  setTab(tab: SupplierTab): void {
+    if (this.activeTab() === tab) return;
+    this.activeTab.set(tab);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: tab === 'soldes' ? 'soldes' : null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   refreshAll(): void {

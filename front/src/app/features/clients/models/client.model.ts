@@ -156,3 +156,19 @@ export interface ClientPaymentPayload {
   notes?: string | null;
   allocations: ClientPaymentAllocationInput[];
 }
+
+/** One client that still owes something (GET /api/clients-summary). */
+export interface ClientBalanceRow {
+  client_id: number;
+  client_name: string;
+  phone: string | null;
+  opening_balance: number;
+  sales_unpaid: number;
+  service_unpaid: number;
+  total_unpaid: number;
+}
+
+export interface ClientBalancesResponse {
+  rows: ClientBalanceRow[];
+  total: number;
+}
