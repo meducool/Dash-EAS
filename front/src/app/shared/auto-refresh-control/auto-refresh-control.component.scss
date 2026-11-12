@@ -26,8 +26,8 @@
   }
 
   &.on {
-    background: rgba($primary, 0.08);
-    border-color: rgba($primary, 0.4);
+    background: color-mix(in srgb, var(--app-primary) 8%, transparent);
+    border-color: color-mix(in srgb, var(--app-primary) 40%, transparent);
     color: $primary;
   }
 }
@@ -57,7 +57,7 @@
   &:focus {
     outline: none;
     border-color: $primary;
-    box-shadow: 0 0 0 3px rgba($primary, 0.1);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 10%, transparent);
   }
 }
 

@@ -2,7 +2,7 @@
 @include layout.page-layout();
 
 // Internal tokens (mirror _page-layout internals)
-$_red:     #ff2d37;
+$_red:     var(--app-primary);
 $_text:    #0f172a;
 $_muted:   #64748b;
 $_dim:     #94a3b8;

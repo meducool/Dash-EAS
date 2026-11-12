@@ -1,5 +1,5 @@
 // ── Design tokens ─────────────────────────────────────────────────────────────
-$_red:      #ff2d37;
+$_red:      var(--app-primary);
 $_red-dark: #e8000b;
 $_text:     #0f172a;
 $_strong:   #1e293b;
@@ -84,7 +84,7 @@ $_radius-md: 12px;
     &:focus {
       outline: none;
       border-color: $_red;
-      box-shadow: 0 0 0 3px rgba(255, 45, 55, 0.1);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 10%, transparent);
     }
   }
 
@@ -174,7 +174,7 @@ $_radius-md: 12px;
     &:focus {
       outline: none;
       border-color: $_red;
-      box-shadow: 0 0 0 3px rgba(255, 45, 55, 0.1);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 10%, transparent);
     }
   }
 }
@@ -205,8 +205,8 @@ $_radius-md: 12px;
   transition: border-color 0.15s, background 0.15s;
 
   &:hover {
-    border-color: rgba(255, 45, 55, 0.25);
-    background: rgba(255, 45, 55, 0.03);
+    border-color: color-mix(in srgb, var(--app-primary) 25%, transparent);
+    background: color-mix(in srgb, var(--app-primary) 3%, transparent);
   }
 
   .result-name {
@@ -249,7 +249,7 @@ $_radius-md: 12px;
   align-items: center;
   padding: 0.2rem 0.65rem;
   border-radius: 999px;
-  background: rgba(255, 45, 55, 0.1);
+  background: color-mix(in srgb, var(--app-primary) 10%, transparent);
   color: $_red;
   font-size: 0.8rem;
   font-weight: 700;
@@ -432,9 +432,9 @@ $_radius-md: 12px;
     background: $_red;
     color: white;
     border-color: $_red;
-    box-shadow: 0 2px 6px rgba(255, 45, 55, 0.3);
+    box-shadow: 0 2px 6px color-mix(in srgb, var(--app-primary) 30%, transparent);
 
-    &:hover { background: $_red-dark; box-shadow: 0 4px 10px rgba(255, 45, 55, 0.4); transform: translateY(-1px); }
+    &:hover { background: $_red-dark; box-shadow: 0 4px 10px color-mix(in srgb, var(--app-primary) 40%, transparent); transform: translateY(-1px); }
     &:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
   }
 }

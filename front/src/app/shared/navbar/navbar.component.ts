@@ -13,6 +13,12 @@ interface NavItem {
   permission?: string;
   exact?: boolean;
   children?: NavItem[];
+  /**
+   * One menu entry for a page split into tabs living on several routes: shown
+   * when any tab is allowed, links to the first allowed one, and highlighted
+   * on all of them.
+   */
+  tabs?: { route: string; permission: string }[];
 }
 
 const COLLAPSED_KEY = 'nav_collapsed';
@@ -74,12 +80,13 @@ export class NavbarComponent implements OnDestroy {
     { icon: '💰', label: 'Cash Flow', route: '/cash-flow', permission: 'view cash-flow' },
     {
       icon: '🛞',
-      label: 'Stock',
-      children: [
-        { icon: '🛞', label: 'Produits', route: '/products', permission: 'view products' },
-        { icon: '📋', label: 'Inventaire', route: '/stock', permission: 'view stock' },
-        { icon: '🏭', label: 'Marques', route: '/brands', permission: 'view brands' },
-      ]
+      label: 'Produits & Inventaire',
+      // Stock first: the menu opens on the stock tab by default.
+      tabs: [
+        { route: '/stock', permission: 'view stock' },
+        { route: '/products', permission: 'view products' },
+        { route: '/depots', permission: 'view stock' },
+      ],
     },
     {
       icon: '🤝',
@@ -89,6 +96,7 @@ export class NavbarComponent implements OnDestroy {
         { icon: '🏢', label: 'Fournisseurs', route: '/suppliers', permission: 'view suppliers' },
         { icon: '🚚', label: 'Transporteurs', route: '/carriers', permission: 'view carriers' },
         { icon: '🤝', label: 'Partenaires', route: '/partners', permission: 'view partners' },
+        { icon: '🏭', label: 'Marques', route: '/brands', permission: 'view brands' },
       ]
     },
     {
@@ -125,31 +133,53 @@ export class NavbarComponent implements OnDestroy {
     return this.allNavItems
       .map(item => {
         if (item.children) {
-          const visibleChildren = item.children.filter(child => !child.permission || this.authService.hasPermission(child.permission));
+          const visibleChildren = item.children
+            .map(child => this.resolveTabs(child))
+            .filter((child): child is NavItem => child !== null)
+            .filter(child => !child.permission || this.authService.hasPermission(child.permission));
           if (visibleChildren.length > 0) {
             return { ...item, children: visibleChildren };
           }
           return null;
         }
-        if (!item.permission || this.authService.hasPermission(item.permission)) {
-          return item;
+        const resolved = this.resolveTabs(item);
+        if (resolved && (!resolved.permission || this.authService.hasPermission(resolved.permission))) {
+          return resolved;
         }
         return null;
       })
       .filter((item): item is NavItem => item !== null);
   });
 
+  /** A tabbed entry becomes a plain link to its first allowed tab — or disappears. */
+  private resolveTabs(item: NavItem): NavItem | null {
+    if (!item.tabs) return item;
+    const first = item.tabs.find(tab => this.authService.hasPermission(tab.permission));
+    return first ? { ...item, route: first.route } : null;
+  }
+
+  /** Every route a menu entry stands for (its tabs, or its own route). */
+  private routesOf(item: NavItem): string[] {
+    return item.tabs ? item.tabs.map(tab => tab.route) : item.route ? [item.route] : [];
+  }
+
+  isChildActive(child: NavItem): boolean {
+    const url = this.currentUrl().split('?')[0];
+    return this.routesOf(child).some(route => url === route || url.startsWith(route + '/'));
+  }
+
   constructor(
     private authService: AuthService,
     private settingsService: SettingsService,
     private router: Router,
   ) {
-    this.settingsService.getCompanySettings().subscribe({
-      next: (settings) => {
-        this.companySettings.set(settings);
-        this.brandLogoUrl.set(settings.logo_url || 'logo.png');
-      },
-    });
+    const applySettings = (settings: CompanySettings) => {
+      this.companySettings.set(settings);
+      this.brandLogoUrl.set(settings.logo_url || 'logo.png');
+    };
+    this.settingsService.getCompanySettings().subscribe({ next: applySettings });
+    // A logo changed in Paramètres › Entreprise shows up without reloading.
+    this.settingsService.saved$.subscribe(applySettings);
 
     this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => {
       this.currentUrl.set(this.router.url);
@@ -176,7 +206,7 @@ export class NavbarComponent implements OnDestroy {
   private autoExpandActiveGroup(): void {
     const url = this.router.url;
     const match = this.allNavItems.find((item) =>
-      item.children?.some((child) => child.route && url.startsWith(child.route)),
+      item.children?.some((child) => this.routesOf(child).some((route) => url.startsWith(route))),
     );
     if (match) {
       this.expandedGroups.update((set) => new Set(set).add(match.label));
@@ -191,7 +221,7 @@ export class NavbarComponent implements OnDestroy {
   // current page lives inside it.
   isGroupActive(item: NavItem): boolean {
     const url = this.currentUrl();
-    return !!item.children?.some((child) => child.route && url.startsWith(child.route));
+    return !!item.children?.some((child) => this.routesOf(child).some((route) => url.startsWith(route)));
   }
 
   toggleGroup(item: NavItem, event: Event): void {
@@ -235,4 +265,9 @@ export class NavbarComponent implements OnDestroy {
   toggleMenu() { this.menuOpen.update((open) => !open); }
   closeMenu() { this.menuOpen.set(false); }
   logout() { this.authService.logout(); }
+
+  /** Shortcut next to the logo, for the users allowed to change it. */
+  get canChangeLogo(): boolean {
+    return this.authService.hasPermission('edit settings');
+  }
 }

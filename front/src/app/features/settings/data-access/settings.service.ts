@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, Subject, tap } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { CompanySettings, UpdateCompanySettingsPayload } from '../models/company-settings.model';
 
@@ -9,6 +9,10 @@ import { CompanySettings, UpdateCompanySettingsPayload } from '../models/company
 })
 export class SettingsService {
   private apiUrl = `${environment.apiUrl}/settings/company`;
+
+  /** Every saved version of the settings — lets the menu show a new logo at once. */
+  private readonly savedSubject = new Subject<CompanySettings>();
+  readonly saved$ = this.savedSubject.asObservable();
 
   constructor(private http: HttpClient) {}
 
@@ -43,6 +47,6 @@ export class SettingsService {
     // PHP only parses multipart/form-data for POST — use method spoofing
     // so files are accessible via $request->file() in Laravel.
     formData.append('_method', 'PUT');
-    return this.http.post<CompanySettings>(this.apiUrl, formData);
+    return this.http.post<CompanySettings>(this.apiUrl, formData).pipe(tap((settings) => this.savedSubject.next(settings)));
   }
 }

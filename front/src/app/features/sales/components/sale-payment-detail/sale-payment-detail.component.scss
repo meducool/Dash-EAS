@@ -1,5 +1,5 @@
 // ── Design tokens (matches supplier-payment.component.scss) ───────────────────
-$primary:      #ff2d37;
+$primary:      var(--app-primary);
 $success-bg:   rgba(34, 197, 94, 0.10);
 $success-text: #15803d;
 $warning-bg:   rgba(234, 179, 8, 0.12);

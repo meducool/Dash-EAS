@@ -1,5 +1,5 @@
 // ── Design tokens ─────────────────────────────────────────────────────────────
-$_red:      #ff2d37;
+$_red:      var(--app-primary);
 $_text:     #0f172a;
 $_strong:   #1e293b;
 $_label:    #334155;
@@ -362,7 +362,7 @@ $_border2:  #d0d9e4;
   &:focus {
     outline: none;
     border-color: $_red;
-    box-shadow: 0 0 0 3px rgba(255, 45, 55, 0.1);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 10%, transparent);
   }
 }
 
@@ -399,9 +399,9 @@ $_border2:  #d0d9e4;
     background: $_red;
     color: white;
     border-color: $_red;
-    box-shadow: 0 2px 6px rgba(255, 45, 55, 0.3);
+    box-shadow: 0 2px 6px color-mix(in srgb, var(--app-primary) 30%, transparent);
 
-    &:hover:not(:disabled) { background: #e8000b; box-shadow: 0 4px 10px rgba(255, 45, 55, 0.4); transform: translateY(-1px); }
+    &:hover:not(:disabled) { background: #e8000b; box-shadow: 0 4px 10px color-mix(in srgb, var(--app-primary) 40%, transparent); transform: translateY(-1px); }
     &:disabled { opacity: 0.55; cursor: not-allowed; }
   }
 

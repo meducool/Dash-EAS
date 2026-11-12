@@ -35,6 +35,12 @@ export class App implements OnInit {
 
       this.loadCompanySettings();
     });
+
+    // Colours / mode / layout saved in Paramètres › Entreprise apply at once.
+    this.settingsService.saved$.subscribe((settings) => {
+      this.companySettings.set(settings);
+      this.themeService.applyCompanyTheme(settings);
+    });
   }
 
   ngOnInit(): void {

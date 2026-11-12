@@ -64,7 +64,7 @@
 
     &:focus {
       outline: none;
-      border-color: #ff2d37;
+      border-color: var(--app-primary);
     }
 
     &.invalid {
@@ -92,12 +92,12 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #ff2d37 0%, #cc0a13 100%);
+  background: linear-gradient(135deg, var(--app-primary) 0%, color-mix(in srgb, var(--app-primary) 80%, #000) 100%);
   color: white;
 
   &:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255, 45, 55, 0.4);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--app-primary) 40%, transparent);
   }
 
   &:disabled {
@@ -116,7 +116,7 @@
   }
 
   a {
-    color: #ff2d37;
+    color: var(--app-primary);
     text-decoration: none;
     font-weight: 600;
 

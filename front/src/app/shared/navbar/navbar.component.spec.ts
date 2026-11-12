@@ -6,7 +6,7 @@ import { NavbarComponent } from './navbar.component';
 describe('NavbarComponent', () => {
   let comp: NavbarComponent;
   let mockAuthService: { user: () => any; hasPermission: ReturnType<typeof vi.fn>; logout: ReturnType<typeof vi.fn> };
-  let mockSettingsService: { getCompanySettings: ReturnType<typeof vi.fn> };
+  let mockSettingsService: { getCompanySettings: ReturnType<typeof vi.fn>; saved$: Subject<any> };
   let routerEvents: Subject<any>;
   let mockRouter: { url: string; events: Subject<any> };
 
@@ -25,7 +25,19 @@ describe('NavbarComponent', () => {
     };
     mockSettingsService = {
       getCompanySettings: vi.fn().mockReturnValue(of({ menu_layout: 'vertical', logo_url: null })),
+      saved$: new Subject<any>(),
     };
+  });
+
+  describe('logo', () => {
+    it('falls back to the default logo, then shows a logo saved in the settings at once', () => {
+      comp = createComponent();
+      expect(comp.brandLogoUrl()).toBe('logo.png');
+
+      mockSettingsService.saved$.next({ menu_layout: 'vertical', logo_url: '/storage/settings/company/new.png' });
+
+      expect(comp.brandLogoUrl()).toBe('/storage/settings/company/new.png');
+    });
   });
 
   describe('toggleGroup', () => {
@@ -52,6 +64,45 @@ describe('NavbarComponent', () => {
 
       expect(comp.isGroupExpanded(finance)).toBe(true);
       expect(comp.isGroupExpanded(tiers)).toBe(true);
+    });
+  });
+
+  describe('Produits & Inventaire entry', () => {
+    const entry = (c: NavbarComponent) => c.visibleNavItems().find((item) => item.label === 'Produits & Inventaire');
+
+    it('is a direct top-level link that replaces the Stock group', () => {
+      comp = createComponent();
+      const labels = comp.visibleNavItems().map((item) => item.label);
+      const childLabels = comp.visibleNavItems().flatMap((item) => item.children ?? []).map((child) => child.label);
+
+      expect(labels).toContain('Produits & Inventaire');
+      expect(labels).not.toContain('Stock');
+      expect(entry(comp)?.children).toBeUndefined();
+      expect(childLabels).toContain('Marques');
+      expect(childLabels).not.toContain('Inventaire');
+      expect(entry(comp)?.route).toBe('/stock'); // stock tab by default
+    });
+
+    it('links to the catalogue when stock is not allowed, and hides without either', () => {
+      mockAuthService.hasPermission.mockImplementation((p: string) => p !== 'view stock');
+      comp = createComponent();
+      expect(entry(comp)?.route).toBe('/products');
+
+      mockAuthService.hasPermission.mockImplementation((p: string) => p !== 'view products' && p !== 'view stock');
+      comp = createComponent();
+      expect(entry(comp)).toBeUndefined();
+    });
+
+    it('stays highlighted on both tabs', () => {
+      comp = createComponent('/stock?search=2055516');
+      expect(comp.isChildActive(entry(comp)!)).toBe(true);
+
+      comp = createComponent('/products');
+      expect(comp.isChildActive(entry(comp)!)).toBe(true);
+
+      comp = createComponent('/depots');
+      expect(comp.isChildActive(entry(comp)!)).toBe(true);
+      expect(comp.isChildActive({ icon: '🏭', label: 'Marques', route: '/brands' })).toBe(false);
     });
   });
 

@@ -1,7 +1,7 @@
 @use '../../_page-layout' as layout;
 @include layout.page-layout();
 
-$_primary:  #ff2d37;
+$_primary:  var(--app-primary);
 $_green:    #22c55e;
 $_red:      #ef4444;
 $_amber:    #f59e0b;
@@ -61,8 +61,8 @@ $_bg:       #f1f5f9;
   }
 
   &.not-eligible {
-    background: rgba($_red, 0.06);
-    border-color: rgba($_red, 0.2);
+    background: color-mix(in srgb, var(--app-primary) 6%, transparent);
+    border-color: color-mix(in srgb, var(--app-primary) 20%, transparent);
   }
 
   .banner-left {
@@ -89,8 +89,8 @@ $_bg:       #f1f5f9;
     }
 
     &.badge-danger {
-      background: rgba($_red, 0.12);
-      color: darken($_red, 5%);
+      background: color-mix(in srgb, var(--app-primary) 12%, transparent);
+      color: color-mix(in srgb, var(--app-primary) 92%, #000);
     }
   }
 }
@@ -195,9 +195,9 @@ tfoot .total-row td { border-bottom: none; }
   margin-top: 1rem;
   padding: 0.75rem 1.25rem;
   border-radius: 8px;
-  background: rgba($_red, 0.06);
-  border: 1px solid rgba($_red, 0.18);
-  color: darken($_red, 5%);
+  background: color-mix(in srgb, var(--app-primary) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--app-primary) 18%, transparent);
+  color: color-mix(in srgb, var(--app-primary) 92%, #000);
   font-size: 0.875rem;
 
   &.notice-warning {
@@ -211,7 +211,7 @@ tfoot .total-row td { border-bottom: none; }
 .spinner {
   width: 20px;
   height: 20px;
-  border: 2px solid rgba($_primary, 0.2);
+  border: 2px solid color-mix(in srgb, var(--app-primary) 20%, transparent);
   border-top-color: $_primary;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;

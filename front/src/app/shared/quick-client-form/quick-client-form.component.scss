@@ -89,7 +89,7 @@ $_border2: #d0d9e4;
   &:focus {
     outline: none;
     border-color: $_red;
-    box-shadow: 0 0 0 3px rgba(255, 45, 55, 0.1);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 10%, transparent);
   }
 
   &::placeholder { color: $_dim; }
@@ -174,7 +174,7 @@ $_border2: #d0d9e4;
   font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.15s;
-  box-shadow: 0 2px 6px rgba(255, 45, 55, 0.25);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--app-primary) 25%, transparent);
 
   &:hover:not(:disabled) { filter: brightness(0.92); }
   &:disabled { opacity: 0.55; cursor: not-allowed; }

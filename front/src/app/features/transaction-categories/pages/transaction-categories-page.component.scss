@@ -1,6 +1,6 @@
 // ── Design tokens ─────────────────────────────────────────────────────────────
-$_red:        #ff2d37;
-$_red-dark:   #cc0a13;
+$_red:        var(--app-primary);
+$_red-dark:   color-mix(in srgb, var(--app-primary) 80%, #000);
 $_text:       #0f172a;
 $_muted:      #64748b;
 $_dim:        #94a3b8;
@@ -82,7 +82,7 @@ $_radius-lg: 14px;
 
   &.active {
     border-color: $_red;
-    background: linear-gradient(135deg, rgba($_red, 0.08), rgba($_red-dark, 0.08));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--app-primary) 8%, transparent), color-mix(in srgb, var(--app-primary) 8%, transparent));
     color: $_red-dark;
   }
 }
@@ -199,7 +199,7 @@ $_radius-lg: 14px;
 }
 
 .badge-confidential {
-  background: rgba($_red, 0.1);
+  background: color-mix(in srgb, var(--app-primary) 10%, transparent);
   color: $_red-dark;
 }
 

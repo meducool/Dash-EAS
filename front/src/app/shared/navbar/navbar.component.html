@@ -6,8 +6,11 @@
 >
   <div class="navbar-brand">
     <a routerLink="/dashboard" class="brand-link" (click)="closeMenu()">
-      <img [src]="brandLogoUrl()" [alt]="companySettings()?.company_name || 'PNEU.MA'" class="brand-logo">
+      <img [src]="brandLogoUrl()" [alt]="companySettings()?.company_name || 'PNEU.MA'" class="brand-logo"
+           (error)="brandLogoUrl.set('logo.png')">
     </a>
+    <a *ngIf="canChangeLogo && !isRail()" routerLink="/settings" fragment="logo" class="logo-edit"
+       title="Changer le logo" aria-label="Changer le logo" (click)="closeMenu()">✏️</a>
     <button
       *ngIf="menuLayout() === 'vertical'"
       type="button"
@@ -32,7 +35,19 @@
   <div class="navbar-links" id="navbar-links" [class.open]="menuOpen()">
     <ng-container *ngFor="let item of visibleNavItems()">
 
-      <a *ngIf="!item.children"
+      <!-- Tabbed page (several routes): highlighted on any of its tabs. -->
+      <a *ngIf="!item.children && item.tabs"
+         class="nav-item"
+         [routerLink]="item.route"
+         [class.active]="isChildActive(item)"
+         [attr.aria-current]="isChildActive(item) ? 'page' : null"
+         [attr.title]="isRail() ? item.label : null"
+         (click)="closeMenu()">
+        <span class="nav-icon" aria-hidden="true">{{ item.icon }}</span>
+        <span class="nav-label">{{ item.label }}</span>
+      </a>
+
+      <a *ngIf="!item.children && !item.tabs"
          class="nav-item"
          [routerLink]="item.route"
          routerLinkActive="active"
@@ -60,7 +75,8 @@
           <a *ngFor="let child of item.children"
              class="nav-item"
              [routerLink]="child.route"
-             routerLinkActive="active"
+             [class.active]="isChildActive(child)"
+             [attr.aria-current]="isChildActive(child) ? 'page' : null"
              (click)="closeMenu()">
             <span class="nav-icon" aria-hidden="true">{{ child.icon }}</span>
             <span class="nav-label">{{ child.label }}</span>

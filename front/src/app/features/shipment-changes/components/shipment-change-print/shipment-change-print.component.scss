@@ -58,9 +58,9 @@
 }
 
 .btn-primary {
-  background: #ff2d37;
+  background: var(--app-primary);
   color: #fff;
-  border-color: #ff2d37;
+  border-color: var(--app-primary);
 }
 
 .btn-ghost {
@@ -110,7 +110,7 @@
   .doc-type-title {
     font-size: 16pt;
     font-weight: 700;
-    color: #ff2d37;
+    color: var(--app-primary);
     margin: 0 0 4px;
     text-transform: uppercase;
     letter-spacing: 0.03em;
@@ -128,7 +128,7 @@
 }
 
 .doc-divider {
-  border-top: 2px solid #ff2d37;
+  border-top: 2px solid var(--app-primary);
 }
 
 // ── Parties émetteur / destinataire ──────────────────────────────────────────
@@ -218,7 +218,7 @@
   font-size: 9.5pt;
 
   thead tr {
-    background: #ff2d37;
+    background: var(--app-primary);
     color: #fff;
 
     th {

@@ -2,7 +2,7 @@
 @include layout.page-layout();
 
 // Local tokens — mirror the dashboard palette so the KPI cards match.
-$_red:          #ff2d37;
+$_red:          var(--app-primary);
 $_blue:         #3b82f6;
 $_green:        #10b981;
 $_amber:        #f59e0b;

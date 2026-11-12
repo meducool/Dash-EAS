@@ -112,7 +112,7 @@
 
     &:focus {
       border-color: $primary;
-      box-shadow: 0 0 0 3px rgba($primary, 0.1);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 10%, transparent);
     }
   }
 }
@@ -150,7 +150,7 @@
 
   &:hover {
     border-color: $primary;
-    background: rgba($primary, 0.05);
+    background: color-mix(in srgb, var(--app-primary) 5%, transparent);
   }
 }
 
@@ -198,7 +198,7 @@
   transition: all 0.2s;
 
   &:hover:not(:disabled) {
-    box-shadow: 0 4px 12px rgba($primary, 0.35);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--app-primary) 35%, transparent);
     transform: translateY(-1px);
   }
 

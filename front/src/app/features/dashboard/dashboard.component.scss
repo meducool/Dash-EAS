@@ -1,6 +1,6 @@
 // ─── Modernised Light — Pneuma POS Dashboard ────────────────────────────────
-$red:          #ff2d37;
-$red-pale:     rgba(255, 45, 55, 0.08);
+$red:          var(--app-primary);
+$red-pale:     color-mix(in srgb, var(--app-primary) 8%, transparent);
 $blue:         #3b82f6;
 $blue-pale:    rgba(59, 130, 246, 0.08);
 $green:        #10b981;
@@ -157,7 +157,7 @@ $text-dim:     #94a3b8;
   &:focus {
     outline: none;
     border-color: $red;
-    box-shadow: 0 0 0 3px rgba(255, 45, 55, 0.1);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 10%, transparent);
   }
 }
 
@@ -390,7 +390,7 @@ $text-dim:     #94a3b8;
 }
 
 .avatar {
-  background: linear-gradient(135deg, #ff2d37 0%, #ff7070 100%);
+  background: linear-gradient(135deg, var(--app-primary) 0%, #ff7070 100%);
   color: white;
   font-weight: 700;
   height: 34px;
@@ -401,7 +401,7 @@ $text-dim:     #94a3b8;
   align-items: center;
   justify-content: center;
   font-size: 0.8rem;
-  box-shadow: 0 2px 8px rgba(255, 45, 55, 0.3);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--app-primary) 30%, transparent);
 
   &--service {
     background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
@@ -459,7 +459,7 @@ $text-dim:     #94a3b8;
   &:hover {
     transform: translateY(-2px);
     border-color: $red;
-    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.1), 0 0 0 1px rgba(255, 45, 55, 0.12);
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.1), 0 0 0 1px color-mix(in srgb, var(--app-primary) 12%, transparent);
   }
 }
 
