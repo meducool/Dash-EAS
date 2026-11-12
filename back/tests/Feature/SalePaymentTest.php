@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Sales\SalePaymentService;
 use App\Models\Account;
+use App\Models\Client;
 use App\Models\Payment;
 use App\Models\Sale;
 use App\Models\SalePaymentAllocation;
@@ -142,6 +143,65 @@ class SalePaymentTest extends TestCase
     // -------------------------------------------------------------------------
     // POST /api/sales/{sale}/payments
     // -------------------------------------------------------------------------
+
+    public function test_store_labels_transaction_with_client_and_payment_mode(): void
+    {
+        Sanctum::actingAs($this->user, [], 'web');
+        $client = $this->attachClient();
+        $id = $this->sale->id;
+
+        $cheque = $this->postJson("/api/sales/{$id}/payments", $this->validPayload(['amount' => 100, 'reference' => ' 556677 BMCE ']));
+        $effet = $this->postJson("/api/sales/{$id}/payments", $this->validPayload(['amount' => 100, 'method' => 'Effet', 'reference' => '8899']));
+        $cash = $this->postJson("/api/sales/{$id}/payments", $this->validPayload(['amount' => 100, 'method' => 'Espèces']));
+
+        $label = fn ($response) => Payment::find($response->json('id'))->transaction->description;
+        $this->assertSame("Paiement vente #{$id} | {$client->name} | 556677 BMCE", $label($cheque));
+        $this->assertSame("Paiement vente #{$id} | {$client->name} | 8899", $label($effet));
+        $this->assertSame("Paiement vente #{$id} | {$client->name} | ESPÈCES", $label($cash));
+    }
+
+    public function test_migration_rewrites_old_sale_descriptions_only(): void
+    {
+        $client = $this->attachClient();
+        $id = $this->sale->id;
+
+        $make = function (string $description, string $method, ?string $reference) {
+            $transaction = Transaction::query()->create([
+                'date' => '2026-04-15',
+                'amount' => 100,
+                'type' => 'income',
+                'category' => 'Vente marchandise',
+                'method' => $method,
+                'description' => $description,
+                'person' => '',
+                'user_id' => $this->user->id,
+                'account_id' => $this->account->id,
+            ]);
+            Payment::query()->create([
+                'sale_id' => $this->sale->id,
+                'client_id' => $this->sale->client_id,
+                'transaction_id' => $transaction->id,
+                'amount' => 100,
+                'date' => '2026-04-15',
+                'method' => $method,
+                'reference' => $reference,
+                'user_id' => $this->user->id,
+            ]);
+
+            return $transaction;
+        };
+
+        $cheque = $make("Paiement vente #{$id} - 4 X MICHELIN PRIMACY 4 205/55R16 POUR {$client->name}", 'Chèque', '556677');
+        $cash = $make("Paiement vente #{$id} - 2 X HANKOOK K125 195/65R15 POUR {$client->name}", 'Espèces', 'X');
+        $manual = $make("Paiement vente #{$id} acompte", 'Chèque', '1');
+
+        $migration = require database_path('migrations/2026_11_11_000001_rewrite_payment_transaction_descriptions.php');
+        $migration->up();
+
+        $this->assertSame("Paiement vente #{$id} | {$client->name} | 556677", $cheque->fresh()->description);
+        $this->assertSame("Paiement vente #{$id} | {$client->name} | ESPÈCES", $cash->fresh()->description);
+        $this->assertSame("Paiement vente #{$id} acompte", $manual->fresh()->description);
+    }
 
     public function test_store_requires_authentication(): void
     {
@@ -398,16 +458,31 @@ class SalePaymentTest extends TestCase
     // Helpers
     // -------------------------------------------------------------------------
 
-    private function validPayload(): array
+    private function validPayload(array $overrides = []): array
     {
-        return [
+        return array_merge([
             'amount' => 500.00,
             'method' => 'Chèque',
             'date' => '2026-04-15',
             'account_id' => $this->account->id,
             'reference' => 'CHQ-001',
             'notes' => null,
-        ];
+        ], $overrides);
+    }
+
+    private function attachClient(string $name = 'KARIM TEST'): Client
+    {
+        $client = Client::query()->create([
+            'name' => $name,
+            'phone' => '0600000099',
+            'category' => 'Particulier',
+            'created_by' => $this->user->id,
+            'updated_by' => $this->user->id,
+            'is_active' => true,
+        ]);
+        $this->sale->update(['client_id' => $client->id]);
+
+        return $client;
     }
 
     private function createPayment(float $amount = 500.00): Payment

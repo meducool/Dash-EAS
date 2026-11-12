@@ -2,6 +2,7 @@
 
 namespace App\Domain\ServiceOrders;
 
+use App\Domain\Support\PaymentDescription;
 use App\Enums\ServiceOrderPaymentStatus;
 use App\Models\ActivityLog;
 use App\Models\ServiceOrder;
@@ -36,13 +37,15 @@ class ServicePaymentService
         $method = $validated['method'] ?? null;
 
         if ($accountId || $method === 'Espèces') {
+            $order->loadMissing('clientRecord');
+
             $transaction = Transaction::create([
                 'date' => $validated['date'],
                 'amount' => $validated['amount'],
                 'type' => 'income',
                 'category' => 'Vente marchandise',
                 'method' => $method ?? 'Espèces',
-                'description' => "Paiement service #{$order->id} - ".$this->describeOrderItems($order)." POUR {$order->client}",
+                'description' => PaymentDescription::forServiceOrder($order->id, (string) $order->clientRecord?->name, $method ?? 'Espèces', $validated['reference'] ?? null),
                 'person' => '',
                 'partner' => $order->client,
                 'user_id' => $user->id,
@@ -104,14 +107,6 @@ class ServicePaymentService
             $userId,
             $userName,
         );
-    }
-
-    private function describeOrderItems(ServiceOrder $order): string
-    {
-        $order->loadMissing('items.product');
-        $types = $order->items->pluck('product.profile')->filter()->unique()->implode(', ');
-
-        return $types ?: 'Service';
     }
 
     public function refreshPaymentStatus(ServiceOrder $order): void

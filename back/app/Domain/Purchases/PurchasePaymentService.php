@@ -2,6 +2,7 @@
 
 namespace App\Domain\Purchases;
 
+use App\Domain\Support\PaymentDescription;
 use App\Enums\PurchasePaymentStatus;
 use App\Enums\PurchaseStatus;
 use App\Models\ActivityLog;
@@ -122,7 +123,7 @@ class PurchasePaymentService
             'type' => 'expense',
             'category' => 'Achat marchandise',
             'method' => $validated['method'],
-            'description' => "Paiement achat #{$purchase->id} - {$purchase->total_quantity} pneus - {$supplierName}",
+            'description' => PaymentDescription::forPurchase($purchase->id, $supplierName, $validated['method'] ?? null, $validated['reference'] ?? null),
             'person' => $supplierName,
             'user_id' => $user->id,
             'account_id' => $validated['account_id'],

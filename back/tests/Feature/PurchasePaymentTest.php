@@ -231,6 +231,81 @@ class PurchasePaymentTest extends TestCase
         ]);
     }
 
+    public function test_store_labels_transaction_with_supplier_and_payment_mode(): void
+    {
+        Sanctum::actingAs($this->user, [], 'web');
+        $supplier = $this->purchase->supplier()->first();
+
+        $cash = $this->postJson("/api/purchases/{$this->purchase->id}/payments", $this->validPayload(['amount' => 100]));
+        $cheque = $this->postJson("/api/purchases/{$this->purchase->id}/payments", $this->validPayload([
+            'amount' => 100,
+            'method' => 'Chèque',
+            'reference' => ' 1234567 ',
+        ]));
+
+        $this->assertSame(
+            "Paiement achat #{$this->purchase->id} | {$supplier->name} | ESPÈCES",
+            PurchasePayment::find($cash->json('id'))->transaction->description,
+        );
+        $this->assertSame(
+            "Paiement achat #{$this->purchase->id} | {$supplier->name} | 1234567",
+            PurchasePayment::find($cheque->json('id'))->transaction->description,
+        );
+    }
+
+    public function test_migration_rewrites_old_auto_generated_descriptions_only(): void
+    {
+        $supplierName = $this->purchase->supplier()->first()->name;
+        $id = $this->purchase->id;
+
+        $make = function (string $description, string $method, ?string $reference) {
+            $transaction = Transaction::query()->create([
+                'date' => '2026-04-15',
+                'amount' => 100,
+                'type' => 'expense',
+                'category' => 'Achat marchandise',
+                'method' => $method,
+                'description' => $description,
+                'person' => '',
+                'user_id' => $this->user->id,
+                'account_id' => $this->account->id,
+            ]);
+            PurchasePayment::query()->create([
+                'purchase_id' => $this->purchase->id,
+                'supplier_id' => $this->purchase->supplier_id,
+                'transaction_id' => $transaction->id,
+                'amount' => 100,
+                'date' => '2026-04-15',
+                'method' => $method,
+                'reference' => $reference,
+                'user_id' => $this->user->id,
+            ]);
+
+            return $transaction;
+        };
+
+        $cheque = $make("Paiement achat #{$id} - 8 pneus - {$supplierName}", 'Chèque', '1234567');
+        $cash = $make("Paiement achat #{$id} - 2 pneus - {$supplierName}", 'Espèces', 'REF-001');
+        $manual = $make("Paiement achat #{$id} acompte négocié", 'Chèque', '999');
+        $older = $make("Paiement achat #{$id} - 2 X HANKOOK VENTUS PRIME 3 205/55R17", 'Virement', null);
+        $interim = $make("Paiement achat #{$id} {$supplierName} CHÈQUE N° 441784 BMCE", 'Chèque', '441784 BMCE');
+        $interimEffet = $make("Paiement achat #{$id} {$supplierName} EFFET N° 5544", 'Effet', '5544');
+        $noSeparator = $make("Paiement achat #{$id} {$supplierName} 777 CIH", 'Chèque', '777 CIH');
+        $effet = $make("Paiement achat #{$id} - 4 pneus - {$supplierName}", 'Effet', '88990');
+
+        $migration = require database_path('migrations/2026_11_11_000001_rewrite_payment_transaction_descriptions.php');
+        $migration->up();
+
+        $this->assertSame("Paiement achat #{$id} | {$supplierName} | 1234567", $cheque->fresh()->description);
+        $this->assertSame("Paiement achat #{$id} | {$supplierName} | ESPÈCES", $cash->fresh()->description);
+        $this->assertSame("Paiement achat #{$id} | {$supplierName} | VIREMENT", $older->fresh()->description);
+        $this->assertSame("Paiement achat #{$id} | {$supplierName} | 441784 BMCE", $interim->fresh()->description);
+        $this->assertSame("Paiement achat #{$id} | {$supplierName} | 5544", $interimEffet->fresh()->description);
+        $this->assertSame("Paiement achat #{$id} | {$supplierName} | 88990", $effet->fresh()->description);
+        $this->assertSame("Paiement achat #{$id} | {$supplierName} | 777 CIH", $noSeparator->fresh()->description);
+        $this->assertSame("Paiement achat #{$id} acompte négocié", $manual->fresh()->description);
+    }
+
     public function test_store_sets_payment_status_to_partiel_on_partial_payment(): void
     {
         Sanctum::actingAs($this->user, [], 'web');
@@ -409,16 +484,16 @@ class PurchasePaymentTest extends TestCase
     // Helpers
     // -------------------------------------------------------------------------
 
-    private function validPayload(): array
+    private function validPayload(array $overrides = []): array
     {
-        return [
+        return array_merge([
             'amount' => 400.00,
             'method' => 'Espèces',
             'date' => '2026-04-15',
             'account_id' => $this->account->id,
             'reference' => 'REF-001',
             'notes' => null,
-        ];
+        ], $overrides);
     }
 
     private function createPayment(float $amount = 400.00): PurchasePayment
