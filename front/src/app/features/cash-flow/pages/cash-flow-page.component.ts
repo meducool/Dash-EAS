@@ -18,6 +18,45 @@ import { PurchasePaymentDetailComponent } from '../../purchases/components/purch
 import { SalePaymentDetailComponent } from '../../sales/components/sale-payment-detail/sale-payment-detail.component';
 import { TransactionCategoryService } from '../../transaction-categories/data-access/transaction-category.service';
 import { TransactionCategory } from '../../transaction-categories/models/transaction-category.model';
+import { monthKey, monthKeyFromToday, monthOffset, monthTitle } from '../../../core/utils/due-period';
+
+/** Colour family of a month: current, next, the one after, any later one — or already past. */
+export type PendingTone = 'overdue' | 'current' | 'next' | 'after' | 'later';
+
+export interface PendingMonth {
+  key: string;
+  title: string;
+  /** "Mois courant", "Mois prochain", "Mois suivant", "En retard" — null for later months. */
+  tag: string | null;
+  tone: PendingTone;
+  items: Transaction[];
+  /** Signed: income adds, expense subtracts. */
+  total: number;
+}
+
+const MONTH_TAGS: Record<PendingTone, string | null> = {
+  overdue: 'En retard',
+  current: 'Mois courant',
+  next: 'Mois prochain',
+  after: 'Mois suivant',
+  later: null,
+};
+
+function toneOf(offset: number): PendingTone {
+  if (offset < 0) return 'overdue';
+  return (['current', 'next', 'after'] as const)[offset] ?? 'later';
+}
+
+/** Today as `YYYY-MM-DD` in the browser's time zone (toISOString() would use UTC). */
+function localToday(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function signedAmount(t: Transaction): number {
+  const amount = Number(t.amount) || 0;
+  return t.type === 'expense' ? -amount : amount;
+}
 
 @Component({
   selector: 'app-cash-flow-page',
@@ -54,7 +93,56 @@ export class CashFlowPageComponent implements OnInit {
 
   pendingTransactions = signal<Transaction[]>([]);
   loadingPending = signal(false);
-  pendingCollapsed = signal(false);
+  // Closed by default — the header opens it on click.
+  pendingCollapsed = signal(true);
+  /** Month groups the user folded (by `YYYY-MM` key). */
+  collapsedMonths = signal<ReadonlySet<string>>(new Set());
+
+  /** Upcoming transactions grouped by due month, latest month first, latest date first. */
+  pendingMonths = computed<PendingMonth[]>(() => {
+    const groups = new Map<string, Transaction[]>();
+    for (const t of this.pendingTransactions()) {
+      const key = monthKey(t.date) ?? '0000-00';
+      groups.set(key, [...(groups.get(key) ?? []), t]);
+    }
+
+    return [...groups.entries()]
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([key, items]) => {
+        const tone = toneOf(monthOffset(key));
+        return {
+          key,
+          title: monthTitle(key),
+          tag: MONTH_TAGS[tone],
+          tone,
+          items: [...items].sort((a, b) => b.date.localeCompare(a.date)),
+          total: items.reduce((sum, t) => sum + signedAmount(t), 0),
+        };
+      });
+  });
+
+  /** The three cards: current month, next month, the one after — shown even when empty. */
+  pendingCards = computed<PendingMonth[]>(() =>
+    [0, 1, 2].map((offset) => {
+      const key = monthKeyFromToday(offset);
+      const tone = toneOf(offset);
+      const group = this.pendingMonths().find((m) => m.key === key);
+      return group ?? { key, title: monthTitle(key), tag: MONTH_TAGS[tone], tone, items: [], total: 0 };
+    }),
+  );
+
+  pendingTotal = computed(() => {
+    const items = this.pendingTransactions();
+    return { count: items.length, total: items.reduce((sum, t) => sum + signedAmount(t), 0) };
+  });
+
+  toggleMonth(key: string): void {
+    this.collapsedMonths.update((set) => {
+      const next = new Set(set);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
+  }
 
   loading = signal(false);
   deletingTransactionId = signal<number | null>(null);
@@ -258,6 +346,52 @@ export class CashFlowPageComponent implements OnInit {
         },
       });
     }
+  }
+
+  // ── Validation avant échéance ────────────────────────────────────────────
+  // A client or supplier may ask to cash a cheque / effet before its due date:
+  // the operation is re-dated to the cashing date and becomes settled.
+  settlingTransaction = signal<Transaction | null>(null);
+  settleDate = signal('');
+  settling = signal(false);
+  settleError = signal('');
+  readonly today = localToday();
+
+  openSettle(transaction: Transaction): void {
+    this.settlingTransaction.set(transaction);
+    this.settleDate.set(this.today);
+    this.settleError.set('');
+  }
+
+  closeSettle(): void {
+    if (this.settling()) return;
+    this.settlingTransaction.set(null);
+  }
+
+  confirmSettle(): void {
+    const transaction = this.settlingTransaction();
+    const date = this.settleDate();
+    if (!transaction || this.settling()) return;
+    if (!date || date > this.today) {
+      this.settleError.set("La date d'encaissement doit être aujourd'hui ou une date passée.");
+      return;
+    }
+
+    this.settling.set(true);
+    this.settleError.set('');
+    this.cashFlowService.settleTransaction(transaction.id, date).subscribe({
+      next: () => {
+        this.settling.set(false);
+        this.settlingTransaction.set(null);
+        this.loadData();
+      },
+      error: (err) => {
+        this.settling.set(false);
+        const errors = err?.error?.errors;
+        const firstError = errors ? (Object.values(errors)[0] as string[] | undefined)?.[0] : null;
+        this.settleError.set(firstError || err?.error?.message || 'La validation a échoué.');
+      },
+    });
   }
 
   deleteTransaction(transaction: Transaction): void {

@@ -42,6 +42,11 @@ export class CashFlowService {
     return this.http.put<Transaction>(`${this.apiUrl}/transactions/${id}`, payload);
   }
 
+  /** Early cashing of a pending Chèque/Effet: re-dates it (and its linked payment) to `date`. */
+  settleTransaction(id: number, date: string): Observable<Transaction> {
+    return this.http.post<Transaction>(`${this.apiUrl}/transactions/${id}/settle`, { date });
+  }
+
   deleteTransaction(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/transactions/${id}`);
   }

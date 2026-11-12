@@ -40,6 +40,21 @@ export class CashFlowService {
     return this.http.put<Transaction>(`${this.apiUrl}/transactions/${id}`, payload);
   }
 
+  /** Deposit a received cheque / effet at the bank: its line moves to that account (no transfer line). */
+  depositCheque(id: number, destinationAccountId: number, date: string): Observable<Transaction> {
+    return this.http.post<Transaction>(`${this.apiUrl}/transactions/${id}/deposit`, { destination_account_id: destinationAccountId, date });
+  }
+
+  /** Mark a cheque deposited earlier through a transfer typed by hand (the line stays where it is). */
+  markChequeDeposited(id: number, date: string): Observable<Transaction> {
+    return this.http.post<Transaction>(`${this.apiUrl}/transactions/${id}/mark-deposited`, { date });
+  }
+
+  /** Undo a deposit — the line goes back to the account it came from. */
+  cancelChequeDeposit(id: number): Observable<Transaction> {
+    return this.http.delete<Transaction>(`${this.apiUrl}/transactions/${id}/deposit`);
+  }
+
   deleteTransaction(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/transactions/${id}`);
   }

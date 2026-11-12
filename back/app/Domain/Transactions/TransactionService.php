@@ -10,6 +10,7 @@ use App\Models\Account;
 use App\Models\Partner;
 use App\Models\Payment;
 use App\Models\PurchasePayment;
+use App\Models\ServicePayment;
 use App\Models\Transaction;
 use App\Models\TransactionCategory;
 use App\Models\User;
@@ -17,6 +18,7 @@ use App\Services\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class TransactionService
 {
@@ -117,6 +119,47 @@ class TransactionService
 
         $after = $this->activityLog->buildTransactionSnapshot($fresh);
         $this->activityLog->logTransactionUpdated($fresh, $before, $after, $userId, $userName);
+
+        return $fresh;
+    }
+
+    /**
+     * Cashes a pending Chèque/Effet before its due date — the client or
+     * supplier asked to deposit it early. Only the date moves: the transaction
+     * (and the sale / purchase / service payment it settles, so statements
+     * stay consistent) is re-dated to the cashing date, which makes it count
+     * as settled in the cash flow and the account balance.
+     *
+     * Unlike update(), this is allowed on a fully paid sale or purchase:
+     * amounts and allocations are untouched, so payment statuses cannot drift.
+     */
+    public function settleEarly(Transaction $transaction, string $date, ?int $userId = null, ?string $userName = null): Transaction
+    {
+        $today = now()->toDateString();
+        $dueDate = $transaction->date?->toDateString();
+
+        if (! in_array($transaction->method, ['Chèque', 'Effet'], true) || $dueDate === null || $dueDate <= $today) {
+            abort(422, "Seule une opération à venir (chèque ou effet dont l'échéance n'est pas encore atteinte) peut être validée.");
+        }
+
+        if ($date > $today) {
+            abort(422, "La date d'encaissement ne peut pas être dans le futur.");
+        }
+
+        $transaction->load('account');
+        $before = $this->activityLog->buildTransactionSnapshot($transaction);
+
+        DB::transaction(function () use ($transaction, $date) {
+            $transaction->update(['date' => $date]);
+
+            Payment::where('transaction_id', $transaction->id)->update(['date' => $date]);
+            PurchasePayment::where('transaction_id', $transaction->id)->update(['date' => $date]);
+            ServicePayment::where('transaction_id', $transaction->id)->update(['date' => $date]);
+        });
+
+        $fresh = $transaction->fresh()->load('account');
+        $after = $this->activityLog->buildTransactionSnapshot($fresh);
+        $this->activityLog->logTransactionSettledEarly($fresh, $dueDate, $before, $after, $userId, $userName);
 
         return $fresh;
     }

@@ -94,31 +94,17 @@
         <table class="table">
           <thead>
             <tr>
-              <th></th>
               <th>Date échéance</th>
               <th>Montant</th>
               <th>Type</th>
               <th>Méthode</th>
-              <th>Référence</th>
-              <th>Description</th>
+              <th>Catégorie</th>
+              <th class="desc-col">Description</th>
+              <th class="actions-col">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let t of pendingTransactions()" class="pending-row">
-              <td class="actions-cell">
-                <button
-                  *ngIf="t.purchase_payment_id"
-                  (click)="openPaymentView(t)"
-                  class="btn-icon"
-                  title="Voir le détail du paiement"
-                >👁️</button>
-                <button
-                  *ngIf="t.sale_payment_id"
-                  (click)="openSalePaymentView(t)"
-                  class="btn-icon"
-                  title="Voir le détail du paiement"
-                >👁️</button>
-              </td>
               <td class="date-cell">{{ t.date | date:'dd/MM/yyyy' }} <span class="badge badge-pending">À venir</span></td>
               <td class="amount-cell">
                 <span [class.amount-income]="t.type === 'income'" [class.amount-expense]="t.type === 'expense'">
@@ -133,6 +119,31 @@
               <td>{{ t.method || '—' }}</td>
               <td>{{ t.category || '—' }}</td>
               <td class="desc-col">{{ t.description }}</td>
+              <td class="actions-cell">
+                <button
+                  *ngIf="t.purchase_payment_id"
+                  (click)="openPaymentView(t)"
+                  class="btn-icon"
+                  title="Voir le détail du paiement"
+                >👁️</button>
+                <button
+                  *ngIf="t.sale_payment_id"
+                  (click)="openSalePaymentView(t)"
+                  class="btn-icon"
+                  title="Voir le détail du paiement"
+                >👁️</button>
+                <ng-container *ngIf="canDeposit(t)">
+                  <ng-container *ngIf="!t.deposited_at">
+                    <button class="btn-deposit" type="button" (click)="openDeposit(t, 'deposit')" title="Verser ce chèque à la banque">🏦 Verser</button>
+                    <button class="btn-deposit btn-deposit--ghost" type="button" (click)="openDeposit(t, 'mark')" title="Déjà versé par un transfert saisi à la main">Déjà versé</button>
+                  </ng-container>
+                  <span class="deposited-badge" *ngIf="t.deposited_at" [title]="t.deposited_from_account_id ? 'Versé depuis ' + (depositedFromName(t) || 'un autre compte') : 'Marqué comme déjà versé'">
+                    ✓ Versé le {{ t.deposited_at | date:'dd/MM/yyyy' }}<ng-container *ngIf="depositedFromName(t) as from"> · de {{ from }}</ng-container>
+                    <button class="deposited-undo" type="button" (click)="cancelDeposit(t)"
+                      [disabled]="cancellingDepositId() === t.id" title="Annuler le versement" aria-label="Annuler le versement">↩</button>
+                  </span>
+                </ng-container>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -147,13 +158,13 @@
         <table class="table">
           <thead>
             <tr>
-              <th></th>
               <th>Date</th>
               <th>Montant</th>
               <th>Type</th>
               <th>Méthode</th>
               <th>Catégorie</th>
-              <th>Description</th>
+              <th class="desc-col">Description</th>
+              <th class="actions-col">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -161,20 +172,6 @@
               <td colspan="7" class="text-center py-4">Chargement...</td>
             </tr>
             <tr *ngFor="let t of settledTransactions()" [class.income-row]="t.type === 'income'" [class.expense-row]="t.type === 'expense'">
-              <td class="actions-cell">
-                <button
-                  *ngIf="t.purchase_payment_id"
-                  (click)="openPaymentView(t)"
-                  class="btn-icon"
-                  title="Voir le détail du paiement"
-                >👁️</button>
-                <button
-                  *ngIf="t.sale_payment_id"
-                  (click)="openSalePaymentView(t)"
-                  class="btn-icon"
-                  title="Voir le détail du paiement"
-                >👁️</button>
-              </td>
               <td class="date-cell">{{ t.date | date:'dd/MM/yyyy' }}</td>
               <td class="amount-cell">
                 <span [class.amount-income]="t.type === 'income'" [class.amount-expense]="t.type === 'expense'">
@@ -189,6 +186,31 @@
               <td>{{ t.method || '—' }}</td>
               <td>{{ t.category || '—' }}</td>
               <td class="desc-col">{{ t.description }}</td>
+              <td class="actions-cell">
+                <button
+                  *ngIf="t.purchase_payment_id"
+                  (click)="openPaymentView(t)"
+                  class="btn-icon"
+                  title="Voir le détail du paiement"
+                >👁️</button>
+                <button
+                  *ngIf="t.sale_payment_id"
+                  (click)="openSalePaymentView(t)"
+                  class="btn-icon"
+                  title="Voir le détail du paiement"
+                >👁️</button>
+                <ng-container *ngIf="canDeposit(t)">
+                  <ng-container *ngIf="!t.deposited_at">
+                    <button class="btn-deposit" type="button" (click)="openDeposit(t, 'deposit')" title="Verser ce chèque à la banque">🏦 Verser</button>
+                    <button class="btn-deposit btn-deposit--ghost" type="button" (click)="openDeposit(t, 'mark')" title="Déjà versé par un transfert saisi à la main">Déjà versé</button>
+                  </ng-container>
+                  <span class="deposited-badge" *ngIf="t.deposited_at" [title]="t.deposited_from_account_id ? 'Versé depuis ' + (depositedFromName(t) || 'un autre compte') : 'Marqué comme déjà versé'">
+                    ✓ Versé le {{ t.deposited_at | date:'dd/MM/yyyy' }}<ng-container *ngIf="depositedFromName(t) as from"> · de {{ from }}</ng-container>
+                    <button class="deposited-undo" type="button" (click)="cancelDeposit(t)"
+                      [disabled]="cancellingDepositId() === t.id" title="Annuler le versement" aria-label="Annuler le versement">↩</button>
+                  </span>
+                </ng-container>
+              </td>
             </tr>
             <tr *ngIf="!loadingTransactions() && settledTransactions().length === 0">
               <td colspan="7" class="empty-state">Aucune transaction pour ce compte.</td>
@@ -198,6 +220,47 @@
       </div>
     </div>
   </ng-container>
+
+  <div class="modal-overlay" *ngIf="depositCheque() as dc" (click)="closeDeposit()">
+    <div class="modal-container deposit-modal" role="dialog" aria-labelledby="deposit-title" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2 id="deposit-title">{{ depositMode() === 'deposit' ? 'Verser à la banque' : 'Marquer comme déjà versé' }}</h2>
+          <p class="modal-subtitle">{{ dc.method }} · {{ dc.amount | number:'1.2-2' }} DH · {{ dc.date | date:'dd/MM/yyyy' }}</p>
+        </div>
+        <button class="btn-icon" type="button" (click)="closeDeposit()" [disabled]="depositSaving()" aria-label="Fermer">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="deposit-desc">{{ dc.description }}</p>
+
+        <div class="form-group" *ngIf="depositMode() === 'deposit'">
+          <label for="deposit_account">Compte bancaire</label>
+          <select id="deposit_account" class="form-control" [ngModel]="depositAccountId()" (ngModelChange)="depositAccountId.set($event)">
+            <option *ngFor="let a of depositTargets()" [ngValue]="a.id">{{ a.name }} ({{ getTypeLabel(a.type) }})</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="deposit_date">Date du versement</label>
+          <input id="deposit_date" type="date" class="form-control" [ngModel]="depositDate()" (ngModelChange)="depositDate.set($event)">
+        </div>
+
+        <p class="deposit-hint" *ngIf="depositMode() === 'deposit'">
+          Le chèque quitte « {{ selectedAccount()?.name }} » et passe sur le compte choisi, sur la même ligne : aucune ligne de transfert n'est créée.
+        </p>
+        <p class="deposit-hint" *ngIf="depositMode() === 'mark'">
+          Le chèque reste sur ce compte : à utiliser pour un chèque déjà versé par un transfert saisi à la main.
+        </p>
+        <p class="deposit-error" role="alert" *ngIf="depositError()">{{ depositError() }}</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" type="button" (click)="closeDeposit()" [disabled]="depositSaving()">Annuler</button>
+        <button class="btn btn-primary" type="button" (click)="confirmDeposit()" [disabled]="depositSaving()">
+          {{ depositSaving() ? 'Enregistrement...' : (depositMode() === 'deposit' ? 'Verser' : 'Marquer comme versé') }}
+        </button>
+      </div>
+    </div>
+  </div>
 
   <app-account-form
     *ngIf="showAccountForm()"

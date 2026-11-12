@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Transactions\ChequeDepositService;
 use App\Domain\Transactions\TransactionService;
 use App\Http\Requests\Transactions\StoreTransactionRequest;
 use App\Http\Requests\Transactions\UpdateTransactionRequest;
 use App\Http\Resources\Transactions\TransactionResource;
+use App\Models\Account;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -82,6 +84,74 @@ class TransactionController extends Controller
     /**
      * Remove the specified transaction.
      */
+    /**
+     * Validate a pending Chèque/Effet before its due date (early cashing).
+     */
+    public function settle(Request $request, Transaction $transaction): JsonResponse
+    {
+        $this->transactionService->guardConfidential($transaction, $this->canViewHr($request));
+
+        $validated = $request->validate([
+            'date' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today'],
+        ]);
+
+        $transaction = $this->transactionService->settleEarly(
+            $transaction,
+            $validated['date'] ?? now()->toDateString(),
+            $request->user()->id,
+            $request->user()->name,
+        );
+
+        return response()->json((new TransactionResource($transaction))->resolve($request));
+    }
+
+    /**
+     * Deposit a received cheque / effet at the bank: creates the transfer to
+     * `destination_account_id` and marks the cheque as deposited.
+     */
+    public function deposit(Request $request, Transaction $transaction, ChequeDepositService $deposits): JsonResponse
+    {
+        $this->transactionService->guardConfidential($transaction, $this->canViewHr($request));
+
+        $validated = $request->validate([
+            'destination_account_id' => ['required', 'integer', 'exists:accounts,id'],
+            'date' => ['required', 'date_format:Y-m-d'],
+        ]);
+
+        $cheque = $deposits->deposit(
+            $transaction,
+            Account::findOrFail($validated['destination_account_id']),
+            $validated['date'],
+            $request->user(),
+        );
+
+        return response()->json((new TransactionResource($cheque->load('account')))->resolve($request));
+    }
+
+    /** Mark a cheque deposited earlier through a transfer typed by hand (no new transfer). */
+    public function markDeposited(Request $request, Transaction $transaction, ChequeDepositService $deposits): JsonResponse
+    {
+        $this->transactionService->guardConfidential($transaction, $this->canViewHr($request));
+
+        $validated = $request->validate([
+            'date' => ['nullable', 'date_format:Y-m-d'],
+        ]);
+
+        $cheque = $deposits->markDeposited($transaction, $validated['date'] ?? now()->toDateString(), $request->user());
+
+        return response()->json((new TransactionResource($cheque->load('account')))->resolve($request));
+    }
+
+    /** Undo a deposit (and delete the transfer it created, if any). */
+    public function cancelDeposit(Request $request, Transaction $transaction, ChequeDepositService $deposits): JsonResponse
+    {
+        $this->transactionService->guardConfidential($transaction, $this->canViewHr($request));
+
+        $cheque = $deposits->cancelDeposit($transaction, $request->user());
+
+        return response()->json((new TransactionResource($cheque->load('account')))->resolve($request));
+    }
+
     public function destroy(Request $request, Transaction $transaction): JsonResponse
     {
         $this->transactionService->guardConfidential($transaction, $this->canViewHr($request));

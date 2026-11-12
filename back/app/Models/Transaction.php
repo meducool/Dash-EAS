@@ -24,12 +24,15 @@ class Transaction extends Model
         'user_id',
         'account_id',
         'transfer_id',
+        'deposited_at',
+        'deposited_from_account_id',
     ];
 
     protected $casts = [
         'date' => 'date:Y-m-d',
         'amount' => 'decimal:2',
         'partner_id' => 'integer',
+        'deposited_at' => 'date:Y-m-d',
     ];
 
     /**

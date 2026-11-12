@@ -91,7 +91,7 @@
 
   &.active {
     border-color: $primary;
-    background: linear-gradient(135deg, rgba($primary, 0.08), rgba($primary-dark, 0.08));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--app-primary) 8%, transparent), color-mix(in srgb, var(--app-primary) 8%, transparent));
     color: $primary-dark;
   }
 
@@ -143,7 +143,7 @@
 
     &:focus {
       border-color: $primary;
-      box-shadow: 0 0 0 3px rgba($primary, 0.1);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 10%, transparent);
     }
 
     &::placeholder {
@@ -195,7 +195,7 @@
   transition: all 0.2s;
 
   &:hover:not(:disabled) {
-    box-shadow: 0 4px 12px rgba($primary, 0.35);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--app-primary) 35%, transparent);
     transform: translateY(-1px);
   }
 

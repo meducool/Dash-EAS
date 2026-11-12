@@ -10,6 +10,8 @@ use App\Models\PurchasePayment;
 use App\Models\PurchasePaymentAllocation;
 use App\Models\Sale;
 use App\Models\SalePaymentAllocation;
+use App\Models\ServiceOrder;
+use App\Models\ServicePayment;
 use App\Models\Supplier;
 use App\Models\Transaction;
 use App\Models\TransactionCategory;
@@ -547,6 +549,200 @@ class AccountAndTransactionTest extends TestCase
 
         $response->assertStatus(422);
         $this->assertDatabaseHas('transactions', ['id' => $tx->id, 'amount' => 100.00]);
+    }
+
+    // POST /api/transactions/{id}/settle — early cashing of a pending Chèque/Effet
+
+    public function test_transactions_settle_requires_edit_cashflow_permission(): void
+    {
+        $account = $this->createAccount();
+        $tx = $this->createTransaction(['account_id' => $account->id, 'method' => 'Chèque', 'date' => now()->addDays(20)->toDateString()]);
+        Sanctum::actingAs($this->createUserWithPermissions(['view cash-flow']), [], 'web');
+
+        $this->postJson("/api/transactions/{$tx->id}/settle")->assertForbidden();
+    }
+
+    public function test_transactions_settle_redates_pending_cheque_and_its_payment_even_when_sale_fully_paid(): void
+    {
+        Sanctum::actingAs($this->user, [], 'web');
+
+        $account = $this->createAccount();
+        $dueDate = now()->addDays(20)->toDateString();
+        $client = Client::query()->create([
+            'name' => 'Client Settle Test',
+            'phone' => '0600000013',
+            'category' => 'Particulier',
+            'created_by' => $this->user->id,
+            'updated_by' => $this->user->id,
+            'is_active' => true,
+        ]);
+        $sale = Sale::query()->create([
+            'date' => now()->toDateString(),
+            'client_id' => $client->id,
+            'total_quantity' => 1,
+            'total_purchase' => 50,
+            'total_sale' => 100,
+            'margin' => 50,
+            'status' => 'EN COURS',
+            'payment_status' => 'PAYE',
+            'created_by' => $this->user->id,
+        ]);
+        $tx = $this->createTransaction(['account_id' => $account->id, 'amount' => 100, 'method' => 'Chèque', 'date' => $dueDate]);
+        $payment = Payment::query()->create([
+            'sale_id' => $sale->id,
+            'client_id' => $client->id,
+            'transaction_id' => $tx->id,
+            'amount' => 100,
+            'date' => $dueDate,
+            'method' => 'Chèque',
+            'user_id' => $this->user->id,
+        ]);
+        SalePaymentAllocation::query()->create(['payment_id' => $payment->id, 'sale_id' => $sale->id, 'amount' => 100]);
+
+        $today = now()->toDateString();
+        $response = $this->postJson("/api/transactions/{$tx->id}/settle");
+
+        $response->assertOk()->assertJsonPath('date', $today);
+        $this->assertSame($today, $tx->fresh()->date->toDateString());
+        $this->assertSame($today, $payment->fresh()->date->toDateString());
+        $this->assertSame('PAYE', $sale->fresh()->payment_status);
+        $this->assertTrue(Transaction::pending()->whereKey($tx->id)->doesntExist());
+        $this->assertDatabaseHas('activity_logs', ['entity_type' => 'transaction', 'entity_id' => $tx->id, 'action' => 'UPDATE']);
+    }
+
+    public function test_transactions_settle_accepts_a_past_cashing_date(): void
+    {
+        Sanctum::actingAs($this->user, [], 'web');
+
+        $account = $this->createAccount();
+        $tx = $this->createTransaction(['account_id' => $account->id, 'method' => 'Effet', 'date' => now()->addMonth()->toDateString()]);
+        $yesterday = now()->subDay()->toDateString();
+
+        $this->postJson("/api/transactions/{$tx->id}/settle", ['date' => $yesterday])
+            ->assertOk()
+            ->assertJsonPath('date', $yesterday);
+    }
+
+    public function test_transactions_settle_rejects_future_date_and_non_pending_transactions(): void
+    {
+        Sanctum::actingAs($this->user, [], 'web');
+
+        $account = $this->createAccount();
+        $pending = $this->createTransaction(['account_id' => $account->id, 'method' => 'Chèque', 'date' => now()->addDays(10)->toDateString()]);
+        $cash = $this->createTransaction(['account_id' => $account->id, 'method' => 'Espèces', 'date' => now()->addDays(10)->toDateString()]);
+        $alreadyDue = $this->createTransaction(['account_id' => $account->id, 'method' => 'Chèque', 'date' => now()->toDateString()]);
+
+        $this->postJson("/api/transactions/{$pending->id}/settle", ['date' => now()->addDay()->toDateString()])
+            ->assertStatus(422)->assertJsonValidationErrors('date');
+        $this->postJson("/api/transactions/{$cash->id}/settle")->assertStatus(422);
+        $this->postJson("/api/transactions/{$alreadyDue->id}/settle")->assertStatus(422);
+
+        $this->assertSame(now()->addDays(10)->toDateString(), $pending->fresh()->date->toDateString());
+    }
+
+    // POST /api/transactions/{id}/deposit — cheque deposited at the bank, on its own line
+
+    public function test_deposit_requires_transfer_accounts_permission(): void
+    {
+        $wallet = $this->createAccount();
+        $cheque = $this->createTransaction(['account_id' => $wallet->id, 'method' => 'Chèque']);
+        Sanctum::actingAs($this->createUserWithPermissions(['view cash-flow', 'edit cash-flow']), [], 'web');
+
+        $this->postJson("/api/transactions/{$cheque->id}/deposit", [
+            'destination_account_id' => $this->createAccount()->id,
+            'date' => '2026-11-12',
+        ])->assertForbidden();
+    }
+
+    public function test_deposit_moves_the_cheque_line_to_the_bank_without_a_transfer(): void
+    {
+        Sanctum::actingAs($this->user, [], 'web');
+        $wallet = $this->createAccount();
+        $bank = $this->createAccount();
+        $cheque = $this->createTransaction(['account_id' => $wallet->id, 'method' => 'Chèque', 'amount' => 3800, 'date' => '2026-10-15']);
+        $before = Transaction::count();
+
+        $response = $this->postJson("/api/transactions/{$cheque->id}/deposit", [
+            'destination_account_id' => $bank->id,
+            'date' => '2026-11-12',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('account_id', $bank->id)
+            ->assertJsonPath('deposited_at', '2026-11-12')
+            ->assertJsonPath('deposited_from_account_id', $wallet->id)
+            ->assertJsonPath('date', '2026-10-15');
+        $this->assertSame($before, Transaction::count(), 'No transfer line may be created');
+        $this->assertDatabaseHas('activity_logs', ['entity_type' => 'transaction', 'entity_id' => $cheque->id, 'action' => 'UPDATE']);
+    }
+
+    public function test_deposit_keeps_a_service_payment_account_in_step(): void
+    {
+        Sanctum::actingAs($this->user, [], 'web');
+        $wallet = $this->createAccount();
+        $bank = $this->createAccount();
+        $cheque = $this->createTransaction(['account_id' => $wallet->id, 'method' => 'Chèque']);
+        $order = ServiceOrder::query()->create([
+            'date' => '2026-10-01',
+            'vehicle' => 'Test',
+            'status' => 'EN COURS',
+            'payment_status' => 'PAYE',
+            'created_by' => $this->user->id,
+        ]);
+        $payment = ServicePayment::query()->create([
+            'service_order_id' => $order->id,
+            'amount' => 100,
+            'date' => '2026-10-01',
+            'method' => 'Chèque',
+            'account_id' => $wallet->id,
+            'transaction_id' => $cheque->id,
+            'user_id' => $this->user->id,
+        ]);
+
+        $this->postJson("/api/transactions/{$cheque->id}/deposit", ['destination_account_id' => $bank->id, 'date' => '2026-11-12'])->assertOk();
+        $this->assertSame($bank->id, $payment->fresh()->account_id);
+
+        $this->deleteJson("/api/transactions/{$cheque->id}/deposit")->assertOk();
+        $this->assertSame($wallet->id, $payment->fresh()->account_id);
+    }
+
+    public function test_deposit_is_refused_twice_on_non_cheques_and_to_the_same_account(): void
+    {
+        Sanctum::actingAs($this->user, [], 'web');
+        $wallet = $this->createAccount();
+        $bank = $this->createAccount();
+        $cheque = $this->createTransaction(['account_id' => $wallet->id, 'method' => 'Chèque']);
+        $cash = $this->createTransaction(['account_id' => $wallet->id, 'method' => 'Espèces']);
+        $payload = ['destination_account_id' => $bank->id, 'date' => '2026-11-12'];
+
+        $this->postJson("/api/transactions/{$cheque->id}/deposit", ['destination_account_id' => $wallet->id, 'date' => '2026-11-12'])->assertStatus(422);
+        $this->postJson("/api/transactions/{$cash->id}/deposit", $payload)->assertStatus(422);
+        $this->postJson("/api/transactions/{$cheque->id}/deposit", $payload)->assertOk();
+        $this->postJson("/api/transactions/{$cheque->id}/deposit", $payload)->assertStatus(422);
+    }
+
+    public function test_mark_deposited_keeps_the_line_and_cancel_moves_a_deposit_back(): void
+    {
+        Sanctum::actingAs($this->user, [], 'web');
+        $wallet = $this->createAccount();
+        $bank = $this->createAccount();
+        $marked = $this->createTransaction(['account_id' => $wallet->id, 'method' => 'Effet']);
+        $deposited = $this->createTransaction(['account_id' => $wallet->id, 'method' => 'Chèque']);
+
+        $this->postJson("/api/transactions/{$marked->id}/mark-deposited", ['date' => '2026-10-16'])
+            ->assertOk()
+            ->assertJsonPath('deposited_at', '2026-10-16')
+            ->assertJsonPath('account_id', $wallet->id)
+            ->assertJsonPath('deposited_from_account_id', null);
+
+        $this->postJson("/api/transactions/{$deposited->id}/deposit", ['destination_account_id' => $bank->id, 'date' => '2026-11-12'])->assertOk();
+        $this->deleteJson("/api/transactions/{$deposited->id}/deposit")
+            ->assertOk()
+            ->assertJsonPath('deposited_at', null)
+            ->assertJsonPath('account_id', $wallet->id);
+
+        $this->deleteJson("/api/transactions/{$marked->id}/deposit")->assertOk()->assertJsonPath('account_id', $wallet->id);
+        $this->deleteJson("/api/transactions/{$marked->id}/deposit")->assertStatus(422);
     }
 
     // DELETE /api/transactions/{id}

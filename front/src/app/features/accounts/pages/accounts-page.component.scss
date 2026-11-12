@@ -2,7 +2,7 @@
 @include layout.page-layout();
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-$_red:      #ff2d37;
+$_red:      var(--app-primary);
 $_text:     #0f172a;
 $_strong:   #1e293b;
 $_muted:    #64748b;
@@ -202,8 +202,9 @@ $_shadow-md: 0 1px 3px rgba(15, 23, 42, 0.05), 0 4px 12px rgba(15, 23, 42, 0.08)
   tr:last-child td { border-bottom: none; }
 }
 
-.income-row td { border-left: 2px solid rgba(34, 197, 94, 0.25); }
-.expense-row td { border-left: 2px solid rgba(239, 68, 68, 0.2); }
+// One colour bar at the start of the row (not one per cell).
+.income-row td:first-child  { box-shadow: inset 3px 0 0 rgba(34, 197, 94, 0.45); }
+.expense-row td:first-child { box-shadow: inset 3px 0 0 rgba(239, 68, 68, 0.4); }
 .pending-row td { background: rgba(234, 179, 8, 0.04); }
 
 .badge {
@@ -223,13 +224,28 @@ $_shadow-md: 0 1px 3px rgba(15, 23, 42, 0.05), 0 4px 12px rgba(15, 23, 42, 0.08)
 .amount-expense { color: #dc2626; font-weight: 600; }
 
 .date-cell   { color: $_muted; font-variant-numeric: tabular-nums; }
-.amount-cell { font-variant-numeric: tabular-nums; }
+.amount-cell { font-variant-numeric: tabular-nums; text-align: right !important; }
+
+// Column sizing: every column shrinks to its content (width: 1% + nowrap),
+// the description takes all the room left, and the actions sit at the end.
+.table {
+  th, td { width: 1%; padding: 0.6rem 0.75rem; }
+
+  th:nth-child(2) { text-align: right; } // Montant, aligned with the amounts
+
+  .desc-col {
+    width: auto;
+    min-width: 16rem;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+  }
+
+  th.actions-col { text-align: right; }
+}
 
 .desc-col {
   white-space: normal !important;
-  max-width: 300px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
 .empty-state {
@@ -255,4 +271,107 @@ $_shadow-md: 0 1px 3px rgba(15, 23, 42, 0.05), 0 4px 12px rgba(15, 23, 42, 0.08)
 // ── Responsive ────────────────────────────────────────────────────────────────
 @media (max-width: 768px) {
   .accounts-grid { grid-template-columns: 1fr; }
+}
+
+
+// ── Versement des chèques ────────────────────────────────────────────────────
+.actions-cell {
+  white-space: nowrap;
+  text-align: right !important;
+
+  > * { vertical-align: middle; }
+}
+
+.btn-deposit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.25rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover { background: #dbeafe; border-color: #93c5fd; }
+
+  &--ghost {
+    border-color: #e2e8f0;
+    background: #fff;
+    color: #64748b;
+    &:hover { background: #f8fafc; border-color: #cbd5e1; }
+  }
+}
+
+.deposited-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: 0.25rem;
+  padding: 0.2rem 0.3rem 0.2rem 0.6rem;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  background: #f0fdf4;
+  color: #15803d;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.deposited-undo {
+  width: 1.3rem;
+  height: 1.3rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #15803d;
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: #dcfce7; }
+  &:disabled { opacity: 0.5; cursor: wait; }
+}
+
+.deposit-modal {
+  max-width: 480px;
+
+  .modal-body { display: flex; flex-direction: column; gap: 1rem; }
+  .form-control { width: 100%; }
+}
+
+.modal-subtitle {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.deposit-desc {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #1e293b;
+  font-size: 0.85rem;
+}
+
+.deposit-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.deposit-error {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: #fff1f2;
+  color: #be123c;
+  font-size: 0.82rem;
 }

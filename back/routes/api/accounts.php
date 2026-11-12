@@ -23,4 +23,10 @@ Route::middleware('permission:view cash-flow')->group(function () {
 });
 Route::post('transactions', [TransactionController::class, 'store'])->middleware('permission:create cash-flow');
 Route::put('transactions/{transaction}', [TransactionController::class, 'update'])->middleware('permission:edit cash-flow');
+Route::post('transactions/{transaction}/settle', [TransactionController::class, 'settle'])->middleware('permission:edit cash-flow');
+Route::middleware('permission:transfer accounts')->group(function () {
+    Route::post('transactions/{transaction}/deposit', [TransactionController::class, 'deposit']);
+    Route::post('transactions/{transaction}/mark-deposited', [TransactionController::class, 'markDeposited']);
+    Route::delete('transactions/{transaction}/deposit', [TransactionController::class, 'cancelDeposit']);
+});
 Route::delete('transactions/{transaction}', [TransactionController::class, 'destroy'])->middleware('permission:delete cash-flow');

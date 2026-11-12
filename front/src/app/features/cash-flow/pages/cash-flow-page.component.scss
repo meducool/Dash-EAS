@@ -2,7 +2,7 @@
 @include layout.page-layout();
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-$_red:      #ff2d37;
+$_red:      var(--app-primary);
 $_text:     #0f172a;
 $_strong:   #1e293b;
 $_muted:    #64748b;
@@ -161,3 +161,226 @@ $_border2:  #d0d9e4;
 // ── Row tints ─────────────────────────────────────────────────────────────────
 .income-row  td { border-left: 2px solid rgba(34, 197, 94, 0.25); }
 .expense-row td { border-left: 2px solid rgba(239, 68, 68, 0.2); }
+
+// ── Transactions à venir : cartes par mois + groupes repliables ──────────────
+// Light palette: each month family gets a pale background, a soft border and
+// a strong text colour, exposed as custom properties consumed below.
+@mixin tone($fg, $bg, $border, $soft) {
+  --tone: #{$fg};
+  --tone-bg: #{$bg};
+  --tone-border: #{$border};
+  --tone-soft: #{$soft};
+}
+
+.tone-current { @include tone(#15803d, #f0fdf4, #bbf7d0, #dcfce7); }
+.tone-next    { @include tone(#1d4ed8, #eff6ff, #bfdbfe, #dbeafe); }
+.tone-after   { @include tone(#7e22ce, #faf5ff, #e9d5ff, #f3e8ff); }
+.tone-later   { @include tone(#475569, #f8fafc, #e2e8f0, #f1f5f9); }
+.tone-overdue { @include tone(#be123c, #fff1f2, #fecdd3, #ffe4e6); }
+.tone-total   { @include tone(#334155, #ffffff, #e2e8f0, #f1f5f9); }
+
+.pending-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid $_border;
+
+  @media (max-width: 1100px) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (max-width: 560px)  { grid-template-columns: 1fr; }
+}
+
+.pending-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--tone-border);
+  border-radius: 12px;
+  background: var(--tone-bg);
+}
+
+.pc-icon,
+.month-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--tone);
+
+  svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+}
+
+.pc-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0.45rem;
+  border-radius: 10px;
+  background: var(--tone-soft);
+}
+
+.pc-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.pc-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pc-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--tone);
+  white-space: nowrap;
+}
+
+.pc-count {
+  font-size: 0.78rem;
+  color: $_muted;
+}
+
+.pc-amount,
+.month-total {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: $_strong;
+
+  &.positive { color: #16a34a; }
+  &.negative { color: #dc2626; }
+}
+
+.pc-amount { font-size: 1rem; }
+
+.month-tag {
+  padding: 0.1rem 0.55rem;
+  border: 1px solid var(--tone-border);
+  border-radius: 999px;
+  background: var(--tone-soft);
+  color: var(--tone);
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+// Each month is its own <tbody>: a tinted header row, then its transactions.
+.pending-table .month-group {
+  .month-row td {
+    padding: 0;
+    background: var(--tone-bg);
+    border-top: 1px solid var(--tone-border);
+    border-bottom: 1px solid var(--tone-border);
+  }
+
+  .pending-row td {
+    background: color-mix(in srgb, var(--tone-bg) 55%, #fff);
+  }
+
+  .pending-row td:first-child { box-shadow: inset 3px 0 0 var(--tone-border); }
+}
+
+.month-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.6rem 1.25rem;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover { background: var(--tone-soft); }
+  &:focus-visible { outline: 2px solid var(--tone); outline-offset: -2px; }
+}
+
+.month-chevron {
+  display: inline-block;
+  width: 1rem;
+  color: var(--tone);
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 0.15s;
+
+  &.folded { transform: rotate(-90deg); }
+}
+
+.month-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.month-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--tone);
+}
+
+.month-count {
+  font-size: 0.8rem;
+  color: $_muted;
+}
+
+.month-total {
+  margin-left: auto;
+  font-size: 0.9rem;
+}
+
+// ── Validation avant échéance ────────────────────────────────────────────────
+.settle-modal { max-width: 480px; }
+
+.settle-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+  margin: 0 0 1.25rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  background: #f0fdf4;
+
+  dt {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: $_muted;
+  }
+
+  dd { margin: 0.15rem 0 0; font-weight: 600; color: $_strong; }
+
+  .settle-desc { grid-column: 1 / -1; }
+}
+
+.settle-hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  color: $_muted;
+}
+
+.settle-error {
+  margin: 0.75rem 0 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: #fff1f2;
+  color: #be123c;
+  font-size: 0.82rem;
+}

@@ -17,6 +17,10 @@ export interface Transaction {
   purchase_payment_id: number | null;
   /** Set when this transaction settles a sale payment — id to fetch its detail via PaymentService.getPaymentDetail(). */
   sale_payment_id: number | null;
+  /** Received cheque / effet deposited at the bank (or marked as such) on this date. */
+  deposited_at?: string | null;
+  /** Account the cheque line was moved from by the deposit — null when it was only marked as deposited. */
+  deposited_from_account_id?: number | null;
   created_at: string;
   updated_at: string;
 }

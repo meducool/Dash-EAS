@@ -156,8 +156,40 @@
         </div>
       </div>
       @if (!pendingCollapsed()) {
+        <div class="pending-cards">
+          @for (c of pendingCards(); track c.key) {
+            <div class="pending-card tone-{{ c.tone }}">
+              <span class="pc-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span>
+              <div class="pc-body">
+                <div class="pc-line">
+                  <strong class="pc-title">{{ c.title }}</strong>
+                  @if (c.tag) { <span class="month-tag">{{ c.tag }}</span> }
+                </div>
+                <div class="pc-line">
+                  <span class="pc-count">{{ c.items.length }} opération{{ c.items.length > 1 ? 's' : '' }}</span>
+                  <span class="pc-amount" [class.positive]="c.total > 0" [class.negative]="c.total < 0">
+                    {{ c.total < 0 ? '-' : c.total > 0 ? '+' : '' }}{{ (c.total < 0 ? -c.total : c.total) | number:'1.2-2' }} DH
+                  </span>
+                </div>
+              </div>
+            </div>
+          }
+          <div class="pending-card tone-total">
+            <span class="pc-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 7.5 12 12l9-4.5L12 3Z"/><path d="m3 12 9 4.5 9-4.5M3 16.5 12 21l9-4.5"/></svg></span>
+            <div class="pc-body">
+              <div class="pc-line"><strong class="pc-title">Total à venir</strong></div>
+              <div class="pc-line">
+                <span class="pc-count">{{ pendingTotal().count }} opération{{ pendingTotal().count > 1 ? 's' : '' }}</span>
+                <span class="pc-amount" [class.positive]="pendingTotal().total > 0" [class.negative]="pendingTotal().total < 0">
+                  {{ pendingTotal().total < 0 ? '-' : pendingTotal().total > 0 ? '+' : '' }}{{ (pendingTotal().total < 0 ? -pendingTotal().total : pendingTotal().total) | number:'1.2-2' }} DH
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="table-responsive">
-          <table class="table">
+          <table class="table pending-table">
             <thead>
               <tr>
                 <th>Actions</th>
@@ -170,71 +202,94 @@
                 <th class="desc-col">Description</th>
               </tr>
             </thead>
-            <tbody>
-              @if (loadingPending()) {
+            @if (loadingPending()) {
+              <tbody>
                 <tr>
                   <td colspan="8" class="text-center py-4">
                     <div class="spinner"></div>
                     Chargement...
                   </td>
                 </tr>
-              } @else {
-                @for (t of pendingTransactions(); track t.id) {
-                  <tr [class.income-row]="t.type === 'income'" [class.expense-row]="t.type === 'expense'" class="pending-row">
-                    <td class="actions-cell">
-                      <button
-                        *ngIf="t.purchase_payment_id"
-                        (click)="openPaymentView(t)"
-                        class="btn-icon btn-view"
-                        title="Voir le détail du paiement"
-                      >👁️</button>
-                      <button
-                        *ngIf="t.sale_payment_id"
-                        (click)="openSalePaymentView(t)"
-                        class="btn-icon btn-view"
-                        title="Voir le détail du paiement"
-                      >👁️</button>
-                      <button
-                        (click)="openEditForm(t)"
-                        class="btn-icon btn-edit"
-                        title="Modifier"
-                        *ngIf="authService.hasPermission('edit cash-flow')"
-                        [disabled]="deletingTransactionId() === t.id"
-                      >✏️</button>
-                      <button
-                        (click)="deleteTransaction(t)"
-                        class="btn-icon btn-delete"
-                        title="Supprimer"
-                        *ngIf="authService.hasPermission('delete cash-flow')"
-                        [disabled]="deletingTransactionId() === t.id"
-                      >
-                        <span *ngIf="deletingTransactionId() !== t.id">🗑️</span>
-                        <span *ngIf="deletingTransactionId() === t.id" class="inline-spinner"></span>
+              </tbody>
+            } @else {
+              @for (m of pendingMonths(); track m.key) {
+                <tbody class="month-group tone-{{ m.tone }}">
+                  <tr class="month-row">
+                    <td colspan="8">
+                      <button type="button" class="month-toggle" (click)="toggleMonth(m.key)"
+                        [attr.aria-expanded]="!collapsedMonths().has(m.key)">
+                        <span class="month-chevron" [class.folded]="collapsedMonths().has(m.key)" aria-hidden="true">⌄</span>
+                        <span class="month-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span>
+                        <strong class="month-title">{{ m.title }}@if (m.tone === 'current') { (Mois courant)}</strong>
+                        <span class="month-count">({{ m.items.length }} opération{{ m.items.length > 1 ? 's' : '' }})</span>
+                        @if (m.tone === 'current' || m.tone === 'overdue') { <span class="month-tag">{{ m.tag }}</span> }
+                        <span class="month-total" [class.positive]="m.total > 0" [class.negative]="m.total < 0">
+                          {{ m.total < 0 ? '-' : m.total > 0 ? '+' : '' }}{{ (m.total < 0 ? -m.total : m.total) | number:'1.2-2' }} DH
+                        </span>
                       </button>
                     </td>
-                    <td class="date-cell">{{ t.date | date:'dd/MM/yyyy' }}</td>
-                    <td class="amount-cell">
-                      <span [class.amount-income]="t.type === 'income'" [class.amount-expense]="t.type === 'expense'">
-                        {{ t.type === 'expense' ? '-' : '+' }}{{ t.amount | number:'1.2-2' }} DH
-                      </span>
-                    </td>
-                    <td>
-                      <span class="badge" [class.badge-income]="t.type === 'income'" [class.badge-expense]="t.type === 'expense'">
-                        {{ t.type === 'income' ? 'Revenu' : 'Dépense' }}
-                      </span>
-                    </td>
-                    <td>{{ t.account?.name || '—' }}</td>
-                    <td><span class="method-badge">{{ t.method }}</span></td>
-                    <td>{{ t.category || '—' }}</td>
-                    <td class="desc-col" [title]="t.description">{{ t.description }}</td>
                   </tr>
-                } @empty {
+                  @if (!collapsedMonths().has(m.key)) {
+                    @for (t of m.items; track t.id) {
+                      <tr [class.income-row]="t.type === 'income'" [class.expense-row]="t.type === 'expense'" class="pending-row">
+                        <td class="actions-cell">
+                          <button
+                            *ngIf="t.purchase_payment_id"
+                            (click)="openPaymentView(t)"
+                            class="btn-icon btn-view"
+                            title="Voir le détail du paiement"
+                          >👁️</button>
+                          <button
+                            *ngIf="t.sale_payment_id"
+                            (click)="openSalePaymentView(t)"
+                            class="btn-icon btn-view"
+                            title="Voir le détail du paiement"
+                          >👁️</button>
+                          <button
+                            (click)="openSettle(t)"
+                            class="btn-icon btn-settle"
+                            title="Valider avant l'échéance (encaissement anticipé)"
+                            *ngIf="authService.hasPermission('edit cash-flow')"
+                            [disabled]="deletingTransactionId() === t.id"
+                          >✅</button>
+                          <button
+                            (click)="deleteTransaction(t)"
+                            class="btn-icon btn-delete"
+                            title="Supprimer"
+                            *ngIf="authService.hasPermission('delete cash-flow')"
+                            [disabled]="deletingTransactionId() === t.id"
+                          >
+                            <span *ngIf="deletingTransactionId() !== t.id">🗑️</span>
+                            <span *ngIf="deletingTransactionId() === t.id" class="inline-spinner"></span>
+                          </button>
+                        </td>
+                        <td class="date-cell">{{ t.date | date:'dd/MM/yyyy' }}</td>
+                        <td class="amount-cell">
+                          <span [class.amount-income]="t.type === 'income'" [class.amount-expense]="t.type === 'expense'">
+                            {{ t.type === 'expense' ? '-' : '+' }}{{ t.amount | number:'1.2-2' }} DH
+                          </span>
+                        </td>
+                        <td>
+                          <span class="badge" [class.badge-income]="t.type === 'income'" [class.badge-expense]="t.type === 'expense'">
+                            {{ t.type === 'income' ? 'Revenu' : 'Dépense' }}
+                          </span>
+                        </td>
+                        <td>{{ t.account?.name || '—' }}</td>
+                        <td><span class="method-badge">{{ t.method }}</span></td>
+                        <td>{{ t.category || '—' }}</td>
+                        <td class="desc-col" [title]="t.description">{{ t.description }}</td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+              } @empty {
+                <tbody>
                   <tr>
                     <td colspan="8" class="empty-state">Aucune transaction à venir.</td>
                   </tr>
-                }
+                </tbody>
               }
-            </tbody>
+            }
           </table>
         </div>
       }
@@ -359,6 +414,47 @@
       (submitted)="onFormSubmit($event)"
       (cancelled)="closeForm()"
     />
+  }
+
+  @if (settlingTransaction(); as st) {
+    <div class="modal-overlay" (click)="closeSettle()">
+      <div class="modal-container settle-modal" role="dialog" aria-labelledby="settle-title" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2 id="settle-title">Valider avant l'échéance</h2>
+          <button type="button" class="btn-icon" (click)="closeSettle()" [disabled]="settling()" aria-label="Fermer">✕</button>
+        </div>
+        <div class="modal-body">
+          <dl class="settle-summary">
+            <div><dt>Montant</dt>
+              <dd [class.amount-income]="st.type === 'income'" [class.amount-expense]="st.type === 'expense'">
+                {{ st.type === 'expense' ? '-' : '+' }}{{ st.amount | number:'1.2-2' }} DH
+              </dd></div>
+            <div><dt>Méthode</dt><dd><span class="method-badge">{{ st.method }}</span></dd></div>
+            <div><dt>Échéance prévue</dt><dd>{{ st.date | date:'dd/MM/yyyy' }}</dd></div>
+            <div><dt>Compte</dt><dd>{{ st.account?.name || '—' }}</dd></div>
+            <div class="settle-desc"><dt>Description</dt><dd>{{ st.description }}</dd></div>
+          </dl>
+
+          <div class="form-group">
+            <label for="settle_date">Date d'encaissement</label>
+            <input id="settle_date" type="date" class="form-control" [max]="today"
+              [ngModel]="settleDate()" (ngModelChange)="settleDate.set($event)" (keydown.enter)="confirmSettle()">
+          </div>
+
+          <p class="settle-hint">
+            {{ st.type === 'income' ? 'Le client a demandé' : 'Le fournisseur a demandé' }} à encaisser avant l'échéance :
+            l'opération et le paiement lié passent à cette date et comptent tout de suite dans le solde du compte.
+          </p>
+          @if (settleError()) { <p class="settle-error" role="alert">{{ settleError() }}</p> }
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeSettle()" [disabled]="settling()">Annuler</button>
+          <button type="button" class="btn btn-primary" (click)="confirmSettle()" [disabled]="settling() || !settleDate()">
+            {{ settling() ? 'Validation...' : "Valider l'encaissement" }}
+          </button>
+        </div>
+      </div>
+    </div>
   }
 
   @if (viewingPaymentId()) {
