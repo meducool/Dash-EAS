@@ -1,5 +1,5 @@
 // ── Design tokens ─────────────────────────────────────────────────────────────
-$_red:      #ff2d37;
+$_red:      var(--app-primary);
 $_text:     #0f172a;
 $_strong:   #1e293b;
 $_muted:    #64748b;
@@ -72,6 +72,69 @@ $_shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
       color: $_text;
       border-color: #bcc6d4;
     }
+  }
+
+  // Title + Précédent / Suivant, same header as the sale and purchase details.
+  .modal-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  .modal-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .modal-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+
+    button {
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      flex-shrink: 0;
+      background: none;
+      border: 1.5px solid $_border2;
+      border-radius: 8px;
+      color: $_muted;
+      font-size: 1.25rem;
+      line-height: 1;
+      cursor: pointer;
+      transition: all 0.15s;
+
+      &:not(:disabled):hover { background: $_border; color: $_text; border-color: #bcc6d4; }
+      &:disabled { opacity: 0.45; cursor: not-allowed; }
+    }
+  }
+
+  // Record number (N° {id}) shown between the ‹ arrow and the position counter.
+  .modal-nav-id {
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: $_strong;
+    font-size: 0.8rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .modal-nav-pos {
+    min-width: 4rem;
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: $_muted;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 }
 
@@ -160,7 +223,7 @@ $_shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
 .badge-success      { background: rgba(34, 197, 94, 0.10);  color: #15803d; }
 .badge-warning      { background: rgba(234, 179, 8, 0.12);  color: #a16207; }
 .badge-danger       { background: rgba(239, 68, 68, 0.10);  color: #dc2626; }
-.badge-type         { background: rgba(255, 45, 55, 0.08);  color: $_red; }
+.badge-type         { background: color-mix(in srgb, var(--app-primary) 8%, transparent);  color: $_red; }
 .badge-part-inline  { background: rgba(34, 197, 94, 0.10);  color: #15803d; }
 
 // ── Item detail helpers ───────────────────────────────────────────────────────
@@ -258,11 +321,11 @@ $_shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
       background: $_red;
       color: white;
       border-color: $_red;
-      box-shadow: 0 2px 6px rgba(255, 45, 55, 0.3);
+      box-shadow: 0 2px 6px color-mix(in srgb, var(--app-primary) 30%, transparent);
 
       &:hover {
         background: #e8000b;
-        box-shadow: 0 4px 10px rgba(255, 45, 55, 0.4);
+        box-shadow: 0 4px 10px color-mix(in srgb, var(--app-primary) 40%, transparent);
         transform: translateY(-1px);
       }
     }

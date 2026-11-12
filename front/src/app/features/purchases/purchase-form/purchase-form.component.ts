@@ -1,22 +1,25 @@
 import { Component, EventEmitter, Input, OnInit, Output, inject, signal } from '@angular/core';
+import { DepotSelectComponent } from '../../../shared/depot-select/depot-select.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { Purchase, PurchasePayload } from '../../../core/models/purchase.model';
 import { PURCHASE_STATUSES, PURCHASE_STATUS_LABELS, PURCHASE_STATUS_TRANSITIONS, PAYMENT_STATUSES, PAYMENT_STATUS_LABELS, PurchaseStatus } from '../../../core/constants/status.constants';
-import { Product } from '../../../core/models/product.model';
+import { Product, ProductPayload } from '../../../core/models/product.model';
 import { ProductDetailComponent } from '../../products/product-detail/product-detail.component';
+import { ProductFormComponent } from '../../products/product-form/product-form.component';
 import { PurchaseService } from '../../../core/services/purchase.service';
 import { ProductService } from '../../../core/services/product.service';
 import { SupplierService } from '../../suppliers/data-access/supplier.service';
 import { Supplier } from '../../suppliers/models/supplier.model';
-import { Stock } from '../../../core/models/stock.model';
+import { Stock, StockFilters, StockPayload } from '../../../core/models/stock.model';
 import { StockService } from '../../../core/services/stock.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-purchase-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, ProductDetailComponent],
+  imports: [DepotSelectComponent, CommonModule, FormsModule, ProductDetailComponent, ProductFormComponent],
   templateUrl: './purchase-form.component.html',
   styleUrls: ['./purchase-form.component.scss']
 })
@@ -40,6 +43,7 @@ export class PurchaseFormComponent implements OnInit {
   private productService = inject(ProductService);
   private supplierService = inject(SupplierService);
   private stockService = inject(StockService);
+  private authService = inject(AuthService);
 
   loading = signal<boolean>(false);
   suppliers = signal<Supplier[]>([]);
@@ -60,6 +64,38 @@ export class PurchaseFormComponent implements OnInit {
   };
 
   editingItemIndex: number | null = null;
+
+  // ── Quick stock creation ────────────────────────────────────────────────
+  // A product bought for the first time has no stock lot to receive it yet:
+  // the lot can be created from here instead of leaving for the Stock page.
+  showStockCreate = signal(false);
+  creatingStock = signal(false);
+  stockCreateError = signal('');
+  /** Existing dépôts / zones / pays, offered as suggestions so spellings stay consistent. */
+  stockOptions = signal<StockFilters>({ brands: [], depots: [], zones: [], countries: [] });
+  private stockOptionsLoaded = false;
+  newStock = { depot: '', zone: '', dot: '', made_in: '' };
+
+  // ── Quick product creation ──────────────────────────────────────────────
+  // Same idea one step earlier: a product missing from the catalogue is
+  // created in a nested window (the regular product form), then selected.
+  showProductCreate = signal(false);
+  creatingProduct = signal(false);
+  productCreateError = signal('');
+  productBrands = signal<{ id: number; name: string }[]>([]);
+  private productBrandsLoaded = false;
+
+  get canCreateProduct(): boolean {
+    return this.authService.hasPermission('create products');
+  }
+
+  get canCreateStock(): boolean {
+    return this.authService.hasPermission('create stock');
+  }
+
+  get hasProductSelected(): boolean {
+    return Number(this.currentItem.product_id) > 0;
+  }
 
   formData: PurchasePayload = {
     date: new Date().toISOString().split('T')[0],
@@ -132,6 +168,7 @@ export class PurchaseFormComponent implements OnInit {
     const id = +(event.target as HTMLSelectElement).value;
     this.currentItem.product_id = id;
     this.currentItem.stock_id = null;
+    this.showStockCreate.set(false);
     const product = this.products().find(p => p.id === id);
     if (product) {
       this.currentItem.linkedProduct = product;
@@ -220,6 +257,116 @@ export class PurchaseFormComponent implements OnInit {
     this.productSearch.set('');
     this.products.set([]);
     this.stocks.set([]);
+    this.showStockCreate.set(false);
+  }
+
+  openProductCreate(): void {
+    this.productCreateError.set('');
+    this.showProductCreate.set(true);
+
+    if (!this.productBrandsLoaded) {
+      this.productBrandsLoaded = true;
+      this.productService.getFilters().subscribe({
+        next: (filters) => this.productBrands.set(filters.brands),
+        error: () => (this.productBrandsLoaded = false), // the brand list is retried on next opening
+      });
+    }
+  }
+
+  closeProductCreate(): void {
+    if (this.creatingProduct()) return;
+    this.showProductCreate.set(false);
+    this.productCreateError.set('');
+  }
+
+  /** Saves the product, puts it on the current line and selects the stock lot created with it. */
+  onProductCreated(payload: ProductPayload): void {
+    if (this.creatingProduct()) return;
+
+    this.creatingProduct.set(true);
+    this.productCreateError.set('');
+    this.productService.createProduct(payload).subscribe({
+      next: (product) => {
+        this.products.update((list) => [product, ...list.filter((p) => p.id !== product.id)]);
+        this.currentItem.product_id = product.id;
+        this.currentItem.linkedProduct = product;
+        this.currentItem.stock_id = null;
+        this.currentItem.stock = null;
+        this.stocks.set([]); // the previous product's lots must not stay offered
+        this.creatingProduct.set(false);
+        this.showProductCreate.set(false);
+
+        // A tyre / part is created with its first (empty) lot, located from the
+        // product form: load it and put it on the line — no second lot to create.
+        if (product.type !== 'service') {
+          this.loadStocksForProduct(product.id, true);
+        }
+      },
+      error: (err) => {
+        const errors = err?.error?.errors;
+        const firstError = errors ? (Object.values(errors)[0] as string[] | undefined)?.[0] : null;
+        this.productCreateError.set(firstError || err?.error?.message || 'La création du produit a échoué.');
+        this.creatingProduct.set(false);
+      },
+    });
+  }
+
+  openStockCreate(): void {
+    if (!this.hasProductSelected) return;
+    this.newStock = { depot: '', zone: '', dot: '', made_in: '' };
+    this.stockCreateError.set('');
+    this.showStockCreate.set(true);
+
+    if (!this.stockOptionsLoaded) {
+      this.stockOptionsLoaded = true;
+      this.stockService.getFilters().subscribe({
+        next: (options) => this.stockOptions.set(options),
+        error: () => (this.stockOptionsLoaded = false), // suggestions are optional — retry next time
+      });
+    }
+  }
+
+  cancelStockCreate(): void {
+    this.showStockCreate.set(false);
+    this.stockCreateError.set('');
+  }
+
+  /**
+   * Creates the lot empty (quantity 0): saving the purchase is what adds the
+   * bought quantity to it, so a non-zero start would count the goods twice.
+   */
+  createStock(): void {
+    if (!this.hasProductSelected || this.creatingStock()) return;
+
+    const clean = (value: string) => value.trim() || null;
+    const unitPrice = Number(this.currentItem.unit_price);
+    const payload: StockPayload = {
+      product_id: Number(this.currentItem.product_id),
+      quantity: 0,
+      purchase_price: unitPrice > 0 ? unitPrice : null,
+      depot: clean(this.newStock.depot),
+      zone: clean(this.newStock.zone),
+      dot: clean(this.newStock.dot),
+      made_in: clean(this.newStock.made_in),
+    };
+
+    this.creatingStock.set(true);
+    this.stockCreateError.set('');
+    this.stockService.createStock(payload).subscribe({
+      next: (stock) => {
+        this.stocks.update((list) => [stock, ...list]);
+        this.currentItem.stock_id = stock.id;
+        this.currentItem.stock = stock;
+        this.creatingStock.set(false);
+        this.showStockCreate.set(false);
+      },
+      error: (err) => {
+        const errors = err?.error?.errors;
+        const firstError = errors ? (Object.values(errors)[0] as string[] | undefined)?.[0] : null;
+        this.stockCreateError.set(firstError || err?.error?.message || 'La création du stock a échoué.');
+        this.creatingStock.set(false);
+      },
+    });
   }
 
   removeItem(index: number) {
@@ -229,6 +376,15 @@ export class PurchaseFormComponent implements OnInit {
       this.editingItemIndex--;
     }
     this.formData.items.splice(index, 1);
+  }
+
+  /** Product chosen but no stock lot exists for it — explains why "Ajouter" stays disabled. */
+  get noStockAvailable(): boolean {
+    return Number(this.currentItem.product_id) > 0 && !this.loadingStocks() && this.stocks().length === 0;
+  }
+
+  get totalQuantity(): number {
+    return this.formData.items.reduce((acc: number, item: any) => acc + Number(item.quantity || 0), 0);
   }
 
   get totalAmount(): number {
@@ -243,12 +399,17 @@ export class PurchaseFormComponent implements OnInit {
     return Math.max(0, this.totalAmount - this.discountAmount);
   }
 
-  loadStocksForProduct(productId: number): void {
+  loadStocksForProduct(productId: number, selectSingle = false): void {
     this.loadingStocks.set(true);
     this.stockService.getStocks({ product_id: String(productId), per_page: '100' }).subscribe({
       next: (res) => {
         this.stocks.set(res.data);
         this.loadingStocks.set(false);
+        // Only lot of a brand-new product: select it, unless the user moved on.
+        if (selectSingle && res.data.length === 1 && Number(this.currentItem.product_id) === productId) {
+          this.currentItem.stock_id = res.data[0].id;
+          this.currentItem.stock = res.data[0];
+        }
       },
       error: () => this.loadingStocks.set(false),
     });

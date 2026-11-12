@@ -191,4 +191,73 @@ describe('ServiceOrderDetailComponent', () => {
       expect(line.total).toBe(150);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Précédent / Suivant
+  // -------------------------------------------------------------------------
+
+  describe('keyboard navigation', () => {
+    const press = (key: string, target: any = document.body) => {
+      const event = { key, target, preventDefault: vi.fn() } as unknown as KeyboardEvent;
+      comp.onKeydown(event);
+      return event;
+    };
+
+    it('emits prev / next on the arrow keys when a neighbour exists', () => {
+      const prev = vi.fn();
+      const next = vi.fn();
+      comp.prev.subscribe(prev);
+      comp.next.subscribe(next);
+      comp.hasPrev = true;
+      comp.hasNext = true;
+
+      press('ArrowLeft');
+      press('ArrowRight');
+
+      expect(prev).toHaveBeenCalledTimes(1);
+      expect(next).toHaveBeenCalledTimes(1);
+    });
+
+    it('does nothing at the edges of the list', () => {
+      const prev = vi.fn();
+      const next = vi.fn();
+      comp.prev.subscribe(prev);
+      comp.next.subscribe(next);
+
+      press('ArrowLeft');
+      press('ArrowRight');
+
+      expect(prev).not.toHaveBeenCalled();
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('leaves the arrows alone while typing or previewing the print', () => {
+      const next = vi.fn();
+      comp.next.subscribe(next);
+      comp.hasNext = true;
+
+      press('ArrowRight', document.createElement('input'));
+      comp.openPrint();
+      press('ArrowRight');
+
+      expect(next).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('ngOnChanges', () => {
+    const change = (previousValue: any, currentValue: any, firstChange = false) =>
+      ({ serviceOrder: { previousValue, currentValue, firstChange, isFirstChange: () => firstChange } }) as any;
+
+    it('closes the print preview when another record is shown', () => {
+      comp.openPrint();
+      comp.ngOnChanges(change(baseOrder(), { ...baseOrder(), id: 2 }));
+      expect(comp.printDoc()).toBeNull();
+    });
+
+    it('keeps the print preview when the same record is refreshed with its full version', () => {
+      comp.openPrint();
+      comp.ngOnChanges(change(baseOrder(), { ...baseOrder(), notes: 'complet' }));
+      expect(comp.printDoc()).not.toBeNull();
+    });
+  });
 });

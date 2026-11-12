@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\ServiceOrders\ServicePaymentService;
 use App\Models\Account;
 use App\Models\Client;
 use App\Models\Product;
@@ -25,8 +26,11 @@ class ServiceOrderApiTest extends TestCase
     use DatabaseTransactions;
 
     private User $user;
+
     private Account $account;
+
     private ServiceOrder $order;
+
     private Product $product;
 
     protected function setUp(): void
@@ -71,7 +75,7 @@ class ServiceOrderApiTest extends TestCase
         $this->user->assignRole($admin);
 
         $this->account = Account::query()->create([
-            'name' => 'Caisse SO ' . fake()->unique()->numerify('###'),
+            'name' => 'Caisse SO '.fake()->unique()->numerify('###'),
             'type' => 'cash',
             'initial_balance' => 0,
             'is_active' => true,
@@ -144,6 +148,33 @@ class ServiceOrderApiTest extends TestCase
         $response = $this->getJson('/api/service-orders?date_from=2026-01-01&date_to=2026-12-31');
 
         $response->assertOk();
+    }
+
+    public function test_index_sorts_by_requested_column_and_direction(): void
+    {
+        Sanctum::actingAs($this->user, [], 'web');
+        $old = $this->createOrder(['date' => '2020-01-05']);
+        $older = $this->createOrder(['date' => '2020-01-02']);
+
+        $asc = $this->getJson('/api/service-orders?date_to=2020-12-31&sort_by=date&sort_direction=asc');
+        $desc = $this->getJson('/api/service-orders?date_to=2020-12-31&sort_by=date&sort_direction=desc');
+
+        $asc->assertOk();
+        $this->assertSame([$older->id, $old->id], array_column($asc->json('data'), 'id'));
+        $this->assertSame([$old->id, $older->id], array_column($desc->json('data'), 'id'));
+    }
+
+    public function test_index_ignores_unknown_sort_column(): void
+    {
+        Sanctum::actingAs($this->user, [], 'web');
+        $old = $this->createOrder(['date' => '2020-01-05']);
+        $older = $this->createOrder(['date' => '2020-01-02']);
+
+        // Not in the whitelist (and an injection attempt): default order, newest first.
+        $response = $this->getJson('/api/service-orders?date_to=2020-12-31&sort_by='.urlencode('id; DROP TABLE users').'&sort_direction=asc');
+
+        $response->assertOk();
+        $this->assertSame([$old->id, $older->id], array_column($response->json('data'), 'id'));
     }
 
     // -------------------------------------------------------------------------
@@ -494,6 +525,71 @@ class ServiceOrderApiTest extends TestCase
         $this->assertNotNull($payment->transaction_id);
     }
 
+    public function test_payment_store_labels_transaction_with_client_and_mode(): void
+    {
+        Sanctum::actingAs($this->user, [], 'web');
+        $client = Client::query()->create([
+            'name' => 'KARIM SERVICE',
+            'phone' => '0600000098',
+            'category' => 'Particulier',
+            'created_by' => $this->user->id,
+            'updated_by' => $this->user->id,
+            'is_active' => true,
+        ]);
+        $this->order->update(['client_id' => $client->id]);
+        $id = $this->order->id;
+
+        $cash = $this->postJson("/api/service-orders/{$id}/payments", array_merge($this->validPaymentPayload(), ['amount' => 10]));
+        $cheque = $this->postJson("/api/service-orders/{$id}/payments", array_merge($this->validPaymentPayload(), [
+            'amount' => 10, 'method' => 'Chèque', 'reference' => '556677 BMCE',
+        ]));
+
+        $label = fn ($response) => ServicePayment::find($response->json('id'))->transaction->description;
+        $this->assertSame("Paiement service #{$id} | KARIM SERVICE | ESPÈCES", $label($cash));
+        $this->assertSame("Paiement service #{$id} | KARIM SERVICE | 556677 BMCE", $label($cheque));
+    }
+
+    public function test_migration_rewrites_old_service_payment_descriptions(): void
+    {
+        $id = $this->order->id;
+        $make = function (string $description, string $method, ?string $reference) {
+            $transaction = Transaction::query()->create([
+                'date' => '2026-05-02',
+                'amount' => 10,
+                'type' => 'income',
+                'category' => 'Vente marchandise',
+                'method' => $method,
+                'description' => $description,
+                'person' => '',
+                'user_id' => $this->user->id,
+                'account_id' => $this->account->id,
+            ]);
+            ServicePayment::query()->create([
+                'service_order_id' => $this->order->id,
+                'amount' => 10,
+                'date' => '2026-05-02',
+                'method' => $method,
+                'account_id' => $this->account->id,
+                'reference' => $reference,
+                'transaction_id' => $transaction->id,
+                'user_id' => $this->user->id,
+            ]);
+
+            return $transaction;
+        };
+
+        $noClient = $make("Paiement service #{$id} - Vidange POUR ", 'Espèces', null);
+        $cheque = $make("Paiement service #{$id} - Vidange POUR SAID", 'Chèque', '123 CIH');
+        $manual = $make("Paiement service #{$id} acompte", 'Espèces', null);
+
+        $migration = require database_path('migrations/2026_11_11_000001_rewrite_payment_transaction_descriptions.php');
+        $migration->up();
+
+        $this->assertSame("Paiement service #{$id} | ESPÈCES", $noClient->fresh()->description);
+        $this->assertSame("Paiement service #{$id} | SAID | 123 CIH", $cheque->fresh()->description);
+        $this->assertSame("Paiement service #{$id} acompte", $manual->fresh()->description);
+    }
+
     public function test_payment_store_updates_payment_status_to_paye(): void
     {
         Sanctum::actingAs($this->user, [], 'web');
@@ -724,7 +820,7 @@ class ServiceOrderApiTest extends TestCase
             'user_id' => $this->user->id,
         ]);
 
-        app(\App\Domain\ServiceOrders\ServicePaymentService::class)
+        app(ServicePaymentService::class)
             ->refreshPaymentStatus($this->order->fresh());
 
         return $payment;

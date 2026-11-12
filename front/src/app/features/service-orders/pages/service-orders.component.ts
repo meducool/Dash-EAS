@@ -1,7 +1,7 @@
-import { Component, OnInit, signal, computed, inject, DestroyRef } from '@angular/core';
+import { Component, OnInit, signal, effect, inject, untracked, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ServiceOrder, ServiceOrderFilters, ServiceOrderPayload, ServiceOrderSummary } from '../../../core/models/service-order.model';
 import { PaymentStatus, ServiceOrderStatus, SERVICE_ORDER_STATUSES, SERVICE_ORDER_STATUS_LABELS, PAYMENT_STATUSES, PAYMENT_STATUS_LABELS } from '../../../core/constants/status.constants';
@@ -10,6 +10,9 @@ import { ServiceOrderFormComponent } from '../service-order-form/service-order-f
 import { ServiceOrderDetailComponent } from '../service-order-detail/service-order-detail.component';
 import { ServicePaymentPanelComponent } from '../service-payment-panel/service-payment-panel.component';
 import { AuthService } from '../../../core/services/auth.service';
+import { PAYMENT_METHODS } from '../../../core/constants/payment-method.constants';
+import { AutoRefreshControlComponent } from '../../../shared/auto-refresh-control/auto-refresh-control.component';
+import { DetailNavigator } from '../../../core/utils/detail-navigator';
 
 @Component({
   selector: 'app-service-orders',
@@ -17,6 +20,8 @@ import { AuthService } from '../../../core/services/auth.service';
   imports: [
     CommonModule,
     FormsModule,
+    RouterLink,
+    AutoRefreshControlComponent,
     ServiceOrderFormComponent,
     ServiceOrderDetailComponent,
     ServicePaymentPanelComponent,
@@ -29,6 +34,7 @@ export class ServiceOrdersComponent implements OnInit {
   readonly SERVICE_ORDER_STATUS_LABELS = SERVICE_ORDER_STATUS_LABELS;
   readonly PAYMENT_STATUSES = PAYMENT_STATUSES;
   readonly PAYMENT_STATUS_LABELS = PAYMENT_STATUS_LABELS;
+  readonly PAYMENT_METHODS = PAYMENT_METHODS;
 
   serviceOrders = signal<ServiceOrder[]>([]);
   summary = signal<ServiceOrderSummary>({ total_revenue: 0, total_purchase: 0, total_margin: 0, total_paid: 0, remaining: 0 });
@@ -48,6 +54,8 @@ export class ServiceOrdersComponent implements OnInit {
   filterCommercial = signal('');
   filterDateFrom = signal('');
   filterDateTo = signal('');
+  sortBy = signal('');
+  sortDirection = signal<'asc' | 'desc'>('asc');
 
   loading = signal(false);
   isExporting = signal(false);
@@ -60,13 +68,37 @@ export class ServiceOrdersComponent implements OnInit {
   paymentOrder = signal<ServiceOrder | null>(null);
   deletingId = signal<number | null>(null);
 
+  /** Précédent / Suivant inside the detail modal — follows the table order across pages. */
+  readonly detailNav = new DetailNavigator<ServiceOrder>({
+    items: this.serviceOrders,
+    current: this.detailOrder,
+    page: this.currentPage,
+    lastPage: this.lastPage,
+    perPage: this.perPage,
+    total: this.total,
+    loading: this.loading,
+    goToPage: (page) => this.goToPage(page),
+  });
+
+  /** Id whose full record has been requested — list rows are shown at once, then completed. */
+  private requestedDetailId: number | null = null;
+
   private route = inject(ActivatedRoute);
   private destroyRef = inject(DestroyRef);
 
   constructor(
     private serviceOrderService: ServiceOrderService,
     public authService: AuthService,
-  ) {}
+  ) {
+    // Whatever opens a record in the modal (👁️ button, Précédent / Suivant, a
+    // page change at the edge of the list), fetch its full version once.
+    effect(() => {
+      const id = this.detailOrder()?.id ?? null;
+      if (id === this.requestedDetailId) return;
+      this.requestedDetailId = id;
+      if (id !== null) untracked(() => this.loadFullDetail(id));
+    });
+  }
 
   ngOnInit(): void {
     this.loadFilters();
@@ -80,7 +112,10 @@ export class ServiceOrdersComponent implements OnInit {
         if (!Number.isFinite(id) || id <= 0) return;
 
         this.serviceOrderService.getServiceOrder(id).subscribe({
-          next: order => this.openDetail(order),
+          next: order => {
+            this.requestedDetailId = order.id; // already the full record
+            this.detailOrder.set(order);
+          },
         });
       });
   }
@@ -95,9 +130,30 @@ export class ServiceOrdersComponent implements OnInit {
         this.lastPage.set(res.last_page);
         this.perPage.set(res.per_page);
         this.loading.set(false);
+        this.detailNav.onListLoaded();
       },
-      error: () => this.loading.set(false),
+      error: () => {
+        this.loading.set(false);
+        this.detailNav.reset();
+      },
     });
+  }
+
+  /** Auto-refresh tick: list and KPI cards together. */
+  refresh(): void {
+    this.loadData();
+    this.loadSummary();
+  }
+
+  toggleSort(column: string): void {
+    if (this.sortBy() === column) {
+      this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.sortBy.set(column);
+      this.sortDirection.set('asc');
+    }
+    this.currentPage.set(1);
+    this.loadData();
   }
 
   loadSummary(): void {
@@ -128,6 +184,8 @@ export class ServiceOrdersComponent implements OnInit {
     this.filterCommercial.set('');
     this.filterDateFrom.set('');
     this.filterDateTo.set('');
+    this.sortBy.set('');
+    this.sortDirection.set('asc');
     this.applyFilters();
   }
 
@@ -144,15 +202,20 @@ export class ServiceOrdersComponent implements OnInit {
 
   openDetail(order: ServiceOrder): void {
     this.detailOrder.set(order);
+  }
+
+  private loadFullDetail(id: number): void {
     this.loadingDetail.set(true);
-    this.serviceOrderService.getServiceOrder(order.id).subscribe({
+    this.serviceOrderService.getServiceOrder(id).subscribe({
       next: (full) => {
+        // Ignore a late answer if the user already moved on to another record.
+        if (this.detailOrder()?.id !== id) return;
         this.detailOrder.set(full);
         this.loadingDetail.set(false);
       },
       error: () => {
-        this.loadingDetail.set(false);
-        this.detailOrder.set(null);
+        if (this.detailOrder()?.id !== id) return;
+        this.closeDetail();
       },
     });
   }
@@ -160,6 +223,7 @@ export class ServiceOrdersComponent implements OnInit {
   closeDetail(): void {
     this.detailOrder.set(null);
     this.loadingDetail.set(false);
+    this.detailNav.reset();
   }
 
   editFromDetail(): void {
@@ -265,6 +329,10 @@ export class ServiceOrdersComponent implements OnInit {
     if (this.filterCommercial()) f['commercial_id'] = this.filterCommercial();
     if (this.filterDateFrom()) f['date_from'] = this.filterDateFrom();
     if (this.filterDateTo()) f['date_to'] = this.filterDateTo();
+    if (this.sortBy()) {
+      f['sort_by'] = this.sortBy();
+      f['sort_direction'] = this.sortDirection();
+    }
     return f;
   }
 
@@ -284,6 +352,8 @@ export class ServiceOrdersComponent implements OnInit {
     const filters = this.buildFilters();
     delete filters['page'];
     delete filters['per_page'];
+    delete filters['sort_by'];
+    delete filters['sort_direction'];
     this.serviceOrderService.exportOrders(filters).subscribe({
       next: (blob) => {
         const url = URL.createObjectURL(blob);

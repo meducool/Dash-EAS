@@ -1,5 +1,5 @@
 // ── Design tokens ─────────────────────────────────────────────────────────────
-$_red:      #ff2d37;
+$_red:      var(--app-primary);
 $_amber:    #d97706;
 $_text:     #0f172a;
 $_strong:   #1e293b;
@@ -110,8 +110,8 @@ $_border2:  #d0d9e4;
 .client-panel {
   margin-bottom: 1.25rem;
   padding: 1rem;
-  border: 1px solid rgba(255, 45, 55, 0.15);
-  background: rgba(255, 45, 55, 0.03);
+  border: 1px solid color-mix(in srgb, var(--app-primary) 15%, transparent);
+  background: color-mix(in srgb, var(--app-primary) 3%, transparent);
   border-radius: 10px;
   display: flex;
   flex-direction: column;
@@ -170,7 +170,7 @@ $_border2:  #d0d9e4;
     &:focus {
       outline: none;
       border-color: $_red;
-      box-shadow: 0 0 0 3px rgba(255, 45, 55, 0.1);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 10%, transparent);
     }
 
     &::placeholder { color: $_dim; }
@@ -204,8 +204,8 @@ $_border2:  #d0d9e4;
   transition: all 0.1s;
 
   &:hover {
-    border-color: rgba(255, 45, 55, 0.25);
-    background: rgba(255, 45, 55, 0.03);
+    border-color: color-mix(in srgb, var(--app-primary) 25%, transparent);
+    background: color-mix(in srgb, var(--app-primary) 3%, transparent);
   }
 
   .result-name {
@@ -226,7 +226,7 @@ $_border2:  #d0d9e4;
   align-items: center;
   gap: 1rem;
   background: $_surface;
-  border: 1.5px solid rgba(255, 45, 55, 0.2);
+  border: 1.5px solid color-mix(in srgb, var(--app-primary) 20%, transparent);
   border-radius: 8px;
   padding: 0.75rem 1rem;
 
@@ -268,7 +268,7 @@ $_border2:  #d0d9e4;
   align-items: center;
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
-  background: rgba(255, 45, 55, 0.1);
+  background: color-mix(in srgb, var(--app-primary) 10%, transparent);
   color: $_red;
   font-size: 0.75rem;
   font-weight: 700;
@@ -324,7 +324,7 @@ $_border2:  #d0d9e4;
   &:focus {
     outline: none;
     border-color: $_red;
-    box-shadow: 0 0 0 3px rgba(255, 45, 55, 0.1);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 10%, transparent);
   }
 
   &::placeholder { color: $_dim; }
@@ -355,8 +355,8 @@ textarea.form-control {
   transition: all 0.15s;
 
   &:hover {
-    background: rgba(255, 45, 55, 0.06);
-    border-color: rgba(255, 45, 55, 0.35);
+    background: color-mix(in srgb, var(--app-primary) 6%, transparent);
+    border-color: color-mix(in srgb, var(--app-primary) 35%, transparent);
     color: $_red;
   }
 }
@@ -397,7 +397,7 @@ textarea.form-control {
   transition: background 0.12s;
 
   &:last-child { border-bottom: none; }
-  &:hover { background: rgba(255, 45, 55, 0.04); }
+  &:hover { background: color-mix(in srgb, var(--app-primary) 4%, transparent); }
 
   .sug-name { font-weight: 500; }
   .sug-price { font-size: 0.75rem; color: $_muted; font-variant-numeric: tabular-nums; }
@@ -422,9 +422,9 @@ textarea.form-control {
   &:hover { filter: brightness(0.93); }
 
   &-service {
-    background: rgba(255, 45, 55, 0.08);
+    background: color-mix(in srgb, var(--app-primary) 8%, transparent);
     color: $_red;
-    border-color: rgba(255, 45, 55, 0.2);
+    border-color: color-mix(in srgb, var(--app-primary) 20%, transparent);
   }
 
   &-part {
@@ -471,7 +471,7 @@ textarea.form-control {
   white-space: nowrap;
   flex-shrink: 0;
 
-  &.badge-service { background: rgba(255, 45, 55, 0.08); color: $_red; }
+  &.badge-service { background: color-mix(in srgb, var(--app-primary) 8%, transparent); color: $_red; }
   &.badge-part    { background: rgba(217, 119, 6, 0.10); color: $_amber; }
 }
 
@@ -556,7 +556,7 @@ textarea.form-control {
 
   &:last-child { border-bottom: none; }
 
-  &:hover { background: rgba(255, 45, 55, 0.03); }
+  &:hover { background: color-mix(in srgb, var(--app-primary) 3%, transparent); }
 }
 
 .part-result-main {
@@ -594,7 +594,7 @@ textarea.form-control {
   align-items: center;
   gap: 0.45rem;
   padding: 0.3rem 0.65rem;
-  background: rgba(255, 45, 55, 0.07);
+  background: color-mix(in srgb, var(--app-primary) 7%, transparent);
   border-radius: 999px;
   font-size: 0.84rem;
   color: $_text;
@@ -705,11 +705,11 @@ textarea.form-control {
     background: $_red;
     color: white;
     border-color: $_red;
-    box-shadow: 0 2px 6px rgba(255, 45, 55, 0.3);
+    box-shadow: 0 2px 6px color-mix(in srgb, var(--app-primary) 30%, transparent);
 
     &:hover:not(:disabled) {
       background: #e8000b;
-      box-shadow: 0 4px 10px rgba(255, 45, 55, 0.4);
+      box-shadow: 0 4px 10px color-mix(in srgb, var(--app-primary) 40%, transparent);
       transform: translateY(-1px);
     }
 

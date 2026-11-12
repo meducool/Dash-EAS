@@ -21,6 +21,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ServiceOrderController extends Controller
 {
+    /** Columns the list may be sorted by (`sort_by`) — anything else falls back to the default order. */
+    private const SORTABLE = ['date', 'net_amount', 'margin', 'status', 'payment_status', 'created_at', 'updated_at'];
+
     public function __construct(protected ServiceOrderService $serviceOrderService) {}
 
     public function index(Request $request): JsonResponse
@@ -28,8 +31,7 @@ class ServiceOrderController extends Controller
         $query = ServiceOrder::query()->with(['commercial', 'creator', 'items.product', 'clientRecord']);
 
         $this->applyFilters($query, $request);
-
-        $query->orderByDesc('date')->orderByDesc('id');
+        $this->applySorting($query, $request);
 
         $paginator = $query->paginate((int) $request->integer('per_page', 20));
 
@@ -251,6 +253,21 @@ class ServiceOrderController extends Controller
             'clients' => $clients,
             'accounts' => $accounts,
         ]);
+    }
+
+    private function applySorting(Builder $query, Request $request): void
+    {
+        $sortBy = (string) $request->string('sort_by');
+
+        if (in_array($sortBy, self::SORTABLE, true)) {
+            $direction = strtolower((string) $request->string('sort_direction')) === 'desc' ? 'desc' : 'asc';
+            // `id` as tie-breaker keeps pagination stable when many rows share the sorted value.
+            $query->orderBy($sortBy, $direction)->orderByDesc('id');
+
+            return;
+        }
+
+        $query->orderByDesc('date')->orderByDesc('id');
     }
 
     private function applyFilters(Builder $query, Request $request): void

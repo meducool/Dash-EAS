@@ -1,33 +1,30 @@
 <div class="page-container">
-
-  <!-- En-tête -->
   <div class="header">
     <div class="title-section">
-      <h1>🔧 Service Auto</h1>
-      <p class="subtitle">{{ total() }} intervention(s) trouvée(s)</p>
+      <h1>Service Auto</h1>
+      <p class="subtitle">Gérez vos interventions et prestations</p>
     </div>
     <div class="actions">
       <button class="btn btn-secondary" type="button" (click)="exportOrders()" [disabled]="isExporting()">
         {{ isExporting() ? 'Export en cours...' : 'Exporter Excel' }}
       </button>
-      <button
-        *ngIf="authService.hasPermission('create service-orders')"
-        class="btn btn-primary"
-        (click)="openAddForm()"
-      >+ Nouvelle intervention</button>
+      <button class="btn btn-primary" (click)="openAddForm()" *ngIf="authService.hasPermission('create service-orders')">
+        Nouvelle intervention
+      </button>
+      <app-auto-refresh-control pageKey="service-orders" (refresh)="refresh()" />
     </div>
+    <p class="export-error" *ngIf="exportError()">{{ exportError() }}</p>
   </div>
-  <p class="export-error" *ngIf="exportError()">{{ exportError() }}</p>
 
-  <!-- Résumé financier -->
   <div class="summary-cards">
     <div class="card summary-card income">
       <div class="card-icon">🔧</div>
       <div class="card-content">
-        <p class="card-label">CA Total</p>
+        <p class="card-label">CA total</p>
         <h3 class="card-value">{{ summary().total_revenue | number:'1.2-2' }} DH</h3>
       </div>
     </div>
+
     <div class="card summary-card margin">
       <div class="card-icon">📈</div>
       <div class="card-content">
@@ -35,6 +32,7 @@
         <h3 class="card-value">{{ summary().total_margin | number:'1.2-2' }} DH</h3>
       </div>
     </div>
+
     <div class="card summary-card balance">
       <div class="card-icon">✅</div>
       <div class="card-content">
@@ -42,222 +40,207 @@
         <h3 class="card-value">{{ summary().total_paid | number:'1.2-2' }} DH</h3>
       </div>
     </div>
+
     <div class="card summary-card expense">
       <div class="card-icon">⏳</div>
       <div class="card-content">
-        <p class="card-label">Reste à Payer</p>
+        <p class="card-label">Reste à payer</p>
         <h3 class="card-value">{{ summary().remaining | number:'1.2-2' }} DH</h3>
       </div>
     </div>
   </div>
 
-  <!-- Filtres -->
-  <div class="filters-section card">
-    <div class="filters-grid">
-      <div class="filter-group">
-        <label>Rechercher</label>
-        <input type="text" class="form-control"
-          [ngModel]="filterSearch()" (ngModelChange)="filterSearch.set($event)"
-          placeholder="Client, véhicule, prestation..." (keyup.enter)="applyFilters()">
-      </div>
-      <div class="filter-group">
-        <label>Prestation</label>
-        <select class="form-control"
-          [ngModel]="filterProductId()" (ngModelChange)="filterProductId.set($event ? +$event : null); applyFilters()">
-          <option [ngValue]="null">Toutes les prestations</option>
-          <option *ngFor="let p of filterOptions().service_products" [value]="p.id">
-            {{ p.profile }}{{ p.reference ? ' (' + p.reference + ')' : '' }}
-          </option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label>Statut</label>
-        <select class="form-control"
-          [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event); applyFilters()">
-          <option value="">Tous les statuts</option>
-          <option *ngFor="let s of SERVICE_ORDER_STATUSES" [value]="s">{{ SERVICE_ORDER_STATUS_LABELS[s] }}</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label>Paiement</label>
-        <select class="form-control"
-          [ngModel]="filterPaymentStatus()" (ngModelChange)="filterPaymentStatus.set($event); applyFilters()">
-          <option value="">Tous</option>
-          <option *ngFor="let s of PAYMENT_STATUSES" [value]="s">{{ PAYMENT_STATUS_LABELS[s] }}</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label>Mode de paiement</label>
-        <select class="form-control"
-          [ngModel]="filterPaymentMethod()" (ngModelChange)="filterPaymentMethod.set($event); applyFilters()">
-          <option value="">Tous</option>
-          <option value="Espèces">Espèces</option>
-          <option value="Chèque">Chèque</option>
-          <option value="Virement">Virement</option>
-          <option value="Carte bancaire">Carte bancaire</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label>Fiche client</label>
-        <select class="form-control"
-          [ngModel]="filterClientId()" (ngModelChange)="filterClientId.set($event ? +$event : null); applyFilters()">
-          <option [ngValue]="null">Tous les clients</option>
-          <option *ngFor="let c of filterOptions().clients" [value]="c.id">{{ c.name }}</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label>Commercial</label>
-        <select class="form-control"
-          [ngModel]="filterCommercial()" (ngModelChange)="filterCommercial.set($event); applyFilters()">
-          <option value="">Tous</option>
-          <option *ngFor="let c of filterOptions().commercials" [value]="c.id">{{ c.name }}</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label>Date du</label>
-        <input type="date" class="form-control"
-          [ngModel]="filterDateFrom()" (ngModelChange)="filterDateFrom.set($event)" />
-      </div>
-      <div class="filter-group">
-        <label>Date au</label>
-        <input type="date" class="form-control"
-          [ngModel]="filterDateTo()" (ngModelChange)="filterDateTo.set($event)" />
-      </div>
-    </div>
-    <div class="filter-actions">
-      <button class="btn btn-primary" (click)="applyFilters()">🔍 Rechercher</button>
-      <button class="btn btn-secondary" (click)="resetFilters()">✕ Réinitialiser</button>
-    </div>
-  </div>
+  <div class="card filters-section">
+    <div class="card-body">
+      <div class="filters-grid">
+        <div class="form-group">
+          <label>Recherche globale</label>
+          <input type="text" class="form-control" [ngModel]="filterSearch()" (ngModelChange)="filterSearch.set($event)" placeholder="Client, véhicule, prestation..." (keyup.enter)="applyFilters()">
+        </div>
 
-  <!-- Tableau -->
-  <div class="table-card card">
-    <div *ngIf="loading()" class="loading-state">Chargement…</div>
+        <div class="form-group">
+          <label>Client</label>
+          <select class="form-control" [ngModel]="filterClientId()" (ngModelChange)="filterClientId.set($event ? +$event : null); applyFilters()">
+            <option [ngValue]="null">Tous les clients</option>
+            <option *ngFor="let c of filterOptions().clients" [value]="c.id">{{ c.name }}</option>
+          </select>
+        </div>
 
-    <div *ngIf="!loading() && serviceOrders().length === 0" class="empty-state">
-      Aucune intervention trouvée.
-    </div>
+        <div class="form-group">
+          <label>Prestation</label>
+          <select class="form-control" [ngModel]="filterProductId()" (ngModelChange)="filterProductId.set($event ? +$event : null); applyFilters()">
+            <option [ngValue]="null">Toutes les prestations</option>
+            <option *ngFor="let p of filterOptions().service_products" [value]="p.id">
+              {{ p.profile }}{{ p.reference ? ' (' + p.reference + ')' : '' }}
+            </option>
+          </select>
+        </div>
 
-    <table *ngIf="!loading() && serviceOrders().length > 0" class="data-table">
-      <thead>
-        <tr>
-          <th class="text-center">ACTIONS</th>
-          <th>DATE</th>
-          <th>CLIENT</th>
-          <th>VÉHICULE</th>
-          <th>PRESTATIONS</th>
-          <th class="text-right">MARGE (DH)</th>
-          <th>STATUT</th>
-          <th>PAIEMENT</th>
-          <th>CRÉÉ PAR</th>
-          <th>CRÉÉ LE</th>
-          <th>MODIFIÉ LE</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let order of serviceOrders()">
-          <td class="text-center actions-cell">
-            <div class="action-buttons">
-              <button
-                class="btn-icon btn-sm"
-                title="Voir"
-                [disabled]="deletingId() === order.id"
-                (click)="openDetail(order)"
-              >👁️</button>
-              <button
-                class="btn-icon"
-                title="Paiements"
-                (click)="openPayments(order)"
-              >💳</button>
-              <button
-                *ngIf="authService.hasPermission('edit service-orders')"
-                class="btn-icon"
-                title="Modifier"
-                (click)="openEditForm(order)"
-              >✏️</button>
-              <button
-                *ngIf="authService.hasPermission('delete service-orders')"
-                class="btn-icon btn-icon--danger"
-                title="Supprimer"
-                [disabled]="deletingId() === order.id"
-                (click)="deleteOrder(order)"
-              >🗑️</button>
-            </div>
-          </td>
-          <td class="date-cell">{{ order.date | date:'dd/MM/yyyy' }}</td>
-          <td>
-            <div class="client-name">
-              {{ order.client_record?.name || '—' }}
-              <span *ngIf="order.client_record" class="client-linked" title="Fiche client liée">🔗</span>
-            </div>
-            <div *ngIf="order.client_record?.phone" class="client-phone">{{ order.client_record!.phone }}</div>
-          </td>
-          <td>
-            <div class="vehicle-name">{{ order.vehicle }}</div>
-            <div *ngIf="order.mileage" class="mileage">{{ order.mileage | number }} km</div>
-          </td>
-          <td>
-            <div class="service-types">
-              <span
-                *ngFor="let item of getServiceItems(order).slice(0, 2)"
-                class="badge badge-type"
-              >{{ item.service_type || '—' }}</span>
-              <span
-                *ngFor="let item of getPartItems(order).slice(0, 2)"
-                class="badge badge-part-type"
-              >🔩 {{ item.product_name || 'Pièce' }}</span>
-              <span
-                *ngIf="orderProductLabels(order).length > 4"
-                class="badge badge-more"
-              >+{{ orderProductLabels(order).length - 4 }}</span>
-            </div>
-          </td>
-          <td class="amount-cell">
-            <span>{{ order.margin | number:'1.2-2' }}</span>
-            <span class="margin-pct" [class]="marginClass(order)" *ngIf="+order.total_amount > 0">
-              {{ marginPct(order) | number:'1.0-1' }}%
-            </span>
-          </td>
-          <td class="status-cell">
-            <select class="status-select"
-                    [class.bg-en-cours]="order.status === 'EN COURS'"
-                    [class.bg-termine]="order.status === 'TERMINE'"
-                    [class.bg-annule]="order.status === 'ANNULE'"
-                    [ngModel]="order.status"
-                    (change)="updateOrderStatus(order, $event.target)">
-              <option *ngFor="let s of SERVICE_ORDER_STATUSES" [value]="s">{{ SERVICE_ORDER_STATUS_LABELS[s] }}</option>
-            </select>
-          </td>
-          <td>
-            <span class="badge" [class]="paymentClass(order.payment_status)">
-              {{ order.payment_status }}
-            </span>
-          </td>
-          <td>{{ order.creator?.name || '-' }}</td>
-          <td>{{ order.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
-          <td>{{ order.updated_at | date:'dd/MM/yyyy HH:mm' }}</td>
-        </tr>
-      </tbody>
-    </table>
+        <div class="form-group">
+          <label>Commercial</label>
+          <select class="form-control" [ngModel]="filterCommercial()" (ngModelChange)="filterCommercial.set($event); applyFilters()">
+            <option value="">Tous</option>
+            <option *ngFor="let c of filterOptions().commercials" [value]="c.id">{{ c.name }}</option>
+          </select>
+        </div>
 
-    <!-- Pagination -->
-    <div *ngIf="lastPage() > 1" class="pagination-wrapper">
-      <span class="pagination-info">
-        Page {{ currentPage() }} / {{ lastPage() }} — {{ total() }} résultats
-      </span>
-      <div class="pagination-controls">
-        <button class="btn-page" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1">‹</button>
-        <button
-          *ngFor="let p of pages"
-          class="btn-page"
-          [class.active]="p === currentPage()"
-          (click)="goToPage(p)"
-        >{{ p }}</button>
-        <button class="btn-page" (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === lastPage()">›</button>
+        <div class="form-group">
+          <label>Statut</label>
+          <select class="form-control" [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event); applyFilters()">
+            <option value="">Tous</option>
+            <option *ngFor="let s of SERVICE_ORDER_STATUSES" [value]="s">{{ SERVICE_ORDER_STATUS_LABELS[s] }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Paiement</label>
+          <select class="form-control" [ngModel]="filterPaymentStatus()" (ngModelChange)="filterPaymentStatus.set($event); applyFilters()">
+            <option value="">Tous</option>
+            <option *ngFor="let s of PAYMENT_STATUSES" [value]="s">{{ PAYMENT_STATUS_LABELS[s] }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Mode paiement</label>
+          <select class="form-control" [ngModel]="filterPaymentMethod()" (ngModelChange)="filterPaymentMethod.set($event); applyFilters()">
+            <option value="">Tous</option>
+            <option *ngFor="let m of PAYMENT_METHODS" [value]="m">{{ m }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Du</label>
+          <input type="date" class="form-control" [ngModel]="filterDateFrom()" (ngModelChange)="filterDateFrom.set($event)" (change)="applyFilters()">
+        </div>
+
+        <div class="form-group">
+          <label>Au</label>
+          <input type="date" class="form-control" [ngModel]="filterDateTo()" (ngModelChange)="filterDateTo.set($event)" (change)="applyFilters()">
+        </div>
+
+        <div class="filter-actions">
+          <button class="btn btn-filter" (click)="applyFilters()" title="Rechercher">🔍</button>
+          <button class="btn btn-reset" (click)="resetFilters()" title="Réinitialiser">✕</button>
+        </div>
       </div>
     </div>
   </div>
 
+  <div class="card table-card">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th class="text-center">Actions</th>
+            <th class="text-center col-id">#</th>
+            <th class="sortable" (click)="toggleSort('date')">Date <span class="sort-icon">{{ sortBy() === 'date' ? (sortDirection() === 'asc' ? '▲' : '▼') : '⇅' }}</span></th>
+            <th class="col-client">Client</th>
+            <th>Véhicule</th>
+            <th>Prestations</th>
+            <th>Commercial</th>
+            <th class="sortable text-right" (click)="toggleSort('net_amount')">Total <span class="sort-icon">{{ sortBy() === 'net_amount' ? (sortDirection() === 'asc' ? '▲' : '▼') : '⇅' }}</span></th>
+            <th class="sortable text-right" (click)="toggleSort('margin')">Marge <span class="sort-icon">{{ sortBy() === 'margin' ? (sortDirection() === 'asc' ? '▲' : '▼') : '⇅' }}</span></th>
+            <th class="sortable" (click)="toggleSort('payment_status')">Paiement <span class="sort-icon">{{ sortBy() === 'payment_status' ? (sortDirection() === 'asc' ? '▲' : '▼') : '⇅' }}</span></th>
+            <th class="sortable" (click)="toggleSort('status')">Statut <span class="sort-icon">{{ sortBy() === 'status' ? (sortDirection() === 'asc' ? '▲' : '▼') : '⇅' }}</span></th>
+            <th>Créé par</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="loading()">
+            <td colspan="12" class="text-center py-4">
+              <div class="spinner"></div> Chargement...
+            </td>
+          </tr>
+
+          <tr *ngIf="!loading() && serviceOrders().length === 0">
+            <td colspan="12" class="text-center py-4 text-muted">
+              Aucune intervention trouvée.
+            </td>
+          </tr>
+
+          <tr *ngFor="let order of serviceOrders()">
+            <td class="text-center actions-cell">
+              <button class="btn-icon btn-sm" (click)="openDetail(order)" title="Voir" [disabled]="deletingId() === order.id">👁️</button>
+              <button class="btn-icon btn-sm" (click)="openPayments(order)" title="Paiements" [disabled]="deletingId() === order.id">💳</button>
+              <button class="btn-icon btn-sm text-primary" (click)="openEditForm(order)" title="Modifier" *ngIf="authService.hasPermission('edit service-orders')" [disabled]="deletingId() === order.id">✏️</button>
+              <button class="btn-icon btn-sm text-danger" (click)="deleteOrder(order)" title="Supprimer" *ngIf="authService.hasPermission('delete service-orders')" [disabled]="deletingId() === order.id">
+                <span *ngIf="deletingId() !== order.id">🗑️</span>
+                <span *ngIf="deletingId() === order.id" class="inline-spinner"></span>
+              </button>
+            </td>
+            <td class="text-center cell-id">{{ order.id }}</td>
+            <td>{{ order.date | date:'dd/MM/yyyy' }}</td>
+            <td class="col-client">
+              <a *ngIf="order.client_record" class="fw-medium link-text client-link" [routerLink]="['/clients', order.client_record.id]">{{ order.client_record.name }}</a>
+              <div *ngIf="!order.client_record" class="fw-medium">-</div>
+              <div class="text-small text-muted">{{ order.client_record?.phone }}</div>
+            </td>
+            <td>
+              <div class="fw-medium">{{ order.vehicle }}</div>
+              <div class="text-small text-muted" *ngIf="order.mileage">{{ order.mileage | number }} km</div>
+            </td>
+            <td>
+              <span class="service-types">
+                <span *ngFor="let item of getServiceItems(order).slice(0, 2)" class="badge badge-type">{{ item.service_type || '-' }}</span>
+                <span *ngFor="let item of getPartItems(order).slice(0, 2)" class="badge badge-part-type">🔩 {{ item.product_name || 'Pièce' }}</span>
+                <span *ngIf="orderProductLabels(order).length > 4" class="badge badge-more">+{{ orderProductLabels(order).length - 4 }}</span>
+              </span>
+            </td>
+            <td>{{ order.commercial?.name || '-' }}</td>
+            <td class="text-right fw-semibold">
+              {{ order.net_amount | number:'1.2-2' }}
+            </td>
+            <td class="text-right fw-semibold">
+              {{ order.margin | number:'1.2-2' }}
+              <span class="margin-pct" [class]="marginClass(order)" *ngIf="+order.total_amount > 0">
+                {{ marginPct(order) | number:'1.0-1' }}%
+              </span>
+            </td>
+            <td>
+              <span class="badge" [class]="paymentClass(order.payment_status)">
+                {{ order.payment_status }}
+              </span>
+            </td>
+            <td class="status-cell">
+              <select class="status-select"
+                      [class.bg-en-cours]="order.status === 'EN COURS'"
+                      [class.bg-termine]="order.status === 'TERMINE'"
+                      [class.bg-annule]="order.status === 'ANNULE'"
+                      [ngModel]="order.status"
+                      (change)="updateOrderStatus(order, $event.target)">
+                <option *ngFor="let s of SERVICE_ORDER_STATUSES" [value]="s">{{ SERVICE_ORDER_STATUS_LABELS[s] }}</option>
+              </select>
+            </td>
+            <td>{{ order.creator?.name || '-' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-wrapper" *ngIf="total() > 0">
+      <div class="pagination-info">
+        Affichage de {{ (currentPage() - 1) * perPage() + 1 }} à
+        {{ (currentPage() * perPage()) > total() ? total() : (currentPage() * perPage()) }}
+        sur {{ total() }} entrées
+      </div>
+      <div class="pagination">
+        <button class="btn-page" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)">
+          &laquo;
+        </button>
+
+        <button class="btn-page"
+                *ngFor="let page of pages"
+                [class.active]="page === currentPage()"
+                (click)="goToPage(page)">
+          {{ page }}
+        </button>
+
+        <button class="btn-page" [disabled]="currentPage() === lastPage()" (click)="goToPage(currentPage() + 1)">
+          &raquo;
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Modal Formulaire -->
@@ -279,8 +262,13 @@
   *ngIf="detailOrder()"
   [serviceOrder]="detailOrder()!"
   [canEdit]="authService.hasPermission('edit service-orders')"
+  [hasPrev]="detailNav.hasPrev()"
+  [hasNext]="detailNav.hasNext()"
+  [position]="detailNav.position()"
   (close)="closeDetail()"
   (edit)="editFromDetail()"
+  (prev)="detailNav.prev()"
+  (next)="detailNav.next()"
 ></app-service-order-detail>
 
 <!-- Panel paiements -->

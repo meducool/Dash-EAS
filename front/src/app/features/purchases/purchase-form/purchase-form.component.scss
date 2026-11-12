@@ -1,5 +1,9 @@
+// Same form template as the sale form (sale-form.component.scss): sections,
+// `.form-grid` of `.form-control` wrappers, totals strip, actions bar. The
+// rules are duplicated here per this repo's per-component SCSS convention.
+
 // ── Design tokens ─────────────────────────────────────────────────────────────
-$_red:      #ff2d37;
+$_red:      var(--app-primary);
 $_red-dark: #e8000b;
 $_text:     #0f172a;
 $_strong:   #1e293b;
@@ -26,46 +30,386 @@ $_radius-md: 12px;
   font-size: 0.9rem;
 }
 
-// ── Utility shims ─────────────────────────────────────────────────────────────
-.p-6  { padding: 1.5rem; }
-.mb-4 { margin-bottom: 1rem; }
-.mb-2 { margin-bottom: 0.5rem; }
-.mt-4 { margin-top: 1rem; }
-.mr-2 { margin-right: 0.5rem; }
-.text-right { text-align: right; }
-.text-muted { color: $_muted; font-size: 0.8125rem; display: block; margin-top: 0.25rem; }
+// ── Form container ────────────────────────────────────────────────────────────
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-section {
+  background: $_surface2;
+  padding: 1.25rem;
+  border-radius: $_radius-md;
+  border: 1px solid $_border;
+}
+
+.section-title {
+  margin: 0 0 1rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: $_dim;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding-bottom: 0.625rem;
+  border-bottom: 1px solid $_border;
+}
+
+// ── Form grid ─────────────────────────────────────────────────────────────────
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.875rem;
+
+  &.align-items-end { align-items: end; }
+}
+
+.form-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+
+  label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: $_label;
+    letter-spacing: 0.01em;
+  }
+
+  input[type='text'],
+  input[type='number'],
+  input[type='date'],
+  select {
+    width: 100%;
+    height: 42px; // inputs and selects share one height so labels line up across a row
+    padding: 0.55rem 0.8rem;
+    border: 1.5px solid $_border2;
+    border-radius: $_radius-sm;
+    font-size: 0.9rem;
+    color: $_text;
+    background: $_surface;
+    transition: border-color 0.15s, box-shadow 0.15s;
+
+    &::placeholder { color: $_dim; }
+
+    &:focus {
+      outline: none;
+      border-color: $_red;
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 10%, transparent);
+    }
+  }
+}
+
+.checkbox-control {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+
+  label { cursor: pointer; }
+
+  input[type='checkbox'] {
+    width: 1.1rem;
+    height: 1.1rem;
+    accent-color: $_red;
+    cursor: pointer;
+  }
+}
+
+// ── Items table ───────────────────────────────────────────────────────────────
+.items-table {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+  background: $_surface;
+  border: 1px solid $_border;
+  border-radius: $_radius-sm;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 0.55rem 0.75rem;
+    text-align: left;
+    font-size: 0.8125rem;
+    border-bottom: 1px solid $_border;
+  }
+
+  th {
+    background: $_surface2;
+    color: $_dim;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+
+  td { color: $_text; font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: none; }
+  tr.table-active td { background: color-mix(in srgb, var(--app-primary) 5%, transparent); }
+
+  .text-right  { text-align: right; }
+  .text-center { text-align: center; white-space: nowrap; }
+}
+
+.product-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: $_red;
+  font-size: 0.8rem;
+  margin-left: 0.35rem;
+  opacity: 0.75;
+  cursor: pointer;
+  transition: opacity 0.15s;
+
+  &:hover { opacity: 1; text-decoration: underline; }
+}
+
+// Narrower tracks than the header grid so the five fields and the "Ajouter"
+// button share one row in the modal instead of orphaning the button below.
+.item-adder .form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+// Label + inline action on one line, same height as a plain label so the
+// fields of the row stay aligned.
+.label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.link-btn {
+  padding: 0;
+  background: none;
+  border: none;
+  color: $_red;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { text-decoration: underline; }
+  &:disabled { color: $_dim; cursor: not-allowed; }
+
+  &--alert { color: #dc2626; }
+}
+
+// ── Quick product creation: nested window above the purchase modal ───────────
+.nested-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(10, 15, 30, 0.55);
+}
+
+.nested-modal {
+  width: 100%;
+  max-width: 1000px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  background: $_surface;
+  border: 1px solid $_border;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.2);
+}
+
+.nested-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: $_surface2;
+  border-bottom: 1px solid $_border;
+  border-radius: 16px 16px 0 0;
+
+  h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: $_text;
+  }
+}
+
+.nested-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+// ── Quick stock creation panel ────────────────────────────────────────────────
+.stock-create {
+  margin-top: 0.875rem;
+  padding: 1rem 1.25rem;
+  background: $_surface;
+  border: 1.5px solid $_border2;
+  border-radius: $_radius-md;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stock-create-header {
+  h4 {
+    margin: 0 0 0.15rem;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: $_text;
+  }
+
+  p {
+    margin: 0;
+    color: $_muted;
+    font-size: 0.8125rem;
+  }
+}
+
+.stock-create-hint {
+  margin: 0;
+  color: $_muted;
+  font-size: 0.8rem;
+}
+
+.stock-create-error {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: $_radius-sm;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #b91c1c;
+  font-size: 0.8125rem;
+}
+
+.stock-create-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.add-item-btn {
+  height: 42px;
+  justify-content: center;
+}
+
+// ── Totals preview ────────────────────────────────────────────────────────────
+.totals-preview {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  padding: 1rem 1.25rem;
+  background: $_surface;
+  border-radius: $_radius-sm;
+  border: 1.5px solid $_border2;
+  box-shadow: $_shadow-sm;
+
+  .total-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .label {
+    font-size: 0.65rem;
+    color: $_dim;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  .value {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: $_text;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+
+    &.text-warning { color: #a16207; }
+  }
+
+  // The amount actually owed to the supplier closes the strip, on the right.
+  .total-net {
+    margin-left: auto;
+    text-align: right;
+
+    .value { color: $_red; }
+  }
+}
+
+.remise-input {
+  width: 90px;
+  padding: 0.3rem 0.5rem;
+  border: 1.5px solid $_border2;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: $_text;
+  background: $_surface;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:focus {
+    outline: none;
+    border-color: $_red;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 10%, transparent);
+  }
+}
+
+// ── Form actions ──────────────────────────────────────────────────────────────
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid $_border;
+}
 
 // ── Buttons ───────────────────────────────────────────────────────────────────
 .btn {
-  padding: 0.55rem 1.1rem;
+  padding: 0.6rem 1.35rem;
   border-radius: $_radius-sm;
-  border: 1.5px solid transparent;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
+  border: 1.5px solid transparent;
   transition: all 0.15s ease;
-  font-size: 0.875rem;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   white-space: nowrap;
+  line-height: 1.2;
 
-  &-primary {
-    background: $_red;
-    color: white;
-    border-color: $_red;
-    box-shadow: 0 2px 6px rgba(255, 45, 55, 0.3);
-
-    &:hover { background: $_red-dark; box-shadow: 0 4px 10px rgba(255, 45, 55, 0.4); transform: translateY(-1px); }
-    &:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
-  }
-
-  &-secondary {
+  &.btn-secondary {
     background: $_surface;
     color: $_strong;
     border-color: $_border2;
     box-shadow: $_shadow-sm;
 
     &:hover { background: $_surface2; border-color: #bcc6d4; }
+    &:disabled { opacity: 0.55; cursor: not-allowed; }
+  }
+
+  &.btn-primary {
+    background: $_red;
+    color: white;
+    border-color: $_red;
+    box-shadow: 0 2px 6px color-mix(in srgb, var(--app-primary) 30%, transparent);
+
+    &:hover { background: $_red-dark; box-shadow: 0 4px 10px color-mix(in srgb, var(--app-primary) 40%, transparent); transform: translateY(-1px); }
+    &:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
   }
 }
 
@@ -82,193 +426,31 @@ $_radius-md: 12px;
   &:hover { background: rgba(239, 68, 68, 0.08); color: #dc2626; }
 }
 
+// ── Utilities ─────────────────────────────────────────────────────────────────
 .text-danger  { color: #dc2626; }
+.text-primary { color: $_red; }
 .text-warning { color: #a16207; }
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-}
-
-// ── Form section ──────────────────────────────────────────────────────────────
-.form-section {
-  background: $_surface2;
-  padding: 1.25rem;
-  border-radius: $_radius-md;
-  border: 1px solid $_border;
-  margin-bottom: 1.25rem;
-}
-
-.section-title {
-  margin: 0 0 1rem;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: $_dim;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding-bottom: 0.625rem;
-  border-bottom: 1px solid $_border;
-}
-
-// ── Info grid ─────────────────────────────────────────────────────────────────
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0.875rem;
-
-  .form-group.checkbox-control {
-    flex-direction: row;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 1.25rem;
-
-    input[type='checkbox'] {
-      width: 1.1rem;
-      height: 1.1rem;
-      accent-color: $_red;
-      cursor: pointer;
-    }
-  }
-}
-
-// ── Bootstrap-style grid shims ────────────────────────────────────────────────
-.row           { display: flex; flex-wrap: wrap; margin: 0 -0.5rem; }
-.align-items-end { align-items: flex-end; }
-.w-100         { width: 100%; }
-.btn-block     { width: 100%; }
-.col-md-6  { flex: 0 0 50%;      max-width: 50%;      padding: 0 0.5rem; }
-.col-md-4  { flex: 0 0 33.3333%; max-width: 33.3333%; padding: 0 0.5rem; }
-.col-md-3  { flex: 0 0 25%;      max-width: 25%;      padding: 0 0.5rem; }
-.col-md-2  { flex: 0 0 16.6666%; max-width: 16.6666%; padding: 0 0.5rem; }
-.col-md-1  { flex: 0 0 8.3333%;  max-width: 8.3333%;  padding: 0 0.5rem; }
-
-// ── Form group ────────────────────────────────────────────────────────────────
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-
-  label {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: $_label;
-    letter-spacing: 0.01em;
-  }
-
-  .form-control {
-    padding: 0.55rem 0.75rem;
-    border: 1.5px solid $_border2;
-    border-radius: $_radius-sm;
-    font-size: 0.875rem;
-    color: $_text;
-    background: $_surface;
-    transition: border-color 0.15s, box-shadow 0.15s;
-
-    &::placeholder { color: $_dim; }
-
-    &:focus {
-      outline: none;
-      border-color: $_red;
-      box-shadow: 0 0 0 3px rgba(255, 45, 55, 0.1);
-    }
-  }
-}
-
-// ── Totals block ──────────────────────────────────────────────────────────────
-.totals-block {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.4rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid $_border;
-}
-
-.totals-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  min-width: 280px;
-  justify-content: flex-end;
-}
-
-.totals-label {
-  font-size: 0.875rem;
-  color: $_muted;
-  white-space: nowrap;
-}
-
-.totals-value {
-  font-size: 0.9rem;
-  font-weight: 600;
-  min-width: 110px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  color: $_strong;
-}
-
-.totals-total {
-  .totals-label {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: $_text;
-  }
-
-  .totals-value {
-    font-size: 1rem;
-    font-weight: 800;
-    color: $_text;
-    letter-spacing: -0.01em;
-  }
-}
-
-.totals-remise .totals-label {
-  color: $_muted;
-}
-
-.remise-input {
-  width: 80px;
-  text-align: right;
-  padding: 0.3rem 0.5rem;
-  border: 1.5px solid $_border2;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  color: $_text;
-  background: $_surface;
-  transition: border-color 0.15s, box-shadow 0.15s;
-
-  &:focus {
-    outline: none;
-    border-color: $_red;
-    box-shadow: 0 0 0 3px rgba(255, 45, 55, 0.1);
-  }
-}
-
-// ── Product link ──────────────────────────────────────────────────────────────
-.product-link {
-  background: none;
-  border: none;
-  padding: 0;
-  color: $_red;
-  font-size: 0.8rem;
-  margin-left: 0.35rem;
-  opacity: 0.75;
-  cursor: pointer;
-  transition: opacity 0.15s;
-
-  &:hover { opacity: 1; text-decoration: underline; }
-}
+.text-small   { font-size: 0.8125rem; }
 
 // ── Responsive ────────────────────────────────────────────────────────────────
 @media (max-width: 768px) {
-  .col-md-6, .col-md-4, .col-md-3, .col-md-2, .col-md-1 {
-    flex: 0 0 100%;
-    max-width: 100%;
+  .nested-overlay { padding: 0.5rem; }
+  .nested-body { padding: 1rem; }
+  .form-container { gap: 0.875rem; }
+  .form-section { padding: 0.875rem; }
+  .form-grid { grid-template-columns: 1fr; gap: 0.75rem; }
+
+  .totals-preview {
+    gap: 1rem;
+    padding: 0.875rem;
+    .value { font-size: 1rem; }
+    .total-net { margin-left: 0; text-align: left; }
   }
 
   .form-actions {
     flex-direction: column-reverse;
     .btn { width: 100%; justify-content: center; }
   }
+
+  .checkbox-control { margin-top: 0; }
 }

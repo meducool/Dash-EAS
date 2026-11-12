@@ -1,8 +1,9 @@
-import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, OnChanges, Output, SimpleChanges, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ServiceOrder } from '../../../core/models/service-order.model';
 import { PaymentStatus, ServiceOrderStatus } from '../../../core/constants/status.constants';
 import { DocumentPrintComponent, PrintDocument, PrintLine } from '../../../shared/document-print/document-print.component';
+import { isTypingTarget } from '../../../core/utils/detail-navigator';
 
 @Component({
   selector: 'app-service-order-detail',
@@ -11,13 +12,46 @@ import { DocumentPrintComponent, PrintDocument, PrintLine } from '../../../share
   templateUrl: './service-order-detail.component.html',
   styleUrl: './service-order-detail.component.scss',
 })
-export class ServiceOrderDetailComponent {
+export class ServiceOrderDetailComponent implements OnChanges {
   @Input({ required: true }) serviceOrder!: ServiceOrder;
   @Input() canEdit = false;
+  @Input() hasPrev = false;
+  @Input() hasNext = false;
+  /** e.g. "12 / 340" — global position in the filtered list. */
+  @Input() position: string | null = null;
   @Output() close = new EventEmitter<void>();
   @Output() edit = new EventEmitter<void>();
+  @Output() prev = new EventEmitter<void>();
+  @Output() next = new EventEmitter<void>();
 
   printDoc = signal<PrintDocument | null>(null);
+
+  /**
+   * Précédent / Suivant swaps `serviceOrder` while this instance stays alive
+   * (kept by `*ngIf`): a print preview opened on the previous record must not
+   * survive the switch. The parent also re-sets the same record once its full
+   * version is loaded — that must leave the preview alone.
+   */
+  ngOnChanges(changes: SimpleChanges): void {
+    const change = changes['serviceOrder'];
+    if (!change || change.firstChange) return;
+    if (change.previousValue?.id !== change.currentValue?.id) this.printDoc.set(null);
+  }
+
+  /** ← / → step through the records, unless typing in a field or previewing the print. */
+  @HostListener('document:keydown', ['$event'])
+  onKeydown(event: KeyboardEvent): void {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    if (isTypingTarget(event.target) || this.printDoc()) return;
+
+    if (event.key === 'ArrowLeft' && this.hasPrev) {
+      event.preventDefault();
+      this.prev.emit();
+    } else if (event.key === 'ArrowRight' && this.hasNext) {
+      event.preventDefault();
+      this.next.emit();
+    }
+  }
 
   openPrint(): void {
     const lines: PrintLine[] = (this.serviceOrder.items || []).map(item => {

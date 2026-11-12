@@ -217,19 +217,17 @@
             <th class="sortable" (click)="toggleSort('payment_status')">Paiement <span class="sort-icon">{{ sortBy() === 'payment_status' ? (sortDirection() === 'asc' ? '▲' : '▼') : '⇅' }}</span></th>
             <th class="sortable" (click)="toggleSort('status')">Statut <span class="sort-icon">{{ sortBy() === 'status' ? (sortDirection() === 'asc' ? '▲' : '▼') : '⇅' }}</span></th>
             <th>Créé par</th>
-            <th class="sortable" (click)="toggleSort('created_at')">Créé le <span class="sort-icon">{{ sortBy() === 'created_at' ? (sortDirection() === 'asc' ? '▲' : '▼') : '⇅' }}</span></th>
-            <th class="sortable" (click)="toggleSort('updated_at')">Modifié le <span class="sort-icon">{{ sortBy() === 'updated_at' ? (sortDirection() === 'asc' ? '▲' : '▼') : '⇅' }}</span></th>
           </tr>
         </thead>
         <tbody>
           <tr *ngIf="loading()">
-            <td colspan="17" class="text-center py-4">
+            <td colspan="15" class="text-center py-4">
               <div class="spinner"></div> Chargement...
             </td>
           </tr>
 
           <tr *ngIf="!loading() && sales().length === 0">
-            <td colspan="17" class="text-center py-4 text-muted">
+            <td colspan="15" class="text-center py-4 text-muted">
               Aucune vente trouvée.
             </td>
           </tr>
@@ -297,8 +295,6 @@
               </select>
             </td>
             <td>{{ sale.creator?.name || '-' }}</td>
-            <td>{{ sale.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
-            <td>{{ sale.updated_at | date:'dd/MM/yyyy HH:mm' }}</td>
           </tr>
         </tbody>
       </table>
