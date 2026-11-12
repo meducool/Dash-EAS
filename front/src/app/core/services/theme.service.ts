@@ -31,7 +31,8 @@ export class ThemeService {
 
     root.style.setProperty('--app-primary', primaryColor);
     root.style.setProperty('--app-accent', accentColor);
-    root.style.setProperty('--app-surface', surfaceColor);
+    // Light-mode surface only: dark mode keeps its own surface (styles/_tokens.scss).
+    root.style.setProperty('--app-surface-custom', surfaceColor);
     root.setAttribute('data-theme-mode', themeMode);
     this.applyLayoutAttributes(root, menuLayout, navbarVariant, contentWidth);
 
