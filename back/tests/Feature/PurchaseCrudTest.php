@@ -454,6 +454,53 @@ class PurchaseCrudTest extends TestCase
         $this->assertEquals($stockAfterCreate - 4 + 2, $this->stock->quantity);
     }
 
+    public function test_update_without_quantity_change_records_no_stock_movement(): void
+    {
+        Sanctum::actingAs($this->user, [], 'web');
+        $purchase = $this->createPurchase(['status' => 'EN COURS']);
+        $stockBefore = $this->stock->fresh()->quantity;
+        $movementsBefore = StockMovement::query()->where('stock_id', $this->stock->id)->count();
+
+        // Same line (4 units), only the price changes.
+        $this->putJson("/api/purchases/{$purchase->id}", $this->validPayload([
+            'items' => [['product_id' => $this->product->id, 'stock_id' => $this->stock->id, 'quantity' => 4, 'unit_price' => 120]],
+        ]))->assertOk();
+
+        $this->assertSame($stockBefore, $this->stock->fresh()->quantity);
+        $this->assertSame($movementsBefore, StockMovement::query()->where('stock_id', $this->stock->id)->count());
+    }
+
+    public function test_update_records_only_the_net_quantity_change(): void
+    {
+        Sanctum::actingAs($this->user, [], 'web');
+        $purchase = $this->createPurchase(['status' => 'EN COURS']);
+        $stockBefore = (int) $this->stock->fresh()->quantity;
+        $lastId = (int) StockMovement::query()->max('id');
+
+        // 4 → 7 units: one movement of +3, not "-4 then +7".
+        $this->putJson("/api/purchases/{$purchase->id}", $this->validPayload([
+            'items' => [['product_id' => $this->product->id, 'stock_id' => $this->stock->id, 'quantity' => 7, 'unit_price' => 100]],
+        ]))->assertOk();
+
+        $new = StockMovement::query()->where('id', '>', $lastId)->where('stock_id', $this->stock->id)->get();
+        $this->assertCount(1, $new);
+        $this->assertSame(StockMovement::TYPE_PURCHASE_IN, $new[0]->type);
+        $this->assertSame($stockBefore, (int) $new[0]->quantity_before);
+        $this->assertSame($stockBefore + 3, (int) $new[0]->quantity_after);
+        $this->assertSame(3, (int) $new[0]->delta);
+
+        // 7 → 5 units: one movement of -2, typed as a purchase withdrawal.
+        $lastId = (int) StockMovement::query()->max('id');
+        $this->putJson("/api/purchases/{$purchase->id}", $this->validPayload([
+            'items' => [['product_id' => $this->product->id, 'stock_id' => $this->stock->id, 'quantity' => 5, 'unit_price' => 100]],
+        ]))->assertOk();
+
+        $new = StockMovement::query()->where('id', '>', $lastId)->where('stock_id', $this->stock->id)->get();
+        $this->assertCount(1, $new);
+        $this->assertSame(StockMovement::TYPE_PURCHASE_OUT, $new[0]->type);
+        $this->assertSame(-2, (int) $new[0]->delta);
+    }
+
     // -------------------------------------------------------------------------
     // PATCH /api/purchases/{purchase}/status
     // -------------------------------------------------------------------------

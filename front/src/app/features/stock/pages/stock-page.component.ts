@@ -1,4 +1,6 @@
 import { CommonModule } from '@angular/common';
+import { DepotSelectComponent } from '../../../shared/depot-select/depot-select.component';
+import { stockMovementClass, stockMovementLabel } from '../../../core/utils/stock-movement-labels';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
@@ -6,11 +8,12 @@ import { AuthService } from '../../../core/services/auth.service';
 import { StockService } from '../data-access/stock.service';
 import { Stock, StockFilters, StockMovement, StockSummary } from '../models/stock.model';
 import { AutoRefreshControlComponent } from '../../../shared/auto-refresh-control/auto-refresh-control.component';
+import { InventoryTabsComponent } from '../../../shared/inventory-tabs/inventory-tabs.component';
 
 @Component({
   selector: 'app-stock-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, AutoRefreshControlComponent],
+  imports: [DepotSelectComponent, CommonModule, FormsModule, AutoRefreshControlComponent, InventoryTabsComponent],
   templateUrl: './stock-page.component.html',
   styleUrl: './stock-page.component.scss',
 })
@@ -375,34 +378,17 @@ export class StockPageComponent implements OnInit {
   }
 
   movementTypeLabel(type: string | null | undefined): string {
-    switch (type) {
-      case 'initial':
-        return 'Initial';
-      case 'adjustment':
-        return 'Ajustement';
-      case 'deletion':
-        return 'Suppression';
-      case 'import':
-        return 'Import';
-      case 'sale':
-        return 'Vente';
-      case 'purchase':
-        return 'Achat';
-      default:
-        return type || '-';
-    }
+    return stockMovementLabel(type);
   }
 
-  movementQuantityLabel(movement: StockMovement): string {
-    if (movement.quantity_change !== null && movement.quantity_change !== undefined) {
-      return `${movement.quantity_change > 0 ? '+' : ''}${movement.quantity_change}`;
-    }
+  movementTypeClass(type: string | null | undefined): string {
+    return stockMovementClass(type);
+  }
 
-    if (movement.quantity_after !== null && movement.quantity_after !== undefined) {
-      return `${movement.quantity_after}`;
-    }
-
-    return '-';
+  /** "+28" / "-28": the change, after − before. */
+  movementDelta(movement: StockMovement): number {
+    if (movement.delta !== null && movement.delta !== undefined) return Number(movement.delta);
+    return Number(movement.quantity_after ?? 0) - Number(movement.quantity_before ?? 0);
   }
 
   movementLocationLabel(movement: StockMovement): string {

@@ -37,6 +37,7 @@ export class BrandFormComponent implements OnInit, OnChanges {
     if (this.brand) {
       this.formData = {
         name: this.brand.name,
+        code: this.brand.code ?? '',
         is_active: this.brand.is_active,
       };
       this.logoFile = undefined;
@@ -46,6 +47,7 @@ export class BrandFormComponent implements OnInit, OnChanges {
 
     this.formData = {
       name: '',
+      code: '',
       is_active: true,
     };
     this.logoFile = undefined;

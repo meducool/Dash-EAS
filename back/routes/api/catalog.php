@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BrandController;
+use App\Http\Controllers\BrandProfileController;
 use App\Http\Controllers\CarrierController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\ClientController;
@@ -22,6 +23,11 @@ Route::post('brands', [BrandController::class, 'store'])->middleware('permission
 Route::put('brands/{brand}', [BrandController::class, 'update'])->middleware('permission:edit brands');
 Route::patch('brands/{brand}/toggle-active', [BrandController::class, 'toggleActive'])->middleware('permission:edit brands');
 Route::delete('brands/{brand}', [BrandController::class, 'destroy'])->middleware('permission:delete brands');
+// Tyre profiles of a brand
+Route::get('brands/{brand}/profiles', [BrandProfileController::class, 'index'])->middleware('permission:view brands');
+Route::post('brands/{brand}/profiles', [BrandProfileController::class, 'store'])->middleware('permission:edit brands');
+Route::put('brand-profiles/{profile}', [BrandProfileController::class, 'update'])->middleware('permission:edit brands');
+Route::delete('brand-profiles/{profile}', [BrandProfileController::class, 'destroy'])->middleware('permission:edit brands');
 
 // Products
 Route::middleware('permission:view products')->group(function () {
@@ -29,6 +35,7 @@ Route::middleware('permission:view products')->group(function () {
     Route::get('products-filters', [ProductController::class, 'filters']);
     Route::get('products/{product}', [ProductController::class, 'show']);
 });
+Route::get('products-reference-preview', [ProductController::class, 'referencePreview'])->middleware('permission:create products');
 Route::post('products', [ProductController::class, 'store'])->middleware('permission:create products');
 Route::put('products/{product}', [ProductController::class, 'update'])->middleware('permission:edit products');
 Route::patch('products/{product}/toggle-active', [ProductController::class, 'toggleActive'])->middleware('permission:edit products');
@@ -64,6 +71,7 @@ Route::put('partners/{partner}', [PartnerController::class, 'update'])->middlewa
 Route::delete('partners/{partner}', [PartnerController::class, 'destroy'])->middleware('permission:delete partners');
 
 // Clients
+Route::get('clients-summary', [ClientController::class, 'summary'])->middleware('permission:view clients');
 Route::get('clients', [ClientController::class, 'index'])->middleware('permission:view clients');
 Route::get('clients/export', [ClientController::class, 'export'])->middleware('permission:view clients');
 Route::get('clients/{client}', [ClientController::class, 'show'])->middleware('permission:view clients');

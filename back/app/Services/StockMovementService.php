@@ -8,6 +8,82 @@ use App\Models\StockMovement;
 class StockMovementService
 {
     /**
+     * Movements held back while netted() runs (static: every service holds
+     * its own instance of this class, and a document update may go through
+     * several of them). Null when nothing is being netted.
+     *
+     * @var array<int, array<string, mixed>>|null
+     */
+    private static ?array $buffer = null;
+
+    /**
+     * Runs `$work` — typically "give back the old lines, then take the new
+     * ones" when a sale / purchase / service order is edited — and records
+     * only the net change per stock lot: one movement from the first
+     * quantity to the last, or none when the quantity ends where it started.
+     *
+     * @template T
+     *
+     * @param  callable(): T  $work
+     * @return T
+     */
+    public function netted(callable $work)
+    {
+        if (self::$buffer !== null) {
+            return $work(); // already netting: the outer call flushes
+        }
+
+        self::$buffer = [];
+        try {
+            $result = $work();
+            $pending = self::$buffer;
+        } finally {
+            self::$buffer = null;
+        }
+
+        foreach ($this->net($pending) as $attributes) {
+            $this->insert($attributes);
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $movements  in the order they happened
+     * @return array<int, array<string, mixed>>
+     */
+    private function net(array $movements): array
+    {
+        $groups = [];
+        foreach ($movements as $i => $movement) {
+            $key = $movement['stock_id'] === null ? "row-{$i}" : "stock-{$movement['stock_id']}";
+            $groups[$key][] = $movement;
+        }
+
+        $netted = [];
+        foreach ($groups as $group) {
+            $first = $group[0];
+            $last = $group[count($group) - 1];
+            $delta = (int) $last['quantity_after'] - (int) $first['quantity_before'];
+            if ($delta === 0) {
+                continue;
+            }
+
+            // Type, reference and reason of the last movement going the same way as the net change.
+            $sameWay = array_values(array_filter($group, fn ($m) => ((int) $m['delta'] > 0) === ($delta > 0)));
+            $model = $sameWay ? $sameWay[count($sameWay) - 1] : $last;
+
+            $netted[] = array_merge($model, [
+                'quantity_before' => (int) $first['quantity_before'],
+                'quantity_after' => (int) $last['quantity_after'],
+                'delta' => $delta,
+            ]);
+        }
+
+        return $netted;
+    }
+
+    /**
      * @param  Stock  $stock
      * @param  int|null  $userId
      * @return void
@@ -243,8 +319,22 @@ class StockMovementService
      * @param  array<string, mixed>  $attributes
      * @return void
      */
+    /**
+     * Only an operation that changes the quantity is a movement: a zero delta
+     * (product created with an empty lot, price or depot edited…) is not kept.
+     */
     private function insert($attributes)
     {
+        if (self::$buffer !== null) {
+            self::$buffer[] = $attributes + ['stock_id' => null];
+
+            return;
+        }
+
+        if ((int) ($attributes['delta'] ?? 0) === 0) {
+            return;
+        }
+
         StockMovement::create($attributes);
     }
 }

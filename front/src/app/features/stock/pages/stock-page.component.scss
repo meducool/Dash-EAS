@@ -1,2 +1,142 @@
 @use '../../_page-layout' as layout;
 @include layout.page-layout();
+
+// Tokens mirror _page-layout (kept local: the mixin does not export them).
+$_red:      var(--app-primary);
+$_text:     #0f172a;
+$_muted:    #64748b;
+$_border:   #e8edf3;
+
+// ── Modal headers (correction, movements) ────────────────────────────────────
+.modal-header h2 { line-height: 1.25; }
+
+.modal-subtitle {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: $_muted;
+}
+
+.movements-modal { max-width: 1000px; }
+
+// ── Correction de stock ──────────────────────────────────────────────────────
+.correction-modal {
+  max-width: 620px;
+
+  .modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .form-control { width: 100%; }
+
+  textarea.form-control {
+    min-height: 5rem;
+    resize: vertical;
+    font-family: inherit;
+  }
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.25rem;
+
+  @media (max-width: 560px) { grid-template-columns: 1fr; }
+}
+
+.reason-group {
+  padding-top: 1rem;
+  border-top: 1px solid $_border;
+}
+
+.required-hint {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #94a3b8;
+}
+
+.form-error {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #fecdd3;
+  border-radius: 8px;
+  background: #fff1f2;
+  color: #be123c;
+  font-size: 0.85rem;
+}
+
+// ── Filtres : cases à cocher ─────────────────────────────────────────────────
+// Each option is a chip aligned with the selects; checked = red accent.
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+  grid-column: span 2;
+
+  @media (max-width: 768px) { grid-column: auto; }
+}
+
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #d0d9e4;
+  border-radius: 8px;
+  background: #fff;
+  color: $_text;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+
+  input[type='checkbox'] {
+    width: 1rem;
+    height: 1rem;
+    margin: 0;
+    accent-color: $_red;
+    cursor: pointer;
+  }
+
+  &:hover { border-color: #c4cdd8; background: #f8fafc; }
+
+  &:has(input:checked) {
+    border-color: color-mix(in srgb, var(--app-primary) 40%, transparent);
+    background: color-mix(in srgb, var(--app-primary) 6%, transparent);
+    color: #b91c1c;
+  }
+
+  &:has(input:focus-visible) { box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 15%, transparent); }
+}
+
+
+// ── Mouvements du produit ────────────────────────────────────────────────────
+.movements-table {
+  .mv-num { font-variant-numeric: tabular-nums; }
+  .mv-delta { font-weight: 700; }
+  .mv-delta-up { color: #15803d; }
+  .mv-delta-down { color: #dc2626; }
+}
+
+.mv-chip {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &.mv-green    { background: #ebf8f2; color: #1f7a52; }
+  &.mv-red      { background: #fff5f5; color: #c53030; }
+  &.mv-blue     { background: #ebf8ff; color: #2b6cb0; }
+  &.mv-orange   { background: #fff7ed; color: #c05621; }
+  &.mv-grey     { background: #edf2f7; color: #4a5568; }
+  &.mv-dark-red { background: #fff5f5; color: #9b2c2c; }
+}

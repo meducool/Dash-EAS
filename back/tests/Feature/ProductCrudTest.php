@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Brand;
+use App\Models\BrandProfile;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
@@ -21,7 +22,9 @@ class ProductCrudTest extends TestCase
     use DatabaseTransactions;
 
     private User $user;
+
     private Brand $brand;
+
     private Product $tyreProduct;
 
     protected function setUp(): void
@@ -53,10 +56,10 @@ class ProductCrudTest extends TestCase
         ]);
         $this->user->assignRole($admin);
 
-        $this->brand = Brand::query()->create(['name' => 'TestBrand-' . uniqid(), 'is_active' => true]);
+        $this->brand = Brand::query()->create(['name' => 'TestBrand-'.uniqid(), 'is_active' => true]);
 
         $this->tyreProduct = Product::query()->create([
-            'reference' => 'MIC-2055516-' . fake()->unique()->numerify('###'),
+            'reference' => 'MIC-2055516-'.fake()->unique()->numerify('###'),
             'type' => 'tyre',
             'brand_id' => $this->brand->id,
             'is_active' => true,
@@ -374,26 +377,119 @@ class ProductCrudTest extends TestCase
             ->assertJsonValidationErrors(['type']);
     }
 
-    public function test_store_validates_unique_reference(): void
+    public function test_parts_and_services_keep_a_free_reference_tyres_ignore_it(): void
+    {
+        Sanctum::actingAs($this->user, [], 'web');
+        $free = 'Castrol 5W30 LL '.uniqid();
+
+        $this->postJson('/api/products', ['type' => 'part', 'reference' => "  {$free} "])
+            ->assertCreated()
+            ->assertJsonPath('reference', $free);
+        // Still unique, whatever the case.
+        $this->postJson('/api/products', ['type' => 'service', 'reference' => strtoupper($free)])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('reference');
+
+        // Left empty: generated (P / S + id).
+        $part = $this->postJson('/api/products', ['type' => 'part'])->assertCreated();
+        $this->assertSame('P'.str_pad((string) $part->json('id'), 7, '0', STR_PAD_LEFT), $part->json('reference'));
+
+        // Tyre: a typed reference is ignored.
+        $tyre = $this->postJson('/api/products', ['type' => 'tyre', 'reference' => 'MA-REF-'.uniqid()])->assertCreated();
+        $this->assertStringStartsNotWith('MA-REF-', $tyre->json('reference'));
+    }
+
+    public function test_store_generates_the_tyre_reference_from_brand_and_profile_codes(): void
+    {
+        Sanctum::actingAs($this->user, [], 'web');
+        $brand = Brand::query()->create(['name' => 'GITI TEST '.uniqid(), 'code' => 'GZ', 'is_active' => true]);
+        BrandProfile::query()->create(['brand_id' => $brand->id, 'name' => 'SYNERGY', 'code' => 'SYN']);
+        $payload = [
+            'type' => 'tyre',
+            'brand_id' => $brand->id,
+            'profile' => 'synergy',
+            'tire_width' => 205,
+            'tire_height' => 60,
+            'tire_diameter' => 16,
+            'tire_load_index' => '92',
+            'tire_speed_index' => 'h',
+        ];
+
+        $this->getJson('/api/products-reference-preview?'.http_build_query($payload))
+            ->assertOk()
+            ->assertJsonPath('reference', 'GZ205601692H-SYN');
+
+        $this->postJson('/api/products', $payload)->assertCreated()->assertJsonPath('reference', 'GZ205601692H-SYN');
+        // Same tyre again: still unique.
+        $this->postJson('/api/products', $payload)->assertCreated()->assertJsonPath('reference', 'GZ205601692H-SYN-2');
+
+        // Run flat, no profile code yet → initials; service → S + id.
+        $this->postJson('/api/products', array_merge($payload, ['profile' => 'Pilot Sport 4', 'tire_runflat' => true]))
+            ->assertCreated()
+            ->assertJsonPath('reference', 'GZ205601692HRF-PS4');
+    }
+
+    public function test_reference_is_locked_except_for_an_administrator(): void
+    {
+        $product = $this->tyreProduct;
+        $original = $product->reference;
+        $payload = ['type' => 'tyre', 'reference' => 'NEW-REF-'.uniqid(), 'brand_id' => $this->brand->id];
+
+        $manager = User::factory()->create();
+        $manager->givePermissionTo('edit products');
+        Sanctum::actingAs($manager, [], 'web');
+
+        $this->putJson("/api/products/{$product->id}", $payload)->assertStatus(422)->assertJsonValidationErrors('reference');
+        // Sending the same reference (or none) is fine and keeps it.
+        $this->putJson("/api/products/{$product->id}", array_merge($payload, ['reference' => $original]))->assertOk();
+        $this->putJson("/api/products/{$product->id}", array_merge($payload, ['reference' => null]))
+            ->assertOk()
+            ->assertJsonPath('reference', $original);
+
+        $this->app['auth']->forgetGuards(); // the guard keeps the first user between requests
+        Sanctum::actingAs($this->user, [], 'web'); // Administrator
+        $this->putJson("/api/products/{$product->id}", array_merge($payload, ['reference' => ' new ref x ']))
+            ->assertOk()
+            ->assertJsonPath('reference', 'NEWREFX');
+        $this->assertDatabaseHas('activity_logs', ['entity_type' => 'produit', 'entity_id' => $product->id, 'action' => 'UPDATE']);
+    }
+
+    public function test_store_creates_the_first_stock_lot_with_location_dot_and_origin(): void
+    {
+        Sanctum::actingAs($this->user, [], 'web');
+
+        $response = $this->postJson('/api/products', [
+            'type' => 'part',
+            'reference' => 'PART-'.fake()->unique()->numerify('######'),
+            'stock' => ['depot' => ' ATELIER ', 'zone' => 'A1', 'dot' => '2426', 'made_in' => 'France'],
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('stocks', [
+            'product_id' => $response->json('id'),
+            'quantity' => 0,
+            'depot' => 'ATELIER',
+            'zone' => 'A1',
+            'dot' => '2426',
+            'made_in' => 'France',
+        ]);
+    }
+
+    public function test_store_validates_stock_lot_fields(): void
     {
         Sanctum::actingAs($this->user, [], 'web');
 
         $this->postJson('/api/products', [
             'type' => 'tyre',
-            'reference' => $this->tyreProduct->reference,
-        ])->assertUnprocessable()
-            ->assertJsonValidationErrors(['reference']);
+            'stock' => ['zone' => str_repeat('Z', 51)],
+        ])->assertStatus(422)->assertJsonValidationErrors('stock.zone');
     }
 
     public function test_store_creates_tyre_product_with_details_and_zero_stock(): void
     {
         Sanctum::actingAs($this->user, [], 'web');
 
-        $ref = 'PIR-' . fake()->unique()->numerify('######');
-
         $response = $this->postJson('/api/products', [
             'type' => 'tyre',
-            'reference' => $ref,
             'brand_id' => $this->brand->id,
             'tire_width' => 225,
             'tire_height' => 45,
@@ -401,9 +497,9 @@ class ProductCrudTest extends TestCase
             'tire_season' => 'summer',
         ]);
 
-        $response->assertCreated()
-            ->assertJsonPath('type', 'tyre')
-            ->assertJsonPath('reference', $ref);
+        $response->assertCreated()->assertJsonPath('type', 'tyre');
+        // Generated: brand code (first letter when none) + 225 45 17.
+        $this->assertMatchesRegularExpression('/^T2254517(-\d+)?$/', $response->json('reference'));
 
         $productId = $response->json('id');
 
@@ -426,7 +522,7 @@ class ProductCrudTest extends TestCase
 
         $response = $this->postJson('/api/products', [
             'type' => 'service',
-            'reference' => 'SVC-MONTAGE-' . fake()->unique()->numerify('###'),
+            'reference' => 'SVC-MONTAGE-'.fake()->unique()->numerify('###'),
             'service_category' => 'tires',
             'selling_price' => 150.00,
         ]);
@@ -446,7 +542,7 @@ class ProductCrudTest extends TestCase
 
         $response = $this->postJson('/api/products', [
             'type' => 'part',
-            'reference' => 'PART-BRAKE-' . fake()->unique()->numerify('###'),
+            'reference' => 'PART-BRAKE-'.fake()->unique()->numerify('###'),
             'part_category' => 'brakes',
             'oem_reference' => 'OEM-12345',
         ]);
@@ -601,14 +697,14 @@ class ProductCrudTest extends TestCase
         $suffix = fake()->unique()->numerify('###');
 
         $withProfile = Product::query()->create([
-            'reference' => 'REF-PROF-' . $suffix,
+            'reference' => 'REF-PROF-'.$suffix,
             'type' => 'tyre',
             'profile' => 'Sport',
             'is_active' => true,
         ]);
 
         Product::query()->create([
-            'reference' => 'REF-NO-PROF-' . $suffix,
+            'reference' => 'REF-NO-PROF-'.$suffix,
             'type' => 'tyre',
             'profile' => null,
             'is_active' => true,
@@ -631,7 +727,7 @@ class ProductCrudTest extends TestCase
         $suffix = fake()->unique()->numerify('###');
 
         $inactive = Product::query()->create([
-            'reference' => 'REF-INACTIVE-' . $suffix,
+            'reference' => 'REF-INACTIVE-'.$suffix,
             'type' => 'tyre',
             'is_active' => false,
         ]);
@@ -654,15 +750,15 @@ class ProductCrudTest extends TestCase
         $suffix = fake()->unique()->numerify('###');
 
         Product::query()->create([
-            'reference' => 'REF-SPORT-' . $suffix,
+            'reference' => 'REF-SPORT-'.$suffix,
             'type' => 'tyre',
-            'profile' => 'Profil-' . $suffix,
+            'profile' => 'Profil-'.$suffix,
             'is_active' => true,
         ]);
 
         $response = $this->getJson('/api/products-filters');
         $response->assertOk()->assertJsonStructure(['brands', 'types', 'seasons', 'profiles']);
 
-        $this->assertContains('Profil-' . $suffix, $response->json('profiles'));
+        $this->assertContains('Profil-'.$suffix, $response->json('profiles'));
     }
 }

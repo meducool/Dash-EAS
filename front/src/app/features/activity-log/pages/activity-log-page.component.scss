@@ -1,7 +1,7 @@
 @use '../../_page-layout' as layout;
 @include layout.page-layout();
 
-$_red:     #ff2d37;
+$_red:     var(--app-primary);
 $_text:    #0f172a;
 $_muted:   #64748b;
 $_surface: #ffffff;
@@ -34,7 +34,7 @@ $_bg:      #f7fafc;
     color: $_text;
     outline: none;
 
-    &:focus { border-color: $_red; box-shadow: 0 0 0 2px rgba(255, 45, 55, 0.12); }
+    &:focus { border-color: $_red; box-shadow: 0 0 0 2px color-mix(in srgb, var(--app-primary) 12%, transparent); }
   }
 
   .filter-search { min-width: 200px; }
@@ -56,7 +56,7 @@ $_bg:      #f7fafc;
 .btn-apply {
   background: $_red;
   color: #fff;
-  &:hover { background: #cc0a13; }
+  &:hover { background: color-mix(in srgb, var(--app-primary) 80%, #000); }
 }
 
 .btn-reset {
@@ -162,7 +162,7 @@ $_bg:      #f7fafc;
 .entity-badge {
   letter-spacing: 0.02em;
 
-  &.entity-vente       { background: rgba(255, 45, 55, 0.08);  color: #c0020b; }
+  &.entity-vente       { background: color-mix(in srgb, var(--app-primary) 8%, transparent);  color: #c0020b; }
   &.entity-achat       { background: rgba(59, 130, 246, 0.1);  color: #1d4ed8; }
   &.entity-service     { background: rgba(168, 85, 247, 0.1);  color: #7c3aed; }
   &.entity-compte      { background: rgba(16, 185, 129, 0.10); color: #065f46; }

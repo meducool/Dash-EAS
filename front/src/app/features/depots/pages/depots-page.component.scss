@@ -1,0 +1,81 @@
+@use '../../_page-layout' as layout;
+@include layout.page-layout();
+
+.depots-card {
+  max-width: 720px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.depot-add {
+  display: flex;
+  gap: 0.5rem;
+
+  .form-control {
+    flex: 1;
+    min-width: 0;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid #d0d9e4;
+    border-radius: 8px;
+    font-size: 0.875rem;
+
+    &:focus { outline: none; border-color: var(--app-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 10%, transparent); }
+  }
+}
+
+.depot-error {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: #fff1f2;
+  color: #be123c;
+  font-size: 0.82rem;
+}
+
+.depot-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid #e8edf3;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.depot-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.9rem;
+  padding: 0.4rem 0.9rem;
+
+  & + & { border-top: 1px solid #e8edf3; }
+  &:hover { background: #f8fafc; }
+}
+
+.depot-name { flex: 1; min-width: 0; font-weight: 600; color: #0f172a; overflow-wrap: anywhere; }
+.depot-count { font-size: 0.8rem; color: #94a3b8; white-space: nowrap; }
+
+.depot-rename {
+  flex: 1;
+  min-width: 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #d0d9e4;
+  border-radius: 8px;
+  font-size: 0.875rem;
+
+  &:focus { outline: none; border-color: var(--app-primary); }
+}
+
+.depot-actions {
+  display: inline-flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.depot-footer {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #64748b;
+}

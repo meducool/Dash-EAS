@@ -1,0 +1,28 @@
+@if (loadFailed()) {
+  <input type="text" [id]="inputId" [class]="controlClass" maxlength="100" autocomplete="off"
+         placeholder="Dépôt" [value]="value()" [disabled]="disabled()"
+         (input)="onTyped($any($event.target).value)">
+} @else if (!creating()) {
+  <select [id]="inputId" [class]="controlClass" [disabled]="disabled()"
+          (change)="onSelect($any($event.target).value)">
+    <option value="" [selected]="!value()">{{ placeholder }}</option>
+    @for (name of options(); track name) {
+      <option [value]="name" [selected]="name === value()">{{ name }}</option>
+    }
+    @if (canCreate) {
+      <option value="__new__">+ Nouveau dépôt…</option>
+    }
+  </select>
+} @else {
+  <div class="depot-create" (keydown.enter)="$event.preventDefault(); confirmCreate()" (keydown.escape)="cancelCreate()">
+    <input type="text" [id]="inputId" [class]="controlClass" maxlength="100" autocomplete="off"
+           placeholder="Nom du nouveau dépôt" aria-label="Nom du nouveau dépôt"
+           [value]="newName()" (input)="newName.set($any($event.target).value)">
+    <button type="button" class="depot-btn depot-btn--ok" (click)="confirmCreate()"
+            [disabled]="saving() || !newName().trim()" title="Créer le dépôt">{{ saving() ? '…' : 'OK' }}</button>
+    <button type="button" class="depot-btn" (click)="cancelCreate()" [disabled]="saving()" title="Annuler" aria-label="Annuler">✕</button>
+  </div>
+  @if (error()) {
+    <span class="depot-error" role="alert">{{ error() }}</span>
+  }
+}

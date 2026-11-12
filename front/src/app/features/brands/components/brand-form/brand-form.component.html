@@ -9,6 +9,13 @@
       </div>
 
       <div class="form-control">
+        <label for="brand_code">Code (références)</label>
+        <input type="text" id="brand_code" name="code" [(ngModel)]="formData.code" maxlength="10"
+               pattern="[A-Za-z0-9]*" placeholder="Ex: M, GT, BFG" autocomplete="off">
+        <small class="field-hint">Début des références des pneus de la marque, ex. <strong>GT</strong>205601692H-SYN.</small>
+      </div>
+
+      <div class="form-control">
         <label>Logo</label>
         <input type="file" accept="image/*" (change)="onFileChange($event)">
         <img *ngIf="logoPreview" [src]="logoPreview" alt="Aperçu" class="logo-preview">

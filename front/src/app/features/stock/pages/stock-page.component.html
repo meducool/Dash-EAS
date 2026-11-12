@@ -1,7 +1,7 @@
 <div class="page-container">
   <div class="header">
     <div class="title-section">
-      <h1>Stock</h1>
+      <h1>Produits &amp; Inventaire</h1>
       <p class="subtitle">Consultez en temps réel les articles disponibles dans vos dépôts et exportez-les en Excel.</p>
     </div>
 
@@ -12,6 +12,8 @@
       <app-auto-refresh-control pageKey="stock" (refresh)="loadData()" />
     </div>
   </div>
+
+  <app-inventory-tabs active="stock" />
 
   <p class="export-error" *ngIf="exportError">{{ exportError }}</p>
 
@@ -272,12 +274,7 @@
         </div>
         <div class="form-group">
           <label>Dépôt</label>
-          <input
-            type="text"
-            class="form-control"
-            [ngModel]="editDepot()"
-            (ngModelChange)="editDepot.set($event)"
-          />
+          <app-depot-select [ngModel]="editDepot()" (ngModelChange)="editDepot.set($event)" />
         </div>
         <div class="form-group">
           <label>Zone</label>
@@ -359,7 +356,9 @@
             <tr>
               <th>Date</th>
               <th>Type</th>
-              <th>Quantité</th>
+              <th class="text-right">Avant</th>
+              <th class="text-right">Après</th>
+              <th class="text-right">Δ</th>
               <th>Emplacement</th>
               <th>Utilisateur</th>
               <th>Motif</th>
@@ -367,15 +366,19 @@
           </thead>
           <tbody>
             <tr *ngIf="movements().length === 0">
-              <td colspan="6" class="text-center py-4 text-muted">
+              <td colspan="8" class="text-center py-4 text-muted">
                 Aucun mouvement trouvé pour ce produit.
               </td>
             </tr>
 
             <tr *ngFor="let movement of movements()">
               <td>{{ formatDate(movement.created_at) }}</td>
-              <td>{{ movementTypeLabel(movement.type) }}</td>
-              <td>{{ movementQuantityLabel(movement) }}</td>
+              <td><span class="mv-chip" [ngClass]="movementTypeClass(movement.type)">{{ movementTypeLabel(movement.type) }}</span></td>
+              <td class="text-right mv-num">{{ movement.quantity_before ?? '-' }}</td>
+              <td class="text-right mv-num">{{ movement.quantity_after ?? '-' }}</td>
+              <td class="text-right mv-num mv-delta" [class.mv-delta-up]="movementDelta(movement) > 0" [class.mv-delta-down]="movementDelta(movement) < 0">
+                {{ movementDelta(movement) > 0 ? '+' : '' }}{{ movementDelta(movement) }}
+              </td>
               <td>{{ movementLocationLabel(movement) }}</td>
               <td>{{ movement.user?.name || '-' }}</td>
               <td>{{ movement.reason || '-' }}</td>

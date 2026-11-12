@@ -28,6 +28,7 @@ class UpdateBrandRequest extends FormRequest
                 'max:255',
                 Rule::unique('brands', 'name')->ignore($brand->id),
             ],
+            'code' => ['nullable', 'string', 'max:10', 'regex:/^[A-Za-z0-9]+$/'],
             'logo' => 'nullable|image|max:2048',
             'is_active' => 'nullable',
         ];

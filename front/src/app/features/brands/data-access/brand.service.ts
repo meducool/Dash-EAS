@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Brand, BrandPayload, PaginatedResponse } from '../models/brand.model';
+import { Brand, BrandPayload, BrandProfile, PaginatedResponse } from '../models/brand.model';
 import { environment } from '../../../../environments/environment';
 
 @Injectable({
@@ -35,6 +35,7 @@ export class BrandService {
   private buildFormData(payload: BrandPayload, logo?: File): FormData {
     const formData = new FormData();
     formData.append('name', payload.name);
+    formData.append('code', (payload.code ?? '').trim());
     formData.append('is_active', payload.is_active ? '1' : '0');
     if (logo) {
       formData.append('logo', logo);
@@ -44,6 +45,24 @@ export class BrandService {
 
   deleteBrand(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  // ── Profils de pneus d'une marque ──
+  getProfiles(brandId: number): Observable<BrandProfile[]> {
+    return this.http.get<BrandProfile[]>(`${this.apiUrl}/${brandId}/profiles`);
+  }
+
+  createProfile(brandId: number, name: string, code?: string | null): Observable<BrandProfile> {
+    return this.http.post<BrandProfile>(`${this.apiUrl}/${brandId}/profiles`, { name, code: code?.trim() || null });
+  }
+
+  /** Also renames the products of the brand that carry the old name. */
+  renameProfile(profileId: number, name: string, code?: string | null): Observable<BrandProfile> {
+    return this.http.put<BrandProfile>(`${environment.apiUrl}/brand-profiles/${profileId}`, { name, code: code?.trim() || null });
+  }
+
+  deleteProfile(profileId: number): Observable<void> {
+    return this.http.delete<void>(`${environment.apiUrl}/brand-profiles/${profileId}`);
   }
 
   toggleActive(id: number): Observable<Brand> {

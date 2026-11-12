@@ -217,6 +217,7 @@ export class ActivityLogPageComponent implements OnInit {
       service_order: 'Service Auto',
       compte: 'Compte',
       transaction: 'Transaction',
+      produit: 'Produit',
     };
     return map[type] ?? type;
   }

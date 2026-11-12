@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Account;
 use App\Models\ActivityLog;
+use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\Sale;
 use App\Models\ServiceOrder;
@@ -11,6 +12,7 @@ use App\Models\ShipmentChangeRequest;
 use App\Models\Transaction;
 use App\Models\TransactionCategory;
 use App\Models\User;
+use Carbon\Carbon;
 
 class ActivityLogService
 {
@@ -508,6 +510,57 @@ class ActivityLogService
             'entity_label' => "Transaction #{$transaction->id}",
             'description' => $desc,
             'properties' => ['before' => $before, 'after' => $after],
+            'user_id' => $userId,
+            'user_name' => $userName,
+        ]);
+    }
+
+    public function logTransactionSettledEarly(Transaction $transaction, string $dueDate, array $before, array $after, ?int $userId, ?string $userName): void
+    {
+        $amountFmt = number_format((float) $transaction->amount, 2, '.', ' ');
+        $due = Carbon::parse($dueDate)->format('d/m/Y');
+        $cashed = $transaction->date?->format('d/m/Y');
+        $desc = "Transaction #{$transaction->id} validée avant échéance — {$transaction->method}, {$amountFmt} MAD, encaissée le {$cashed} (échéance initiale {$due})";
+
+        $this->insert([
+            'action' => ActivityLog::ACTION_UPDATE,
+            'entity_type' => ActivityLog::ENTITY_TRANSACTION,
+            'is_confidential' => $this->isConfidentialCategory($before['category'] ?? null),
+            'entity_id' => $transaction->id,
+            'entity_label' => "Transaction #{$transaction->id}",
+            'description' => $desc,
+            'properties' => ['before' => $before, 'after' => $after],
+            'user_id' => $userId,
+            'user_name' => $userName,
+        ]);
+    }
+
+    /** An Administrator corrected a product reference (references are otherwise locked). */
+    public function logProductReferenceChanged(Product $product, string $from, string $to, ?int $userId, ?string $userName): void
+    {
+        $this->insert([
+            'action' => ActivityLog::ACTION_UPDATE,
+            'entity_type' => ActivityLog::ENTITY_PRODUCT,
+            'entity_id' => $product->id,
+            'entity_label' => "Produit #{$product->id}",
+            'description' => "Référence du produit #{$product->id} corrigée : {$from} → {$to}",
+            'properties' => ['reference' => ['from' => $from, 'to' => $to]],
+            'user_id' => $userId,
+            'user_name' => $userName,
+        ]);
+    }
+
+    /** A free-form UPDATE entry on a transaction (e.g. cheque deposited at the bank). */
+    public function logTransactionNote(Transaction $transaction, string $description, array $snapshot, ?int $userId, ?string $userName): void
+    {
+        $this->insert([
+            'action' => ActivityLog::ACTION_UPDATE,
+            'entity_type' => ActivityLog::ENTITY_TRANSACTION,
+            'is_confidential' => $this->isConfidentialCategory($snapshot['category'] ?? null),
+            'entity_id' => $transaction->id,
+            'entity_label' => "Transaction #{$transaction->id}",
+            'description' => $description,
+            'properties' => ['after' => $snapshot + ['deposited_at' => $transaction->deposited_at?->format('Y-m-d')]],
             'user_id' => $userId,
             'user_name' => $userName,
         ]);

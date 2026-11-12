@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Stock;
 use App\Models\StockMovement;
 use App\Models\User;
+use App\Services\StockMovementService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
@@ -23,9 +24,13 @@ class StockTest extends TestCase
     use DatabaseTransactions;
 
     private User $user;
+
     private Brand $brand;
+
     private Product $tyreProd;
+
     private Product $serviceProd;
+
     private Stock $stock;
 
     protected function setUp(): void
@@ -64,10 +69,10 @@ class StockTest extends TestCase
         ]);
         $this->user->assignRole($admin);
 
-        $this->brand = Brand::query()->create(['name' => 'TestBrand-' . uniqid(), 'is_active' => true]);
+        $this->brand = Brand::query()->create(['name' => 'TestBrand-'.uniqid(), 'is_active' => true]);
 
         $this->tyreProd = Product::query()->create([
-            'reference' => 'TYRE-' . fake()->unique()->numerify('###'),
+            'reference' => 'TYRE-'.fake()->unique()->numerify('###'),
             'type' => 'tyre',
             'brand_id' => $this->brand->id,
             'is_active' => true,
@@ -83,7 +88,7 @@ class StockTest extends TestCase
         ]);
 
         $this->serviceProd = Product::query()->create([
-            'reference' => 'SVC-' . fake()->unique()->numerify('###'),
+            'reference' => 'SVC-'.fake()->unique()->numerify('###'),
             'type' => 'service',
             'brand_id' => $this->brand->id,
             'is_active' => true,
@@ -319,7 +324,7 @@ class StockTest extends TestCase
     {
         Sanctum::actingAs($this->user, [], 'web');
 
-        $response = $this->getJson('/api/stocks?brand=' . urlencode($this->brand->name));
+        $response = $this->getJson('/api/stocks?brand='.urlencode($this->brand->name));
         $response->assertOk();
         $this->assertGreaterThanOrEqual(1, $response->json('total'));
     }
@@ -338,7 +343,7 @@ class StockTest extends TestCase
     {
         Sanctum::actingAs($this->user, [], 'web');
 
-        $response = $this->getJson('/api/stocks?search=' . urlencode('205/55R16'));
+        $response = $this->getJson('/api/stocks?search='.urlencode('205/55R16'));
         $response->assertOk();
         $this->assertGreaterThanOrEqual(1, $response->json('total'));
     }
@@ -690,11 +695,97 @@ class StockTest extends TestCase
         $this->assertGreaterThanOrEqual(1, $response->json('total'));
     }
 
+    public function test_movements_ignore_operations_that_do_not_change_the_quantity(): void
+    {
+        StockMovement::query()->create([
+            'stock_id' => $this->stock->id,
+            'product_id' => $this->tyreProd->id,
+            'type' => StockMovement::TYPE_AUTO_CREATE,
+            'quantity_before' => 0,
+            'quantity_after' => 0,
+            'delta' => 0,
+            'user_id' => $this->user->id,
+        ]);
+        StockMovement::query()->create([
+            'stock_id' => $this->stock->id,
+            'product_id' => $this->tyreProd->id,
+            'type' => StockMovement::TYPE_INITIAL,
+            'quantity_before' => 0,
+            'quantity_after' => 10,
+            'delta' => 10,
+            'user_id' => $this->user->id,
+        ]);
+        Sanctum::actingAs($this->user, [], 'web');
+
+        $types = array_column($this->getJson("/api/stock-movements?stock_id={$this->stock->id}")->assertOk()->json('data'), 'type');
+
+        $this->assertContains(StockMovement::TYPE_INITIAL, $types);
+        $this->assertNotContains(StockMovement::TYPE_AUTO_CREATE, $types);
+    }
+
+    public function test_zero_delta_movements_are_not_recorded(): void
+    {
+        $before = StockMovement::query()->count();
+
+        app(StockMovementService::class)->recordAutoCreate($this->stock, $this->user->id);
+
+        $this->assertSame($before, StockMovement::query()->count());
+    }
+
+    public function test_migration_nets_movement_pairs_written_by_one_document_save(): void
+    {
+        $make = fn (string $type, int $before, int $after, int $ref, string $createdAt = '2026-07-10 11:42:00') => DB::table('stock_movements')->insertGetId([
+            'stock_id' => $this->stock->id,
+            'product_id' => $this->tyreProd->id,
+            'type' => $type,
+            'quantity_before' => $before,
+            'quantity_after' => $after,
+            'delta' => $after - $before,
+            'reference_type' => 'Achat',
+            'reference_id' => $ref,
+            'reason' => "Achat #{$ref}",
+            'user_id' => $this->user->id,
+            'created_at' => $createdAt,
+            'updated_at' => $createdAt,
+        ]);
+
+        // Edit that changed nothing: -28 then +28 → removed.
+        $out = $make(StockMovement::TYPE_PURCHASE_OUT, 52, 24, 990001);
+        $in = $make(StockMovement::TYPE_PURCHASE_IN, 24, 52, 990001);
+        // Edit 4 → 7: -4 then +7 → one "+3" movement.
+        $out2 = $make(StockMovement::TYPE_PURCHASE_OUT, 10, 6, 990002);
+        $in2 = $make(StockMovement::TYPE_PURCHASE_IN, 6, 13, 990002);
+        // A long save spilling over the next second is still one save.
+        $spillOut = $make(StockMovement::TYPE_PURCHASE_OUT, 4, -4, 990004, '2026-10-29 11:15:12');
+        $spillIn = $make(StockMovement::TYPE_PURCHASE_IN, -4, 4, 990004, '2026-10-29 11:15:13');
+        // A lone movement, and a real cancellation minutes later, are left alone.
+        $alone = $make(StockMovement::TYPE_PURCHASE_IN, 13, 15, 990003);
+        $later = $make(StockMovement::TYPE_PURCHASE_OUT, 15, 13, 990001, '2026-07-10 11:50:00');
+
+        $migration = require database_path('migrations/2026_11_12_000002_net_document_edit_stock_movements.php');
+        $migration->up();
+
+        $this->assertDatabaseMissing('stock_movements', ['id' => $out]);
+        $this->assertDatabaseMissing('stock_movements', ['id' => $in]);
+        $this->assertDatabaseMissing('stock_movements', ['id' => $out2]);
+        $this->assertDatabaseHas('stock_movements', [
+            'id' => $in2,
+            'type' => StockMovement::TYPE_PURCHASE_IN,
+            'quantity_before' => 10,
+            'quantity_after' => 13,
+            'delta' => 3,
+        ]);
+        $this->assertDatabaseMissing('stock_movements', ['id' => $spillOut]);
+        $this->assertDatabaseMissing('stock_movements', ['id' => $spillIn]);
+        $this->assertDatabaseHas('stock_movements', ['id' => $alone, 'delta' => 2]);
+        $this->assertDatabaseHas('stock_movements', ['id' => $later, 'delta' => -2]);
+    }
+
     public function test_movements_filters_by_stock_id(): void
     {
-        $otherBrand = Brand::query()->create(['name' => 'TestBrand2-' . uniqid(), 'is_active' => true]);
+        $otherBrand = Brand::query()->create(['name' => 'TestBrand2-'.uniqid(), 'is_active' => true]);
         $otherProd = Product::query()->create([
-            'reference' => 'OTHER-' . fake()->unique()->numerify('###'),
+            'reference' => 'OTHER-'.fake()->unique()->numerify('###'),
             'type' => 'tyre',
             'brand_id' => $otherBrand->id,
             'is_active' => true,
@@ -759,7 +850,7 @@ class StockTest extends TestCase
 
         Sanctum::actingAs($this->user, [], 'web');
 
-        $response = $this->getJson('/api/stock-movements?type=' . StockMovement::TYPE_ADJUSTMENT);
+        $response = $this->getJson('/api/stock-movements?type='.StockMovement::TYPE_ADJUSTMENT);
         $response->assertOk();
 
         foreach ($response->json('data') as $movement) {

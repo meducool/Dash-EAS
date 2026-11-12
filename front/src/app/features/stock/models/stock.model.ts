@@ -40,7 +40,8 @@ export interface StockMovement {
   user_id: number | null;
   quantity_before?: number | null;
   quantity_after?: number | null;
-  quantity_change?: number | null;
+  /** Signed change: after − before. */
+  delta?: number | null;
   reason?: string | null;
   metadata?: Record<string, unknown> | null;
   created_at?: string;

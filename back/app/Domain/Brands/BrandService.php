@@ -17,10 +17,10 @@ class BrandService
      */
     public function list(array $filters = [])
     {
-        $query = Brand::query();
+        $query = Brand::query()->withCount('profiles');
 
-        if (!empty($filters['search'])) {
-            $query->where('name', 'like', '%' . $filters['search'] . '%');
+        if (! empty($filters['search'])) {
+            $query->where('name', 'like', '%'.$filters['search'].'%');
         }
 
         if (array_key_exists('is_active', $filters)) {
@@ -28,7 +28,7 @@ class BrandService
         }
 
         $sortable = ['name', 'created_at'];
-        if (!empty($filters['sort_by']) && in_array($filters['sort_by'], $sortable, true)) {
+        if (! empty($filters['sort_by']) && in_array($filters['sort_by'], $sortable, true)) {
             $direction = ($filters['sort_direction'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
             $query->orderBy($filters['sort_by'], $direction);
         } else {
@@ -101,6 +101,9 @@ class BrandService
     private function preparePayload(array $validated, $logo = null, $brand = null)
     {
         $validated['is_active'] = (bool) ($validated['is_active'] ?? true);
+        if (array_key_exists('code', $validated)) {
+            $validated['code'] = ($code = strtoupper(trim((string) $validated['code']))) !== '' ? $code : null;
+        }
 
         if ($logo !== null) {
             if ($brand !== null && $brand->logo) {

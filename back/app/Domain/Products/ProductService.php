@@ -5,17 +5,21 @@ namespace App\Domain\Products;
 use App\Models\Brand;
 use App\Models\Product;
 use App\Models\Stock;
+use App\Services\ActivityLogService;
 use App\Services\StockMovementService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ProductService
 {
-    public function __construct(private StockMovementService $movements)
-    {
-    }
+    public function __construct(
+        private StockMovementService $movements,
+        private ProductReferenceService $references,
+        private ActivityLogService $activityLog,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $filters
@@ -36,10 +40,15 @@ class ProductService
      */
     public function create(array $validated, ?int $userId): Product
     {
+        $typed = trim((string) ($validated['reference'] ?? ''));
+        if (($validated['type'] ?? null) !== 'tyre' && $typed !== '' && $this->referenceTaken($typed, 0)) {
+            throw ValidationException::withMessages(['reference' => ['Cette référence est déjà utilisée par un autre produit.']]);
+        }
+
         $product = DB::transaction(function () use ($validated, $userId) {
             $product = Product::create([
                 'profile' => $validated['profile'] ?? null,
-                'reference' => $validated['reference'] ?? null,
+                'reference' => null, // generated below, once the id is known
                 'type' => $validated['type'],
                 'brand_id' => $validated['brand_id'] ?? null,
                 'description' => $validated['description'] ?? null,
@@ -49,10 +58,27 @@ class ProductService
 
             $this->upsertDetails($product, $validated);
 
+            // Tyre: generated from its characteristics. Part / service: the
+            // reference typed by the user (unique), generated when left empty.
+            $typed = trim((string) ($validated['reference'] ?? ''));
+            $reference = $product->type !== 'tyre' && $typed !== ''
+                ? $typed
+                : $this->references->generate($validated, $product->id, $product->id);
+            $product->update(['reference' => $reference]);
+
             if ($product->type !== 'service') {
+                // The first lot is created empty (quantity comes from purchases),
+                // with the location / DOT / origin typed in the product form, if any.
+                $lot = $validated['stock'] ?? [];
+                $clean = fn (string $key) => ($value = trim((string) ($lot[$key] ?? ''))) !== '' ? $value : null;
+
                 $stock = Stock::create([
                     'product_id' => $product->id,
                     'quantity' => 0,
+                    'depot' => $clean('depot'),
+                    'zone' => $clean('zone'),
+                    'dot' => $clean('dot'),
+                    'made_in' => $clean('made_in'),
                     'user_id' => $userId,
                 ]);
 
@@ -68,12 +94,32 @@ class ProductService
     /**
      * @param  array<string, mixed>  $validated
      */
-    public function update(Product $product, array $validated): Product
+    /**
+     * The reference is locked once created: only an Administrator may correct
+     * it (recorded in the activity log). An absent / empty reference keeps the
+     * current one.
+     */
+    public function update(Product $product, array $validated, bool $isAdmin = false, ?int $userId = null, ?string $userName = null): Product
     {
-        DB::transaction(function () use ($product, $validated) {
+        $current = $product->reference;
+        $requested = array_key_exists('reference', $validated) && trim((string) $validated['reference']) !== ''
+            ? ProductReferenceService::normalize($validated['reference'])
+            : null;
+        $changed = $requested !== null && $requested !== ProductReferenceService::normalize($current);
+
+        if ($changed && ! $isAdmin) {
+            throw ValidationException::withMessages([
+                'reference' => ['La référence ne peut pas être modifiée. Seul un administrateur peut la corriger.'],
+            ]);
+        }
+        if ($changed && $this->referenceTaken($requested, $product->id)) {
+            throw ValidationException::withMessages(['reference' => ['Cette référence est déjà utilisée par un autre produit.']]);
+        }
+
+        DB::transaction(function () use ($product, $validated, $changed, $requested, $current) {
             $product->update([
                 'profile' => $validated['profile'] ?? null,
-                'reference' => $validated['reference'] ?? null,
+                'reference' => $changed ? $requested : $current,
                 'type' => $validated['type'],
                 'brand_id' => $validated['brand_id'] ?? null,
                 'description' => $validated['description'] ?? null,
@@ -84,7 +130,25 @@ class ProductService
             $this->upsertDetails($product, $validated);
         });
 
+        if ($changed) {
+            $this->activityLog->logProductReferenceChanged($product, (string) $current, $requested, $userId, $userName);
+        }
+
         return $this->loadRelations($product);
+    }
+
+    /** Reference the form shows before saving (the server re-computes it on save). */
+    public function previewReference(array $data): string
+    {
+        return $this->references->generate($data);
+    }
+
+    private function referenceTaken(string $reference, int $exceptId): bool
+    {
+        return Product::query()
+            ->whereRaw('LOWER(TRIM(reference)) = ?', [mb_strtolower($reference)])
+            ->where('id', '!=', $exceptId)
+            ->exists();
     }
 
     public function delete(Product $product): void

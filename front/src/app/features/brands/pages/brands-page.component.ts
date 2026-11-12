@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BrandService } from '../data-access/brand.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { Brand, BrandPayload } from '../models/brand.model';
+import { Brand, BrandPayload, BrandProfile } from '../models/brand.model';
 import { BrandFormComponent } from '../components/brand-form/brand-form.component';
 import { AutoRefreshControlComponent } from '../../../shared/auto-refresh-control/auto-refresh-control.component';
 
@@ -30,6 +30,133 @@ export class BrandsPageComponent implements OnInit {
   deletingBrandId = signal<number | null>(null);
   showForm = signal(false);
   editingBrand = signal<Brand | null>(null);
+
+  // ── Profils de pneus de la marque ouverte ──
+  profilesBrand = signal<Brand | null>(null);
+  profiles = signal<BrandProfile[]>([]);
+  loadingProfiles = signal(false);
+  profileError = signal('');
+  newProfileName = signal('');
+  newProfileCode = signal('');
+  editingProfileCode = signal('');
+  savingProfile = signal(false);
+  editingProfileId = signal<number | null>(null);
+  editingProfileName = signal('');
+
+  get canEditProfiles(): boolean {
+    return this.authService.hasPermission('edit brands');
+  }
+
+  openProfiles(brand: Brand): void {
+    this.profilesBrand.set(brand);
+    this.profiles.set([]);
+    this.newProfileName.set('');
+    this.editingProfileId.set(null);
+    this.profileError.set('');
+    this.loadProfiles();
+  }
+
+  closeProfiles(): void {
+    if (this.savingProfile()) return;
+    const changed = this.profilesBrand() !== null;
+    this.profilesBrand.set(null);
+    if (changed) this.loadData(); // refresh the profile counts
+  }
+
+  private loadProfiles(): void {
+    const brand = this.profilesBrand();
+    if (!brand) return;
+    this.loadingProfiles.set(true);
+    this.brandService.getProfiles(brand.id).subscribe({
+      next: (list) => {
+        this.profiles.set(list);
+        this.loadingProfiles.set(false);
+      },
+      error: () => {
+        this.profileError.set('Impossible de charger les profils.');
+        this.loadingProfiles.set(false);
+      },
+    });
+  }
+
+  addProfile(): void {
+    const brand = this.profilesBrand();
+    const name = this.newProfileName().trim();
+    if (!brand || !name || this.savingProfile()) return;
+
+    this.savingProfile.set(true);
+    this.profileError.set('');
+    this.brandService.createProfile(brand.id, name, this.newProfileCode()).subscribe({
+      next: (profile) => {
+        this.profiles.update((list) => [...list, profile].sort((a, b) => a.name.localeCompare(b.name)));
+        this.newProfileName.set('');
+        this.newProfileCode.set('');
+        this.savingProfile.set(false);
+      },
+      error: (err) => this.onProfileError(err),
+    });
+  }
+
+  startRename(profile: BrandProfile): void {
+    this.editingProfileId.set(profile.id);
+    this.editingProfileName.set(profile.name);
+    this.editingProfileCode.set(profile.code ?? '');
+    this.profileError.set('');
+  }
+
+  cancelRename(): void {
+    this.editingProfileId.set(null);
+  }
+
+  saveRename(profile: BrandProfile): void {
+    const name = this.editingProfileName().trim();
+    if (!name || this.savingProfile()) return;
+    const code = this.editingProfileCode().trim().toUpperCase();
+    if (name === profile.name && code === (profile.code ?? '')) {
+      this.cancelRename();
+      return;
+    }
+    if (name !== profile.name && profile.products_count > 0
+      && !confirm(`Renommer « ${profile.name} » en « ${name} » ? Les ${profile.products_count} produit(s) de cette marque qui portent ce profil seront renommés aussi.`)) {
+      return;
+    }
+
+    this.savingProfile.set(true);
+    this.profileError.set('');
+    this.brandService.renameProfile(profile.id, name, code).subscribe({
+      next: (updated) => {
+        this.profiles.update((list) =>
+          list.map((p) => (p.id === updated.id ? updated : p)).sort((a, b) => a.name.localeCompare(b.name)),
+        );
+        this.editingProfileId.set(null);
+        this.savingProfile.set(false);
+      },
+      error: (err) => this.onProfileError(err),
+    });
+  }
+
+  removeProfile(profile: BrandProfile): void {
+    const note = profile.products_count > 0
+      ? `\n${profile.products_count} produit(s) gardent ce nom de profil.`
+      : '';
+    if (!confirm(`Retirer le profil « ${profile.name} » de la liste ?${note}`)) return;
+
+    this.savingProfile.set(true);
+    this.brandService.deleteProfile(profile.id).subscribe({
+      next: () => {
+        this.profiles.update((list) => list.filter((p) => p.id !== profile.id));
+        this.savingProfile.set(false);
+      },
+      error: (err) => this.onProfileError(err),
+    });
+  }
+
+  private onProfileError(err: any): void {
+    const errors = err?.error?.errors;
+    const first = errors ? (Object.values(errors)[0] as string[] | undefined)?.[0] : null;
+    this.profileError.set(first || err?.error?.message || "L'opération a échoué.");
+    this.savingProfile.set(false);
+  }
 
   constructor(
     private brandService: BrandService,

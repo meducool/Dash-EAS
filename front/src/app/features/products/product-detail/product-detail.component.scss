@@ -148,7 +148,7 @@
   letter-spacing: 0.02em;
 }
 
-.badge-tyre    { background: #fff5f5; color: #ff2d37; }
+.badge-tyre    { background: #fff5f5; color: var(--app-primary); }
 .badge-part    { background: #fff7ed; color: #c05621; }
 .badge-service { background: #ebf8ff; color: #2b6cb0; }
 .badge-active  { background: #ebf8f2; color: #1f7a52; }
@@ -164,8 +164,8 @@
 }
 
 .tag-season { background: #ebf4ff; color: #2b6cb0; }
-.tag-rft    { background: #fff5f5; color: #ff2d37; }
-.tag-xl     { background: #fff5f5; color: #ff2d37; }
+.tag-rft    { background: #fff5f5; color: var(--app-primary); }
+.tag-xl     { background: #fff5f5; color: var(--app-primary); }
 
 .eu-grade {
   display: inline-flex;
@@ -193,7 +193,7 @@
 }
 
 .btn-primary {
-  background: #ff2d37;
+  background: var(--app-primary);
   color: #fff;
   &:hover { filter: brightness(0.93); }
 }

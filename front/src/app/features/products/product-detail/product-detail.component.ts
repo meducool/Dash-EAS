@@ -135,6 +135,8 @@ export class ProductDetailComponent implements OnInit {
       SALE_IN: 'Annulation vente',
       PURCHASE_IN: 'Achat',
       PURCHASE_OUT: 'Annulation achat',
+      SERVICE_OUT: 'Service Auto',
+      SERVICE_IN: 'Annulation service',
     };
     return labels[type] || type;
   }
@@ -150,6 +152,8 @@ export class ProductDetailComponent implements OnInit {
       SALE_IN: 'mv-green',
       PURCHASE_IN: 'mv-green',
       PURCHASE_OUT: 'mv-red',
+      SERVICE_OUT: 'mv-red',
+      SERVICE_IN: 'mv-green',
     };
     return classes[type] || '';
   }

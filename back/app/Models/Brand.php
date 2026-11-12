@@ -9,6 +9,7 @@ class Brand extends Model
 {
     protected $fillable = [
         'name',
+        'code',
         'logo',
         'is_active',
     ];
@@ -20,5 +21,11 @@ class Brand extends Model
     public function products()
     {
         return $this->hasMany(Product::class);
+    }
+
+    /** Tyre profiles managed under this brand (reference list for the product form). */
+    public function profiles(): HasMany
+    {
+        return $this->hasMany(BrandProfile::class);
     }
 }

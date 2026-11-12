@@ -7,7 +7,9 @@ export type StockMovementType =
   | 'SALE_OUT'
   | 'SALE_IN'
   | 'PURCHASE_IN'
-  | 'PURCHASE_OUT';
+  | 'PURCHASE_OUT'
+  | 'SERVICE_OUT'
+  | 'SERVICE_IN';
 
 export interface StockMovement {
   id: number;

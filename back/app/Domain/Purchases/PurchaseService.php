@@ -134,7 +134,9 @@ class PurchaseService
         $purchase->loadMissing(['supplier', 'commercial']);
         $beforeSnapshot = $this->activityLog->buildPurchaseSnapshot($purchase);
 
-        DB::transaction(function () use ($purchase, $validated, $itemsData, $totals, $userId, $oldStatus) {
+        // Lines are given back then re-applied: only the net change per stock
+        // lot is recorded as a movement (none when the quantity is unchanged).
+        DB::transaction(fn () => $this->movements->netted(function () use ($purchase, $validated, $itemsData, $totals, $userId, $oldStatus) {
             if ($this->statusAppliesStock($oldStatus)) {
                 $this->restoreStockForItems($purchase, $userId);
             }
@@ -150,7 +152,7 @@ class PurchaseService
             $newStatus = $validated['status'] ?? $oldStatus;
 
             $this->createItemsAndApplyStock($purchase, $itemsData, $newStatus, $userId);
-        });
+        }));
 
         $loaded = $this->loadRelations($purchase->fresh());
 

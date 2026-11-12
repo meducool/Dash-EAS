@@ -75,6 +75,8 @@ describe('ProductDetailComponent', () => {
         SALE_IN:       'Annulation vente',
         PURCHASE_IN:   'Achat',
         PURCHASE_OUT:  'Annulation achat',
+        SERVICE_OUT:   'Service Auto',
+        SERVICE_IN:    'Annulation service',
       };
       for (const [type, label] of Object.entries(expected) as [StockMovementType, string][]) {
         expect(comp.movementTypeLabel(type)).toBe(label);

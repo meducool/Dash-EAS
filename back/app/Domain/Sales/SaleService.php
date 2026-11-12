@@ -74,11 +74,15 @@ class SaleService
             $sale->update($this->filterColumns('sales', $saleData));
 
             if ($items !== null) {
-                if ($wasApplied) {
-                    $this->restoreStockForItems($sale, $userId);
-                }
-                $sale->items()->delete();
-                $this->persistItems($sale, $items, $userId, $willApply);
+                // Lines are given back then re-taken: only the net change per
+                // stock lot is recorded (none when the quantity is unchanged).
+                $this->movements->netted(function () use ($sale, $items, $userId, $wasApplied, $willApply) {
+                    if ($wasApplied) {
+                        $this->restoreStockForItems($sale, $userId);
+                    }
+                    $sale->items()->delete();
+                    $this->persistItems($sale, $items, $userId, $willApply);
+                });
             } elseif ($wasApplied && ! $willApply) {
                 // Sale cancelled without touching items — release the stock it held.
                 $this->restoreStockForItems($sale, $userId);

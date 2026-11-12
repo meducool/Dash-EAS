@@ -95,6 +95,15 @@ export interface ProductPayload {
   service_category?: ServiceCategory | null;
   duration_minutes?: number | null;
   selling_price?: number | null;
+  /** Creation only: location / DOT / origin of the first (empty) stock lot of a tyre or part. */
+  stock?: ProductStockLot;
+}
+
+export interface ProductStockLot {
+  depot?: string | null;
+  zone?: string | null;
+  dot?: string | null;
+  made_in?: string | null;
 }
 
 export interface ProductFilters {

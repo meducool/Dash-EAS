@@ -21,6 +21,11 @@ export class ProductService {
     return this.http.get<Product>(`${this.apiUrl}/${id}`);
   }
 
+  /** The reference (SKU) a new product with these characteristics would get. */
+  previewReference(params: Record<string, string>): Observable<{ reference: string }> {
+    return this.http.get<{ reference: string }>(`${environment.apiUrl}/products-reference-preview`, { params });
+  }
+
   getFilters(): Observable<ProductFilters> {
     return this.http.get<ProductFilters>(`${this.apiUrl}-filters`);
   }

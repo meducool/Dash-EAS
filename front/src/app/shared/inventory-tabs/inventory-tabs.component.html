@@ -1,0 +1,10 @@
+<nav class="inventory-tabs" aria-label="Produits et inventaire">
+  @for (tab of tabs(); track tab.key) {
+    <a class="inventory-tab" [routerLink]="tab.route"
+       [class.active]="tab.key === active"
+       [attr.aria-current]="tab.key === active ? 'page' : null">
+      <span aria-hidden="true">{{ tab.icon }}</span>
+      {{ tab.label }}
+    </a>
+  }
+</nav>

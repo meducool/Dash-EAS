@@ -159,6 +159,14 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/settings/pages/company-settings-page.component').then((m) => m.CompanySettingsPageComponent),
   },
+  { path: 'settings/depots', redirectTo: 'depots', pathMatch: 'full' },
+  {
+    path: 'depots',
+    canActivate: [authGuard, permissionGuard],
+    data: { permission: 'view stock' },
+    loadComponent: () =>
+      import('./features/depots/pages/depots-page.component').then((m) => m.DepotsPageComponent),
+  },
   {
     path: 'settings/transaction-categories',
     canActivate: [authGuard, permissionGuard],

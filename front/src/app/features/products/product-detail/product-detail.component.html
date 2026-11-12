@@ -84,28 +84,6 @@
       </div>
 
       <!-- EU label -->
-      <div class="detail-section eu-section" *ngIf="isTyre && (product.tyre?.eu_fuel || product.tyre?.eu_wet_grip || product.tyre?.eu_noise_db)">
-        <h3 class="section-title">Étiquetage européen</h3>
-        <div class="detail-grid eu-grid">
-          <div class="detail-item">
-            <span class="label">Efficacité énergétique</span>
-            <span class="eu-grade" *ngIf="product.tyre?.eu_fuel; else dash">{{ product.tyre!.eu_fuel }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">Adhérence sol mouillé</span>
-            <span class="eu-grade" *ngIf="product.tyre?.eu_wet_grip; else dash">{{ product.tyre!.eu_wet_grip }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">Bruit extérieur</span>
-            <span class="value">{{ product.tyre?.eu_noise_db ? (product.tyre!.eu_noise_db + ' dB') : '-' }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">Classe bruit</span>
-            <span class="value">{{ product.tyre?.eu_noise_class || '-' }}</span>
-          </div>
-        </div>
-      </div>
-
       <!-- Part characteristics -->
       <div class="detail-section" *ngIf="isPart">
         <h3 class="section-title">Caractéristiques pièce</h3>

@@ -1324,16 +1324,19 @@ class SaleControllerTest extends TestCase
         $stock->refresh();
         $this->assertEquals(9, $stock->quantity);
 
+        // Only the net change is a movement: 3 sold → 1 sold gives back 2 (7 → 9),
+        // not "+3 then -1".
         $this->assertDatabaseHas('stock_movements', [
             'stock_id' => $stock->id,
             'type' => 'SALE_IN',
-            'delta' => 3,
+            'quantity_before' => 7,
+            'quantity_after' => 9,
+            'delta' => 2,
             'reference_id' => $sale->id,
         ]);
-        $this->assertDatabaseHas('stock_movements', [
+        $this->assertDatabaseMissing('stock_movements', [
             'stock_id' => $stock->id,
             'type' => 'SALE_OUT',
-            'delta' => -1,
             'reference_id' => $sale->id,
         ]);
     }

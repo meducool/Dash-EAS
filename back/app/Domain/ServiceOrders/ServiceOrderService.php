@@ -7,7 +7,9 @@ use App\Enums\ServiceOrderStatus;
 use App\Models\ServiceItem;
 use App\Models\ServiceOrder;
 use App\Models\Transaction;
+use App\Models\Vehicle;
 use App\Services\ActivityLogService;
+use App\Services\StockMovementService;
 use Illuminate\Support\Facades\DB;
 
 class ServiceOrderService
@@ -83,20 +85,24 @@ class ServiceOrderService
             ]));
 
             if ($items !== null) {
-                $this->stockDeduction->restoreForOrder($order, $userId);
+                // Parts are given back then re-taken: only the net change per
+                // stock lot is recorded (none when the quantity is unchanged).
+                app(StockMovementService::class)->netted(function () use ($order, $items, $userId, $cancellingOrder) {
+                    $this->stockDeduction->restoreForOrder($order, $userId);
 
-                ServiceItem::withoutEvents(function () use ($order, $items) {
-                    $order->items()->delete();
-                    foreach ($items as $i => $itemData) {
-                        $order->items()->create($this->buildItemAttributes($itemData, $i));
+                    ServiceItem::withoutEvents(function () use ($order, $items) {
+                        $order->items()->delete();
+                        foreach ($items as $i => $itemData) {
+                            $order->items()->create($this->buildItemAttributes($itemData, $i));
+                        }
+                    });
+
+                    $order->recalculateTotals();
+
+                    if (! $cancellingOrder) {
+                        $this->stockDeduction->deductForOrder($order, $userId);
                     }
                 });
-
-                $order->recalculateTotals();
-
-                if (! $cancellingOrder) {
-                    $this->stockDeduction->deductForOrder($order, $userId);
-                }
             } elseif ($cancellingOrder) {
                 $this->stockDeduction->restoreForOrder($order, $userId);
             }
@@ -164,12 +170,12 @@ class ServiceOrderService
 
     private function resolveVehicleSnapshot(array $validated): string
     {
-        if (!empty($validated['vehicle'])) {
+        if (! empty($validated['vehicle'])) {
             return $validated['vehicle'];
         }
 
-        if (!empty($validated['vehicle_id'])) {
-            $v = \App\Models\Vehicle::find($validated['vehicle_id']);
+        if (! empty($validated['vehicle_id'])) {
+            $v = Vehicle::find($validated['vehicle_id']);
             if ($v) {
                 return "{$v->brand} {$v->model_name}";
             }

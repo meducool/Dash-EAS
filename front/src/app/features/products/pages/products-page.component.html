@@ -1,8 +1,8 @@
 <div class="page-container">
   <div class="header">
     <div class="title-section">
-      <h1>Produits</h1>
-      <p class="subtitle">Catalogue des pneus</p>
+      <h1>Produits &amp; Inventaire</h1>
+      <p class="subtitle">Catalogue des pneus, pièces et services</p>
     </div>
     <div class="actions">
       <button class="btn btn-primary" (click)="openAddForm()" *ngIf="authService.hasPermission('create products')">
@@ -11,6 +11,8 @@
       <app-auto-refresh-control pageKey="products" (refresh)="loadData()" />
     </div>
   </div>
+
+  <app-inventory-tabs active="catalogue" />
 
   <div class="search-hero">
     <div class="search-box">

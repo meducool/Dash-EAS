@@ -44,6 +44,8 @@
               <span class="sort-icon">{{ sortBy() === 'name' ? (sortDirection() === 'asc' ? '&#9650;' : '&#9660;') : '&#8693;' }}</span>
             </th>
             <th>Logo</th>
+            <th class="text-center">Code</th>
+            <th class="text-center">Profils</th>
             <th class="text-center">Statut</th>
             <th class="sortable" (click)="toggleSort('created_at')">
               Date de création
@@ -54,14 +56,14 @@
         </thead>
         <tbody>
           <tr *ngIf="loading()">
-            <td colspan="5" class="text-center py-4">
+            <td colspan="7" class="text-center py-4">
               <div class="spinner"></div>
               Chargement...
             </td>
           </tr>
 
           <tr *ngIf="!loading() && brands().length === 0">
-            <td colspan="5" class="text-center py-4 text-muted">
+            <td colspan="7" class="text-center py-4 text-muted">
               Aucune marque trouvée.
             </td>
           </tr>
@@ -73,6 +75,13 @@
             <td>
               <img *ngIf="brand.logo" [src]="'/storage/' + brand.logo" alt="{{ brand.name }}" class="brand-logo" />
               <span *ngIf="!brand.logo">-</span>
+            </td>
+            <td class="text-center"><span class="brand-code">{{ brand.code || '—' }}</span></td>
+            <td class="text-center">
+              <button type="button" class="profiles-chip" (click)="openProfiles(brand)"
+                      [title]="'Profils de pneus ' + brand.name">
+                🛞 {{ brand.profiles_count || 0 }} profil{{ (brand.profiles_count || 0) > 1 ? 's' : '' }}
+              </button>
             </td>
             <td class="text-center">
               <span class="badge" [class.badge-success]="brand.is_active" [class.badge-muted]="!brand.is_active">
@@ -144,6 +153,66 @@
         (save)="onFormSubmit($event)"
         (cancel)="closeForm()">
       </app-brand-form>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="profilesBrand() as pb" (click)="closeProfiles()">
+  <div class="modal-container profiles-modal" role="dialog" aria-labelledby="profiles-title" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <h2 id="profiles-title">Profils de pneus</h2>
+        <p class="modal-subtitle">{{ pb.name }}</p>
+      </div>
+      <button class="btn-icon" type="button" (click)="closeProfiles()" aria-label="Fermer">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <form class="profile-add" *ngIf="canEditProfiles" (ngSubmit)="addProfile()">
+        <input type="text" class="form-control" name="new_profile" maxlength="150" autocomplete="off"
+               placeholder="Nouveau profil, ex : PRIMACY 4"
+               [ngModel]="newProfileName()" (ngModelChange)="newProfileName.set($event)">
+        <input type="text" class="form-control profile-code-input" name="new_profile_code" maxlength="15" autocomplete="off"
+               placeholder="Code, ex : P4" aria-label="Code du profil"
+               [ngModel]="newProfileCode()" (ngModelChange)="newProfileCode.set($event)">
+        <button type="submit" class="btn btn-primary" [disabled]="savingProfile() || !newProfileName().trim()">Ajouter</button>
+      </form>
+
+      <p class="profile-error" role="alert" *ngIf="profileError()">{{ profileError() }}</p>
+
+      <div class="text-center py-4" *ngIf="loadingProfiles()"><div class="spinner"></div> Chargement...</div>
+
+      <p class="text-muted text-center py-4" *ngIf="!loadingProfiles() && profiles().length === 0">
+        Aucun profil pour cette marque.
+      </p>
+
+      <ul class="profile-list" *ngIf="!loadingProfiles() && profiles().length > 0">
+        <li *ngFor="let profile of profiles()" class="profile-item">
+          <ng-container *ngIf="editingProfileId() !== profile.id; else renaming">
+            <span class="profile-name">{{ profile.name }}</span>
+            <span class="profile-code" [class.profile-code--missing]="!profile.code"
+                  [title]="profile.code ? 'Code des références' : 'Pas de code : les initiales du profil seront utilisées'">{{ profile.code || '—' }}</span>
+            <span class="profile-count">{{ profile.products_count }} produit{{ profile.products_count > 1 ? 's' : '' }}</span>
+            <span class="profile-actions" *ngIf="canEditProfiles">
+              <button type="button" class="btn-icon btn-sm" (click)="startRename(profile)" title="Renommer" [disabled]="savingProfile()">&#9998;&#65039;</button>
+              <button type="button" class="btn-icon btn-sm text-danger" (click)="removeProfile(profile)" title="Retirer" [disabled]="savingProfile()">&#128465;&#65039;</button>
+            </span>
+          </ng-container>
+          <ng-template #renaming>
+            <input type="text" class="form-control profile-rename" maxlength="150" autocomplete="off"
+                   [attr.aria-label]="'Nouveau nom pour ' + profile.name"
+                   [ngModel]="editingProfileName()" (ngModelChange)="editingProfileName.set($event)"
+                   (keydown.enter)="$event.preventDefault(); saveRename(profile)" (keydown.escape)="cancelRename()">
+            <input type="text" class="form-control profile-code-input" maxlength="15" autocomplete="off"
+                   [attr.aria-label]="'Code pour ' + profile.name" placeholder="Code"
+                   [ngModel]="editingProfileCode()" (ngModelChange)="editingProfileCode.set($event)"
+                   (keydown.enter)="$event.preventDefault(); saveRename(profile)" (keydown.escape)="cancelRename()">
+            <span class="profile-actions">
+              <button type="button" class="btn btn-primary btn-sm" (click)="saveRename(profile)" [disabled]="savingProfile()">OK</button>
+              <button type="button" class="btn btn-secondary btn-sm" (click)="cancelRename()" [disabled]="savingProfile()">Annuler</button>
+            </span>
+          </ng-template>
+        </li>
+      </ul>
     </div>
   </div>
 </div>
