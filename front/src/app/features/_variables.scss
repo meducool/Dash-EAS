@@ -1,18 +1,20 @@
+// Shared Sass names, all pointing at the design tokens (src/styles/_tokens.scss)
+// so every component using them follows the light / dark theme.
 $primary: var(--app-primary);
 $primary-dark: color-mix(in srgb, var(--app-primary) 80%, #000);
-$income-color: #48bb78;
-$expense-color: #f56565;
-$warning-color: #ed8936;
-$warning-dark: #c05621;
-$text-dark: #2d3748;
-$text-muted: #718096;
-$text-light: #a0aec0;
-$bg-body: #f7fafc;
-$bg-card: #ffffff;
-$border-color: #e2e8f0;
-$border-subtle: #edf2f7;
-$shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-$shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+$income-color: var(--app-success);
+$expense-color: var(--app-danger);
+$warning-color: var(--app-warning);
+$warning-dark: var(--app-warning-text);
+$text-dark: var(--app-text);
+$text-muted: var(--app-text-muted);
+$text-light: var(--app-text-subtle);
+$bg-body: var(--app-background);
+$bg-card: var(--app-surface);
+$border-color: var(--app-border);
+$border-subtle: var(--app-border);
+$shadow-sm: var(--app-shadow-sm);
+$shadow-md: var(--app-shadow-md);
 $radius: 12px;
 $radius-sm: 8px;
 $radius-lg: 16px;

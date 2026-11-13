@@ -7,7 +7,7 @@
   display: flex;
   gap: 0.25rem;
   margin: -1rem 0 1.5rem;
-  border-bottom: 1px solid #e8edf3;
+  border-bottom: 1px solid var(--app-border);
   overflow-x: auto;
 }
 
@@ -20,7 +20,7 @@
   border: 0;
   border-bottom: 2px solid transparent;
   background: none;
-  color: #64748b;
+  color: var(--app-text-muted);
   font: inherit;
   font-size: 0.9rem;
   font-weight: 600;
@@ -28,7 +28,7 @@
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
 
-  &:hover { color: #0f172a; }
+  &:hover { color: var(--app-text); }
   &:focus-visible { outline: 2px solid var(--app-primary); outline-offset: -2px; border-radius: 6px 6px 0 0; }
 
   &.active {
@@ -64,14 +64,14 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--app-text-muted);
 }
 
 .balances-total {
   font-size: 0.9rem;
-  color: #64748b;
+  color: var(--app-text-muted);
 
-  strong { color: #dc2626; font-variant-numeric: tabular-nums; }
+  strong { color: var(--app-danger-text); font-variant-numeric: tabular-nums; }
 }
 
 .balances-card .text-right { font-variant-numeric: tabular-nums; }
@@ -88,7 +88,7 @@
 
 .total-row td {
   font-weight: 700;
-  border-top: 2px solid #e8edf3;
+  border-top: 2px solid var(--app-border);
   border-bottom: none !important;
 }
 

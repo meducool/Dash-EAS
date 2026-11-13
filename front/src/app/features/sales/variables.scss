@@ -1,11 +1,11 @@
 $primary: #2563eb;
-$text-dark: #1f2937;
-$text-muted: #6b7280;
-$bg-body: #f3f4f6;
-$bg-card: #ffffff;
-$border-color: #e5e7eb;
-$income-color: #16a34a;
-$expense-color: #dc2626;
+$text-dark: var(--app-text);
+$text-muted: var(--app-text-muted);
+$bg-body: var(--app-background);
+$bg-card: var(--app-surface);
+$border-color: var(--app-border);
+$income-color: var(--app-success);
+$expense-color: var(--app-danger);
 $radius: 1rem;
 $radius-sm: 0.5rem;
 $shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);

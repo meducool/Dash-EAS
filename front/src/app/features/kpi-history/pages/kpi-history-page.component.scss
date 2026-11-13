@@ -1,13 +1,13 @@
 // Design tokens — mirror _variables.scss
 $_red:     var(--app-primary);
-$_text:    #0f172a;
-$_muted:   #64748b;
-$_dim:     #94a3b8;
-$_bg:      #f1f5f9;
-$_surface: #ffffff;
-$_border:  #e8edf3;
-$_green:   #10b981;
-$_danger:  #ef4444;
+$_text: var(--app-text);
+$_muted: var(--app-text-muted);
+$_dim: var(--app-text-subtle);
+$_bg: var(--app-surface-2);
+$_surface: var(--app-surface);
+$_border: var(--app-border);
+$_green: var(--app-success);
+$_danger: var(--app-danger);
 
 .page-wrapper {
   padding: 1.5rem;
@@ -58,7 +58,7 @@ $_danger:  #ef4444;
   border-radius: 8px;
   font-size: 0.875rem;
   color: $_text;
-  background: white;
+  background: var(--app-surface);
   &:focus { outline: none; border-color: $_red; box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 10%, transparent); }
 }
 
@@ -69,13 +69,13 @@ $_danger:  #ef4444;
   &:hover { filter: brightness(0.95); }
 }
 .btn-secondary {
-  background: white; border: 1px solid $_border; color: #4a5568;
+  background: var(--app-surface); border: 1px solid $_border; color: var(--app-text-muted);
   padding: 0.5rem 1rem; border-radius: 8px; font-weight: 500; font-size: 0.875rem;
   cursor: pointer; white-space: nowrap;
   &:hover { background: $_bg; }
 }
 .btn-icon {
-  width: 2rem; height: 2rem; border: 1px solid $_border; background: white;
+  width: 2rem; height: 2rem; border: 1px solid $_border; background: var(--app-surface);
   border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;
   cursor: pointer; font-size: 0.9rem;
   &:hover { background: $_bg; }
@@ -121,8 +121,8 @@ $_danger:  #ef4444;
 .text-right { text-align: right; }
 .text-center { text-align: center; }
 
-.positive { color: #276749; font-weight: 600; }
-.negative { color: #e53e3e; font-weight: 600; }
+.positive { color: var(--app-success-text); font-weight: 600; }
+.negative { color: var(--app-danger-text); font-weight: 600; }
 
 // States
 .loading-state, .empty-state {
@@ -139,7 +139,7 @@ $_danger:  #ef4444;
   border-top: 1px solid $_border;
 }
 .page-btn {
-  min-width: 2rem; height: 2rem; border: 1px solid $_border; background: white;
+  min-width: 2rem; height: 2rem; border: 1px solid $_border; background: var(--app-surface);
   border-radius: 6px; font-size: 0.8rem; cursor: pointer; padding: 0 0.4rem;
   &.active { background: $_red; color: white; border-color: $_red; font-weight: 600; }
   &:hover:not(.active):not(:disabled) { background: $_bg; }
@@ -152,7 +152,7 @@ $_danger:  #ef4444;
   display: flex; align-items: center; justify-content: center; z-index: 1000;
 }
 .modal-container {
-  background: white; border-radius: 12px;
+  background: var(--app-surface); border-radius: 12px;
   width: 95vw; max-width: 900px; max-height: 90vh;
   display: flex; flex-direction: column;
   box-shadow: 0 10px 25px rgba(15,23,42,0.15);

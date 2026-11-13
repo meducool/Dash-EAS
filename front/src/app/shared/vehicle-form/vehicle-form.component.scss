@@ -33,7 +33,7 @@
     border-radius: $radius-sm;
     font-size: 0.875rem;
     color: $text-dark;
-    background: #fff;
+    background: var(--app-surface);
 
     &:focus {
       outline: none;

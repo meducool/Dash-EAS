@@ -1,18 +1,18 @@
 // ── Design tokens (matches client-payment.component.scss / supplier-detail-page.component.scss) ──
 $primary:      var(--app-primary);
 $danger-bg:    rgba(239, 68, 68, 0.10);
-$danger-text:  #dc2626;
+$danger-text: var(--app-danger-text);
 $warning-bg:   rgba(234, 179, 8, 0.12);
-$warning-text: #a16207;
+$warning-text: var(--app-warning-text);
 
-$surface:  #ffffff;
-$surface2: #f8fafc;
-$border:   #e8edf3;
-$border2:  #d0d9e4;
-$text:     #0f172a;
-$muted:    #64748b;
-$dim:      #94a3b8;
-$strong:   #1e293b;
+$surface: var(--app-surface);
+$surface2: var(--app-surface-2);
+$border: var(--app-border);
+$border2: var(--app-border-strong);
+$text: var(--app-text);
+$muted: var(--app-text-muted);
+$dim: var(--app-text-subtle);
+$strong: var(--app-text);
 
 $radius-sm: 8px;
 $radius-md: 12px;
@@ -123,7 +123,7 @@ $radius-md: 12px;
   background: $surface;
   color: $strong;
   border-color: $border2;
-  &:hover:not(:disabled) { background: $surface2; border-color: #bcc6d4; }
+  &:hover:not(:disabled) { background: $surface2; border-color: var(--app-border-strong); }
 }
 
 // ── Section header ────────────────────────────────────────────────────────────

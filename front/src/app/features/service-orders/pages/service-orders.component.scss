@@ -17,9 +17,9 @@
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0;
-  &.margin-low  { color: #dc2626; }
-  &.margin-mid  { color: #d97706; }
-  &.margin-high { color: #16a34a; }
+  &.margin-low  { color: var(--app-danger-text); }
+  &.margin-mid  { color: var(--app-warning-text); }
+  &.margin-high { color: var(--app-success-text); }
 }
 
 // ── Prestations / pièces badges ───────────────────────────────────────────────
@@ -33,24 +33,24 @@
 
 .badge-type {
   background: color-mix(in srgb, var(--app-primary) 8%, transparent);
-  color: color-mix(in srgb, var(--app-primary) 75%, #000);
+  color: var(--app-primary-text);
 }
 
 .badge-part-type {
   background: rgba(245, 158, 11, 0.12);
-  color: #92400e;
+  color: var(--app-warning-text);
 }
 
 .badge-more {
   background: rgba(100, 116, 139, 0.1);
-  color: #475569;
+  color: var(--app-text-muted);
 }
 
 // ── Edit modal placeholder while the full order loads ─────────────────────────
 .loading-state {
   padding: 3rem;
   text-align: center;
-  color: #64748b;
+  color: var(--app-text-muted);
   font-size: 0.9rem;
 }
 

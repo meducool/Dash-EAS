@@ -1,8 +1,7 @@
-// ─── _page-layout.scss — Modernised light theme mixin for all list pages ─────
+// ─── _page-layout.scss — shared look of every list page (light + dark) ──────
 // Self-contained: no external @use dependency.
 // Usage: @use '../../_page-layout' as layout; @include layout.page-layout();
 
-// Internal design tokens (mirror _variables.scss)
 $_red:       var(--app-primary);
 // All of them are CSS variables from src/styles/_tokens.scss (light + dark).
 $_text:      var(--app-text);
@@ -33,15 +32,15 @@ $_danger:    var(--app-danger);
     justify-content: space-between;
     align-items: center;
     gap: 1rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     flex-wrap: wrap;
 
     .title-section {
       h1 {
         margin: 0;
         color: $_text;
-        font-size: 1.6rem;
-        font-weight: 800;
+        font-size: 1.5rem;
+        font-weight: 700;
         letter-spacing: -0.02em;
         line-height: 1.2;
       }
@@ -55,7 +54,8 @@ $_danger:    var(--app-danger);
 
     .actions {
       display: flex;
-      gap: 0.75rem;
+      align-items: center;
+      gap: 0.6rem;
       flex-wrap: wrap;
     }
   }
@@ -64,9 +64,11 @@ $_danger:    var(--app-danger);
   .btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.4rem;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
+    min-height: 2.25rem;
+    padding: 0.45rem 1rem;
+    border-radius: var(--app-radius-sm);
     border: none;
     font-size: 0.875rem;
     font-weight: 600;
@@ -117,8 +119,31 @@ $_danger:    var(--app-danger);
     }
 
     &-sm {
+      min-height: 1.9rem;
       padding: 0.3rem 0.65rem;
       font-size: 0.8rem;
+    }
+
+    &:disabled { opacity: 0.55; cursor: not-allowed; filter: none; box-shadow: none; }
+  }
+
+  // Keyboard focus: a ring in the brand colour on every control of the page.
+  .btn,
+  .btn-icon,
+  .btn-filter,
+  .btn-reset,
+  .btn-cancel,
+  .btn-page,
+  .search-btn,
+  .reset-btn,
+  .reference-link,
+  .client-link,
+  .link-text,
+  .status-select,
+  th.sortable {
+    &:focus-visible {
+      outline: 2px solid var(--app-primary);
+      outline-offset: 2px;
     }
   }
 
@@ -189,9 +214,9 @@ $_danger:    var(--app-danger);
   // ── Card base ─────────────────────────────────────────────────────────────
   .card {
     background: $_surface;
-    border-radius: 14px;
+    border-radius: var(--app-radius-md);
     border: 1px solid $_border;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 4px 12px rgba(15, 23, 42, 0.04);
+    box-shadow: var(--app-shadow-sm);
   }
 
   // ── Summary cards ─────────────────────────────────────────────────────────
@@ -207,18 +232,18 @@ $_danger:    var(--app-danger);
     display: flex;
     align-items: center;
     gap: 0.9rem;
-    border-radius: 14px;
+    border-radius: var(--app-radius-md);
     border: 1px solid $_border;
     background: $_surface;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 4px 12px rgba(15, 23, 42, 0.04);
-    transition: box-shadow 0.2s, transform 0.2s;
-    &:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(15, 23, 42, 0.09); }
+    box-shadow: var(--app-shadow-sm);
+    transition: box-shadow 0.2s, border-color 0.2s;
+    &:hover { box-shadow: var(--app-shadow-md); border-color: var(--app-border-strong); }
 
     &.income  .card-icon { background: color-mix(in srgb, var(--app-primary) 8%, transparent);  color: $_red; }
     &.expense .card-icon { background: color-mix(in srgb, var(--app-danger) 10%, transparent);  color: var(--app-danger); }
     &.balance .card-icon { background: color-mix(in srgb, var(--app-success) 12%, transparent);  color: var(--app-success); }
     &.margin  .card-icon { background: color-mix(in srgb, var(--app-violet) 12%, transparent);  color: var(--app-violet); }
-    &.info    .card-icon { background: rgba(59, 130, 246, 0.1);  color: $_blue; }
+    &.info    .card-icon { background: color-mix(in srgb, var(--app-info) 12%, transparent);  color: $_blue; }
     &.balance.negative .card-icon { background: color-mix(in srgb, var(--app-danger) 10%, transparent); color: var(--app-danger); }
 
     .card-icon {
@@ -235,15 +260,15 @@ $_danger:    var(--app-danger);
     .card-label {
       margin: 0;
       font-size: 0.68rem;
-      color: $_dim;
+      color: $_muted;
       text-transform: uppercase;
       font-weight: 700;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.08em;
     }
 
     .card-value {
       margin: 0;
-      font-size: 1.25rem;
+      font-size: 1.3rem;
       font-weight: 700;
       color: $_text;
       font-variant-numeric: tabular-nums;
@@ -263,7 +288,7 @@ $_danger:    var(--app-danger);
       border: 1.5px solid $_border-2;
       border-radius: 12px;
       padding: 0.45rem 0.75rem;
-      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+      box-shadow: var(--app-shadow-sm);
       transition: border-color 0.18s, box-shadow 0.18s;
 
       &:focus-within {
@@ -332,8 +357,8 @@ $_danger:    var(--app-danger);
     margin-bottom: 1.75rem;
     background: $_surface;
     border: 1px solid $_border;
-    border-radius: 14px;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+    border-radius: var(--app-radius-md);
+    box-shadow: var(--app-shadow-sm);
     overflow: hidden;
 
     .card-header {
@@ -381,9 +406,10 @@ $_danger:    var(--app-danger);
     }
 
     .form-control {
+      min-height: 2.25rem;
       padding: 0.45rem 0.7rem;
       border: 1px solid $_border-2;
-      border-radius: 8px;
+      border-radius: var(--app-radius-sm);
       font-size: 0.875rem;
       color: $_text;
       background: $_surface;
@@ -392,8 +418,10 @@ $_danger:    var(--app-danger);
       &:focus {
         outline: none;
         border-color: $_red;
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 10%, transparent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 12%, transparent);
       }
+
+      &::placeholder { color: $_dim; }
     }
 
     .pill-group {
@@ -432,9 +460,9 @@ $_danger:    var(--app-danger);
   .table-card {
     overflow: hidden;
     border: 1px solid $_border;
-    border-radius: 14px;
+    border-radius: var(--app-radius-md);
     background: $_surface;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 4px 12px rgba(15, 23, 42, 0.04);
+    box-shadow: var(--app-shadow-sm);
   }
 
   .table-responsive { overflow-x: auto; }
@@ -444,7 +472,7 @@ $_danger:    var(--app-danger);
     border-collapse: collapse;
 
     th, td {
-      padding: 0.6rem 0.875rem;
+      padding: 0.65rem 0.875rem;
       text-align: left;
       border-bottom: 1px solid $_border;
       white-space: nowrap;
@@ -454,11 +482,11 @@ $_danger:    var(--app-danger);
     th {
       background: $_surface-2;
       font-weight: 700;
-      font-size: 0.65rem;
-      color: $_dim;
+      font-size: 0.68rem;
+      color: $_muted;
       text-transform: uppercase;
-      letter-spacing: 0.1em;
-      border-bottom: 2px solid $_border;
+      letter-spacing: 0.07em;
+      border-bottom: 1px solid $_border-2;
 
       &.sortable {
         cursor: pointer;
@@ -531,7 +559,7 @@ $_danger:    var(--app-danger);
     border-radius: 999px;
     font-size: 0.7rem;
     font-weight: 700;
-    background: rgba(16, 185, 129, 0.1);
+    background: color-mix(in srgb, var(--app-success) 12%, transparent);
     color: var(--app-success-text);
     &.inactive { background: color-mix(in srgb, var(--app-danger) 12%, transparent); color: var(--app-danger-text); }
   }
@@ -592,7 +620,7 @@ $_danger:    var(--app-danger);
 
   .inline-spinner {
     width: 0.85rem; height: 0.85rem;
-    border: 1.5px solid rgba(239, 68, 68, 0.2);
+    border: 1.5px solid color-mix(in srgb, var(--app-danger) 25%, transparent);
     border-top-color: var(--app-danger);
     border-radius: 50%;
     animation: spin 0.9s linear infinite;
@@ -649,7 +677,7 @@ $_danger:    var(--app-danger);
     border: 1px solid $_border;
     background: $_surface;
     color: $_text;
-    border-radius: 8px;
+    border-radius: var(--app-radius-sm);
     font-size: 0.82rem;
     font-weight: 500;
     cursor: pointer;
@@ -675,13 +703,13 @@ $_danger:    var(--app-danger);
 
   .modal-container {
     background: $_surface;
-    border-radius: 16px;
+    border-radius: var(--app-radius-lg);
     width: 95vw;
     max-width: 1400px;
     max-height: 90vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 8px 32px rgba(15, 23, 42, 0.14), 0 2px 8px rgba(15, 23, 42, 0.06);
+    box-shadow: var(--app-shadow-lg);
     border: 1px solid $_border;
   }
 
@@ -692,7 +720,7 @@ $_danger:    var(--app-danger);
     justify-content: space-between;
     align-items: center;
     background: $_surface-2;
-    border-radius: 16px 16px 0 0;
+    border-radius: var(--app-radius-lg) var(--app-radius-lg) 0 0;
 
     h2 { margin: 0; font-size: 1.05rem; color: $_text; font-weight: 700; }
   }
@@ -706,7 +734,7 @@ $_danger:    var(--app-danger);
     justify-content: flex-end;
     gap: 0.75rem;
     background: $_surface-2;
-    border-radius: 0 0 16px 16px;
+    border-radius: 0 0 var(--app-radius-lg) var(--app-radius-lg);
   }
 
   // ── Responsive ────────────────────────────────────────────────────────────

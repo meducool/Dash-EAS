@@ -2,15 +2,15 @@
 @include layout.page-layout();
 
 $_primary:  var(--app-primary);
-$_green:    #22c55e;
-$_red:      #ef4444;
-$_amber:    #f59e0b;
-$_text:     #0f172a;
-$_muted:    #64748b;
-$_surface:  #ffffff;
-$_surface2: #f8fafc;
-$_border:   #e8edf3;
-$_bg:       #f1f5f9;
+$_green: var(--app-success);
+$_red: var(--app-danger);
+$_amber: var(--app-warning);
+$_text: var(--app-text);
+$_muted: var(--app-text-muted);
+$_surface: var(--app-surface);
+$_surface2: var(--app-surface-2);
+$_border: var(--app-border);
+$_bg: var(--app-surface-2);
 
 // ── Month navigation ─────────────────────────────────────────────────────────
 .month-nav {
@@ -56,8 +56,8 @@ $_bg:       #f1f5f9;
   border: 1px solid transparent;
 
   &.eligible {
-    background: rgba($_green, 0.08);
-    border-color: rgba($_green, 0.25);
+    background: color-mix(in srgb, var(--app-success) 8%, transparent);
+    border-color: color-mix(in srgb, var(--app-success) 25%, transparent);
   }
 
   &.not-eligible {
@@ -84,13 +84,13 @@ $_bg:       #f1f5f9;
     font-weight: 600;
 
     &.badge-success {
-      background: rgba($_green, 0.15);
-      color: darken($_green, 10%);
+      background: color-mix(in srgb, var(--app-success) 15%, transparent);
+      color: var(--app-success-text);
     }
 
     &.badge-danger {
       background: color-mix(in srgb, var(--app-primary) 12%, transparent);
-      color: color-mix(in srgb, var(--app-primary) 92%, #000);
+      color: var(--app-primary-text);
     }
   }
 }
@@ -123,8 +123,8 @@ $_bg:       #f1f5f9;
   }
 
   &.highlight.eligible {
-    border-color: rgba($_green, 0.4);
-    .summary-value { color: darken($_green, 8%); }
+    border-color: color-mix(in srgb, var(--app-success) 40%, transparent);
+    .summary-value { color: var(--app-success-text); }
   }
 }
 
@@ -154,14 +154,14 @@ $_bg:       #f1f5f9;
     letter-spacing: 0.03em;
   }
 
-  tbody tr:hover { background: rgba($_surface2, 0.6); }
+  tbody tr:hover { background: color-mix(in srgb, var(--app-surface-2) 60%, transparent); }
   tr:last-child td { border-bottom: none; }
 
   .text-right { text-align: right; }
 
   .commercial-name { font-weight: 500; color: $_text; }
 
-  .prime-amount { font-weight: 600; color: darken($_green, 8%); }
+  .prime-amount { font-weight: 600; color: var(--app-success-text); }
   .prime-zero { color: $_muted !important; font-weight: 400 !important; }
 
   .row-disabled td { color: $_muted; }
@@ -197,13 +197,13 @@ tfoot .total-row td { border-bottom: none; }
   border-radius: 8px;
   background: color-mix(in srgb, var(--app-primary) 6%, transparent);
   border: 1px solid color-mix(in srgb, var(--app-primary) 18%, transparent);
-  color: color-mix(in srgb, var(--app-primary) 92%, #000);
+  color: var(--app-primary-text);
   font-size: 0.875rem;
 
   &.notice-warning {
-    background: rgba($_amber, 0.08);
-    border-color: rgba($_amber, 0.3);
-    color: darken($_amber, 15%);
+    background: color-mix(in srgb, var(--app-warning) 8%, transparent);
+    border-color: color-mix(in srgb, var(--app-warning) 30%, transparent);
+    color: var(--app-warning-text);
   }
 }
 

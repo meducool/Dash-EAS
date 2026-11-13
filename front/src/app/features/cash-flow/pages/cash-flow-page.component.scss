@@ -3,14 +3,14 @@
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 $_red:      var(--app-primary);
-$_text:     #0f172a;
-$_strong:   #1e293b;
-$_muted:    #64748b;
-$_dim:      #94a3b8;
-$_surface:  #ffffff;
-$_surface2: #f8fafc;
-$_border:   #e8edf3;
-$_border2:  #d0d9e4;
+$_text: var(--app-text);
+$_strong: var(--app-text);
+$_muted: var(--app-text-muted);
+$_dim: var(--app-text-subtle);
+$_surface: var(--app-surface);
+$_surface2: var(--app-surface-2);
+$_border: var(--app-border);
+$_border2: var(--app-border-strong);
 
 // ── Utility shims ─────────────────────────────────────────────────────────────
 .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
@@ -22,16 +22,16 @@ $_border2:  #d0d9e4;
 }
 
 .summary-card.balance.negative {
-  border-top: 3px solid #ef4444;
-  .card-icon { background: rgba(239, 68, 68, 0.08); color: #dc2626; }
-  .card-value { color: #dc2626; }
+  border-top: 3px solid var(--app-danger);
+  .card-icon { background: rgba(239, 68, 68, 0.08); color: var(--app-danger-text); }
+  .card-value { color: var(--app-danger-text); }
 }
 
 // ── Pending section ───────────────────────────────────────────────────────────
 .pending-section {
   margin-bottom: 1.25rem;
   overflow: hidden;
-  border-left: 4px solid #f59e0b;
+  border-left: 4px solid var(--app-warning);
 }
 
 .pending-header {
@@ -45,7 +45,7 @@ $_border2:  #d0d9e4;
   user-select: none;
   transition: background 0.15s;
 
-  &:hover { background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, #f1f5f9 100%); }
+  &:hover { background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, var(--app-surface-3) 100%); }
 }
 
 .pending-title {
@@ -54,7 +54,7 @@ $_border2:  #d0d9e4;
   gap: 0.625rem;
   font-size: 0.875rem;
   font-weight: 700;
-  color: #a16207;
+  color: var(--app-warning-text);
   letter-spacing: -0.01em;
 }
 
@@ -71,7 +71,7 @@ $_border2:  #d0d9e4;
   font-size: 0.7rem;
   font-weight: 700;
   background: rgba(245, 158, 11, 0.15);
-  color: #a16207;
+  color: var(--app-warning-text);
   border: 1px solid rgba(245, 158, 11, 0.25);
 }
 
@@ -118,22 +118,22 @@ $_border2:  #d0d9e4;
 
 // ── Amount colors ─────────────────────────────────────────────────────────────
 .amount-income {
-  color: #15803d;
+  color: var(--app-success-text);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
 
 .amount-expense {
-  color: #dc2626;
+  color: var(--app-danger-text);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
 
 // ── Badge variants for transactions ───────────────────────────────────────────
-.badge-income  { background: rgba(34, 197, 94, 0.10);  color: #15803d; }
-.badge-expense { background: rgba(239, 68, 68, 0.10);  color: #dc2626; }
+.badge-income  { background: rgba(34, 197, 94, 0.10);  color: var(--app-success-text); }
+.badge-expense { background: rgba(239, 68, 68, 0.10);  color: var(--app-danger-text); }
 
 // ── Method badge ──────────────────────────────────────────────────────────────
 .method-badge {
@@ -172,12 +172,12 @@ $_border2:  #d0d9e4;
   --tone-soft: #{$soft};
 }
 
-.tone-current { @include tone(#15803d, #f0fdf4, #bbf7d0, #dcfce7); }
-.tone-next    { @include tone(#1d4ed8, #eff6ff, #bfdbfe, #dbeafe); }
-.tone-after   { @include tone(#7e22ce, #faf5ff, #e9d5ff, #f3e8ff); }
-.tone-later   { @include tone(#475569, #f8fafc, #e2e8f0, #f1f5f9); }
-.tone-overdue { @include tone(#be123c, #fff1f2, #fecdd3, #ffe4e6); }
-.tone-total   { @include tone(#334155, #ffffff, #e2e8f0, #f1f5f9); }
+.tone-current { @include tone(var(--app-success-text), color-mix(in srgb, var(--app-success) 7%, var(--app-surface)), color-mix(in srgb, var(--app-success) 30%, transparent), color-mix(in srgb, var(--app-success) 14%, transparent)); }
+.tone-next { @include tone(var(--app-info-text), color-mix(in srgb, var(--app-info) 7%, var(--app-surface)), color-mix(in srgb, var(--app-info) 30%, transparent), color-mix(in srgb, var(--app-info) 14%, transparent)); }
+.tone-after { @include tone(var(--app-violet-text), color-mix(in srgb, var(--app-violet) 7%, var(--app-surface)), color-mix(in srgb, var(--app-violet) 30%, transparent), color-mix(in srgb, var(--app-violet) 14%, transparent)); }
+.tone-later { @include tone(var(--app-neutral-text), color-mix(in srgb, var(--app-neutral) 7%, var(--app-surface)), color-mix(in srgb, var(--app-neutral) 30%, transparent), color-mix(in srgb, var(--app-neutral) 14%, transparent)); }
+.tone-overdue { @include tone(var(--app-danger-text), color-mix(in srgb, var(--app-danger) 7%, var(--app-surface)), color-mix(in srgb, var(--app-danger) 30%, transparent), color-mix(in srgb, var(--app-danger) 14%, transparent)); }
+.tone-total   { @include tone(var(--app-text), var(--app-surface), var(--app-border), var(--app-surface-3)); }
 
 .pending-cards {
   display: grid;
@@ -263,8 +263,8 @@ $_border2:  #d0d9e4;
   white-space: nowrap;
   color: $_strong;
 
-  &.positive { color: #16a34a; }
-  &.negative { color: #dc2626; }
+  &.positive { color: var(--app-success-text); }
+  &.negative { color: var(--app-danger-text); }
 }
 
 .pc-amount { font-size: 1rem; }
@@ -290,7 +290,7 @@ $_border2:  #d0d9e4;
   }
 
   .pending-row td {
-    background: color-mix(in srgb, var(--tone-bg) 55%, #fff);
+    background: color-mix(in srgb, var(--tone-bg) 55%, var(--app-surface));
   }
 
   .pending-row td:first-child { box-shadow: inset 3px 0 0 var(--tone-border); }
@@ -353,9 +353,9 @@ $_border2:  #d0d9e4;
   gap: 0.75rem 1rem;
   margin: 0 0 1.25rem;
   padding: 0.875rem 1rem;
-  border: 1px solid #bbf7d0;
+  border: 1px solid color-mix(in srgb, var(--app-success) 35%, transparent);
   border-radius: 10px;
-  background: #f0fdf4;
+  background: color-mix(in srgb, var(--app-success) 10%, transparent);
 
   dt {
     font-size: 0.7rem;
@@ -380,7 +380,7 @@ $_border2:  #d0d9e4;
   margin: 0.75rem 0 0;
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
-  background: #fff1f2;
-  color: #be123c;
+  background: color-mix(in srgb, var(--app-danger) 10%, transparent);
+  color: var(--app-danger-text);
   font-size: 0.82rem;
 }

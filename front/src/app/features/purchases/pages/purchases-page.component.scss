@@ -18,11 +18,11 @@
 }
 .badge-method {
   background: rgba(100, 116, 139, 0.1);
-  color: #475569; // neutral fallback for legacy/unmapped values
+  color: var(--app-text-muted); // neutral fallback for legacy/unmapped values
 
-  &.method-especes  { background: rgba(16, 185, 129, 0.12); color: #065f46; }
-  &.method-cheque   { background: rgba(59, 130, 246, 0.10); color: #1d4ed8; }
-  &.method-virement { background: rgba(139, 92, 246, 0.10); color: #6d28d9; }
-  &.method-effet    { background: rgba(245, 158, 11, 0.12); color: #92400e; }
+  &.method-especes  { background: rgba(16, 185, 129, 0.12); color: var(--app-success-text); }
+  &.method-cheque   { background: rgba(59, 130, 246, 0.10); color: var(--app-info-text); }
+  &.method-virement { background: rgba(139, 92, 246, 0.10); color: var(--app-violet-text); }
+  &.method-effet    { background: rgba(245, 158, 11, 0.12); color: var(--app-warning-text); }
   &.method-carte    { background: rgba(236, 72, 153, 0.10); color: #9d174d; }
 }

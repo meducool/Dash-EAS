@@ -1,13 +1,13 @@
 // ── Design tokens ─────────────────────────────────────────────────────────────
 $_red:      var(--app-primary);
-$_text:     #0f172a;
-$_strong:   #1e293b;
-$_muted:    #64748b;
-$_dim:      #94a3b8;
-$_surface:  #ffffff;
-$_surface2: #f8fafc;
-$_border:   #e8edf3;
-$_border2:  #d0d9e4;
+$_text: var(--app-text);
+$_strong: var(--app-text);
+$_muted: var(--app-text-muted);
+$_dim: var(--app-text-subtle);
+$_surface: var(--app-surface);
+$_surface2: var(--app-surface-2);
+$_border: var(--app-border);
+$_border2: var(--app-border-strong);
 
 $_shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
 
@@ -70,7 +70,7 @@ $_shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
     &:hover {
       background: $_border;
       color: $_text;
-      border-color: #bcc6d4;
+      border-color: var(--app-border-strong);
     }
   }
 
@@ -110,7 +110,7 @@ $_shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
       cursor: pointer;
       transition: all 0.15s;
 
-      &:not(:disabled):hover { background: $_border; color: $_text; border-color: #bcc6d4; }
+      &:not(:disabled):hover { background: $_border; color: $_text; border-color: var(--app-border-strong); }
       &:disabled { opacity: 0.45; cursor: not-allowed; }
     }
   }
@@ -119,7 +119,7 @@ $_shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
   .modal-nav-id {
     padding: 0.2rem 0.6rem;
     border-radius: 999px;
-    background: #f1f5f9;
+    background: var(--app-surface-3);
     color: $_strong;
     font-size: 0.8rem;
     font-weight: 700;
@@ -220,11 +220,11 @@ $_shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
   width: fit-content;
 }
 
-.badge-success      { background: rgba(34, 197, 94, 0.10);  color: #15803d; }
-.badge-warning      { background: rgba(234, 179, 8, 0.12);  color: #a16207; }
-.badge-danger       { background: rgba(239, 68, 68, 0.10);  color: #dc2626; }
+.badge-success      { background: rgba(34, 197, 94, 0.10);  color: var(--app-success-text); }
+.badge-warning      { background: rgba(234, 179, 8, 0.12);  color: var(--app-warning-text); }
+.badge-danger       { background: rgba(239, 68, 68, 0.10);  color: var(--app-danger-text); }
 .badge-type         { background: color-mix(in srgb, var(--app-primary) 8%, transparent);  color: $_red; }
-.badge-part-inline  { background: rgba(34, 197, 94, 0.10);  color: #15803d; }
+.badge-part-inline  { background: rgba(34, 197, 94, 0.10);  color: var(--app-success-text); }
 
 // ── Item detail helpers ───────────────────────────────────────────────────────
 .item-desc {
@@ -315,7 +315,7 @@ $_shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
     gap: 0.35rem;
     box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
 
-    &:hover { background: $_surface2; border-color: #bcc6d4; }
+    &:hover { background: $_surface2; border-color: var(--app-border-strong); }
 
     &.btn-primary {
       background: $_red;
@@ -324,7 +324,7 @@ $_shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
       box-shadow: 0 2px 6px color-mix(in srgb, var(--app-primary) 30%, transparent);
 
       &:hover {
-        background: #e8000b;
+        background: color-mix(in srgb, var(--app-primary) 88%, #000);
         box-shadow: 0 4px 10px color-mix(in srgb, var(--app-primary) 40%, transparent);
         transform: translateY(-1px);
       }

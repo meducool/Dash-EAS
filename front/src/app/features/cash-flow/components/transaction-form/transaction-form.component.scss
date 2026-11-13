@@ -24,7 +24,7 @@
 }
 
 .modal-content {
-  background: #fff;
+  background: var(--app-surface);
   border-radius: 16px;
   width: 100%;
   max-width: 560px;
@@ -92,12 +92,12 @@
   &.active {
     border-color: $primary;
     background: linear-gradient(135deg, color-mix(in srgb, var(--app-primary) 8%, transparent), color-mix(in srgb, var(--app-primary) 8%, transparent));
-    color: $primary-dark;
+    color: var(--app-primary-text);
   }
 
   &:hover:not(.active) {
     border-color: $text-light;
-    background: #fff;
+    background: var(--app-surface);
   }
 }
 
@@ -110,7 +110,7 @@
 
 .field-error {
   font-size: 0.75rem;
-  color: #e53e3e;
+  color: var(--app-danger-text);
   margin-top: 0.15rem;
 }
 
@@ -136,7 +136,7 @@
     border-radius: 8px;
     font-size: 0.9rem;
     color: $text-dark;
-    background: #fff;
+    background: var(--app-surface);
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
     font-family: inherit;

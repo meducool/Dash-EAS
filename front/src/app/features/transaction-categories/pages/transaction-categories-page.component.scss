@@ -1,14 +1,14 @@
 // ── Design tokens ─────────────────────────────────────────────────────────────
 $_red:        var(--app-primary);
 $_red-dark:   color-mix(in srgb, var(--app-primary) 80%, #000);
-$_text:       #0f172a;
-$_muted:      #64748b;
-$_dim:        #94a3b8;
-$_bg:         #f1f5f9;
-$_surface:    #ffffff;
-$_surface2:   #f8fafc;
-$_border:     #e8edf3;
-$_border2:    #d0d9e4;
+$_text: var(--app-text);
+$_muted: var(--app-text-muted);
+$_dim: var(--app-text-subtle);
+$_bg: var(--app-surface-2);
+$_surface: var(--app-surface);
+$_surface2: var(--app-surface-2);
+$_border: var(--app-border);
+$_border2: var(--app-border-strong);
 
 $_shadow-md: 0 1px 3px rgba(15, 23, 42, 0.05), 0 4px 12px rgba(15, 23, 42, 0.08);
 
@@ -57,7 +57,7 @@ $_radius-lg: 14px;
 
 .alert-danger {
   background: rgba(239, 68, 68, 0.08);
-  color: #b91c1c;
+  color: var(--app-danger-text);
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
@@ -83,7 +83,7 @@ $_radius-lg: 14px;
   &.active {
     border-color: $_red;
     background: linear-gradient(135deg, color-mix(in srgb, var(--app-primary) 8%, transparent), color-mix(in srgb, var(--app-primary) 8%, transparent));
-    color: $_red-dark;
+    color: var(--app-primary-text);
   }
 }
 
@@ -195,12 +195,12 @@ $_radius-lg: 14px;
 
 .badge-system {
   background: rgba(100, 116, 139, 0.12);
-  color: #475569;
+  color: var(--app-text-muted);
 }
 
 .badge-confidential {
   background: color-mix(in srgb, var(--app-primary) 10%, transparent);
-  color: $_red-dark;
+  color: var(--app-primary-text);
 }
 
 .category-actions {
@@ -219,7 +219,7 @@ $_radius-lg: 14px;
   border-radius: $_radius-sm;
 
   &:hover { background: $_border; }
-  &.danger:hover { color: #dc2626; }
+  &.danger:hover { color: var(--app-danger-text); }
 }
 
 .children-list {

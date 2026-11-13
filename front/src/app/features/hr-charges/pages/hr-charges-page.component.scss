@@ -55,7 +55,7 @@
 
 .alert-danger {
   background: rgba(239, 68, 68, 0.08);
-  color: #b91c1c;
+  color: var(--app-danger-text);
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
@@ -139,7 +139,7 @@
 
   &.highlight {
     border-color: color-mix(in srgb, var(--app-primary) 35%, transparent);
-    .summary-value { color: $primary-dark; }
+    .summary-value { color: var(--app-primary-text); }
   }
 }
 
@@ -174,7 +174,7 @@
 
   .text-right { text-align: right; }
   .employee-name { font-weight: 500; color: $text-dark; }
-  .amount { font-weight: 600; color: $primary-dark; }
+  .amount { font-weight: 600; color: var(--app-primary-text); }
   .description {
     white-space: normal;
     max-width: 260px;
@@ -198,8 +198,8 @@ tfoot .total-row td { border-bottom: none; }
   border-radius: $radius-sm;
 
   &:hover { background: $bg-body; }
-  &.danger:hover { color: #dc2626; }
-  &.primary:hover { color: $primary-dark; }
+  &.danger:hover { color: var(--app-danger-text); }
+  &.primary:hover { color: var(--app-primary-text); }
 }
 
 .actions-cell { white-space: nowrap; }

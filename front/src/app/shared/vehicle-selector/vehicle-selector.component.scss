@@ -33,7 +33,7 @@
     border-radius: $radius-sm;
     font-size: 0.875rem;
     color: $text-dark;
-    background: #fff;
+    background: var(--app-surface);
 
     &:focus { outline: none; border-color: $primary; }
   }
@@ -51,7 +51,7 @@
   line-height: 1;
   white-space: nowrap;
 
-  &:hover { background: color-mix(in srgb, var(--app-primary) 10%, #fff); }
+  &:hover { background: color-mix(in srgb, var(--app-primary) 10%, var(--app-surface)); }
 }
 
 .btn-clear-vehicle {
@@ -76,7 +76,7 @@
   gap: 0.5rem;
   align-items: center;
   padding: 0.4rem 0.6rem;
-  background: color-mix(in srgb, var(--app-primary) 8%, #fff);
+  background: color-mix(in srgb, var(--app-primary) 8%, var(--app-surface));
   border-radius: $radius-sm;
   font-size: 0.8rem;
 

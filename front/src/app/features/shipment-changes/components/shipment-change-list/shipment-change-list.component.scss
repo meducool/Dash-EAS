@@ -68,10 +68,10 @@
   width: fit-content;
 }
 
-.badge-success { background: rgba(34, 197, 94, 0.10);  color: #15803d; }
-.badge-warning { background: rgba(234, 179, 8, 0.12);  color: #a16207; }
-.badge-danger  { background: rgba(239, 68, 68, 0.10);  color: #dc2626; }
-.badge-neutral { background: rgba(100, 116, 139, 0.10); color: #475569; }
+.badge-success { background: rgba(34, 197, 94, 0.10);  color: var(--app-success-text); }
+.badge-warning { background: rgba(234, 179, 8, 0.12);  color: var(--app-warning-text); }
+.badge-danger  { background: rgba(239, 68, 68, 0.10);  color: var(--app-danger-text); }
+.badge-neutral { background: rgba(100, 116, 139, 0.10); color: var(--app-text-muted); }
 
 .actions-cell {
   display: flex;
@@ -89,7 +89,7 @@
   border-radius: $radius-sm;
 
   &:hover { background: $border-subtle; }
-  &.danger:hover { color: #dc2626; }
+  &.danger:hover { color: var(--app-danger-text); }
 }
 
 .status-select {

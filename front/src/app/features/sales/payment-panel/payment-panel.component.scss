@@ -1,14 +1,14 @@
 // ── Design tokens ─────────────────────────────────────────────────────────────
 $_red:      var(--app-primary);
-$_text:     #0f172a;
-$_strong:   #1e293b;
-$_label:    #334155;
-$_muted:    #64748b;
-$_dim:      #94a3b8;
-$_surface:  #ffffff;
-$_surface2: #f8fafc;
-$_border:   #e8edf3;
-$_border2:  #d0d9e4;
+$_text: var(--app-text);
+$_strong: var(--app-text);
+$_label: var(--app-text);
+$_muted: var(--app-text-muted);
+$_dim: var(--app-text-subtle);
+$_surface: var(--app-surface);
+$_surface2: var(--app-surface-2);
+$_border: var(--app-border);
+$_border2: var(--app-border-strong);
 
 // ── Overlay ───────────────────────────────────────────────────────────────────
 .panel-overlay {
@@ -83,7 +83,7 @@ $_border2:  #d0d9e4;
   justify-content: center;
   transition: all 0.15s;
 
-  &:hover { background: $_border; color: $_text; border-color: #bcc6d4; }
+  &:hover { background: $_border; color: $_text; border-color: var(--app-border-strong); }
 }
 
 // ── Body ──────────────────────────────────────────────────────────────────────
@@ -122,8 +122,8 @@ $_border2:  #d0d9e4;
     letter-spacing: -0.01em;
   }
 
-  .text-success { color: #15803d; }
-  .text-danger  { color: #dc2626; }
+  .text-success { color: var(--app-success-text); }
+  .text-danger  { color: var(--app-danger-text); }
 }
 
 .overpaid-warning {
@@ -135,10 +135,10 @@ $_border2:  #d0d9e4;
   border-radius: 6px;
   padding: 0.4rem 0.6rem;
   font-size: 0.875rem;
-  color: #c05621;
+  color: var(--app-warning-text);
   font-weight: 600;
 
-  strong { color: #c05621; font-variant-numeric: tabular-nums; }
+  strong { color: var(--app-warning-text); font-variant-numeric: tabular-nums; }
 }
 
 .progress-bar-wrapper {
@@ -158,7 +158,7 @@ $_border2:  #d0d9e4;
 
 .progress-fill {
   height: 100%;
-  background: #22c55e;
+  background: var(--app-success);
   border-radius: 999px;
   transition: width 0.35s ease;
 }
@@ -187,9 +187,9 @@ $_border2:  #d0d9e4;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 
-  &-success { background: rgba(34, 197, 94, 0.10);  color: #15803d; }
-  &-warning { background: rgba(234, 179, 8, 0.12);  color: #a16207; }
-  &-danger  { background: rgba(239, 68, 68, 0.10);  color: #dc2626; }
+  &-success { background: rgba(34, 197, 94, 0.10);  color: var(--app-success-text); }
+  &-warning { background: rgba(234, 179, 8, 0.12);  color: var(--app-warning-text); }
+  &-danger  { background: rgba(239, 68, 68, 0.10);  color: var(--app-danger-text); }
 }
 
 // ── Payments list ─────────────────────────────────────────────────────────────
@@ -286,7 +286,7 @@ $_border2:  #d0d9e4;
   color: $_muted;
   transition: opacity 0.15s, color 0.15s;
 
-  &:hover { opacity: 1; color: #dc2626; }
+  &:hover { opacity: 1; color: var(--app-danger-text); }
 }
 
 .btn-view:hover { color: $_red; }
@@ -299,7 +299,7 @@ $_border2:  #d0d9e4;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #a16207;
+  color: var(--app-warning-text);
   background: rgba(234, 179, 8, 0.12);
   border-radius: 6px;
   vertical-align: middle;
@@ -402,7 +402,7 @@ $_border2:  #d0d9e4;
     border-color: $_red;
     box-shadow: 0 2px 6px color-mix(in srgb, var(--app-primary) 30%, transparent);
 
-    &:hover:not(:disabled) { background: #e8000b; box-shadow: 0 4px 10px color-mix(in srgb, var(--app-primary) 40%, transparent); transform: translateY(-1px); }
+    &:hover:not(:disabled) { background: color-mix(in srgb, var(--app-primary) 88%, #000); box-shadow: 0 4px 10px color-mix(in srgb, var(--app-primary) 40%, transparent); transform: translateY(-1px); }
     &:disabled { opacity: 0.55; cursor: not-allowed; }
   }
 
@@ -412,7 +412,7 @@ $_border2:  #d0d9e4;
     border-color: $_border2;
     box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
 
-    &:hover { background: $_surface2; border-color: #bcc6d4; }
+    &:hover { background: $_surface2; border-color: var(--app-border-strong); }
   }
 }
 

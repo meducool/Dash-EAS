@@ -1,13 +1,13 @@
 // ── Design tokens ─────────────────────────────────────────────────────────────
 $_red:      var(--app-primary);
-$_text:     #0f172a;
-$_muted:    #64748b;
-$_dim:      #94a3b8;
-$_bg:       #f1f5f9;
-$_surface:  #ffffff;
-$_surface2: #f8fafc;
-$_border:   #e8edf3;
-$_border2:  #d0d9e4;
+$_text: var(--app-text);
+$_muted: var(--app-text-muted);
+$_dim: var(--app-text-subtle);
+$_bg: var(--app-surface-2);
+$_surface: var(--app-surface);
+$_surface2: var(--app-surface-2);
+$_border: var(--app-border);
+$_border2: var(--app-border-strong);
 
 $_shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.04);
 $_shadow-md: 0 1px 3px rgba(15, 23, 42, 0.05), 0 4px 12px rgba(15, 23, 42, 0.08);
@@ -212,7 +212,7 @@ $_radius-lg: 14px;
   label {
     font-size: 0.8125rem;
     font-weight: 600;
-    color: #334155;
+    color: var(--app-text-muted);
     letter-spacing: 0.01em;
   }
 }
@@ -245,7 +245,7 @@ $_radius-lg: 14px;
   label {
     font-size: 0.8125rem;
     font-weight: 600;
-    color: #334155;
+    color: var(--app-text-muted);
     letter-spacing: 0.01em;
   }
 }
@@ -287,8 +287,8 @@ $_radius-lg: 14px;
   border-radius: 16px;
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--preview-accent) 10%, #f8fafc) 0%,
-    #e2e8f0 100%
+    color-mix(in srgb, var(--preview-accent) 10%, var(--app-surface-2)) 0%,
+    var(--app-surface-3) 100%
   );
   padding: 1rem;
   display: flex;
@@ -314,7 +314,7 @@ $_radius-lg: 14px;
 
 .theme-preview__topbar {
   padding: 1rem;
-  background: color-mix(in srgb, var(--preview-accent) 92%, #ffffff);
+  background: color-mix(in srgb, var(--preview-accent) 92%, var(--app-surface));
   color: #fff;
   display: flex;
   align-items: center;
@@ -509,7 +509,7 @@ $_radius-lg: 14px;
   flex-wrap: wrap;
   gap: 0.75rem 1rem;
   font-size: 0.85rem;
-  color: #475569;
+  color: var(--app-text-muted);
 
   span {
     padding: 0.45rem 0.65rem;
@@ -553,7 +553,7 @@ $_radius-lg: 14px;
   box-shadow: 0 2px 6px color-mix(in srgb, var(--app-primary) 30%, transparent);
 
   &:hover:not(:disabled) {
-    background: #e8000b;
+    background: color-mix(in srgb, var(--app-primary) 88%, #000);
     box-shadow: 0 4px 10px color-mix(in srgb, var(--app-primary) 40%, transparent);
     transform: translateY(-1px);
   }
@@ -567,18 +567,18 @@ $_radius-lg: 14px;
 
   &:hover:not(:disabled) {
     background: $_surface2;
-    border-color: #bcc6d4;
+    border-color: var(--app-border-strong);
   }
 }
 
 .btn-danger {
-  background: #fff5f5;
-  color: #c53030;
-  border-color: #fed7d7;
+  background: color-mix(in srgb, var(--app-danger) 10%, transparent);
+  color: var(--app-danger-text);
+  border-color: color-mix(in srgb, var(--app-danger) 35%, transparent);
 
   &:hover:not(:disabled) {
-    background: #fee2e2;
-    border-color: #fc8181;
+    background: color-mix(in srgb, var(--app-danger) 10%, transparent);
+    border-color: color-mix(in srgb, var(--app-danger) 35%, transparent);
   }
 }
 
@@ -591,15 +591,15 @@ $_radius-lg: 14px;
 }
 
 .alert-danger {
-  background: #fff5f5;
-  color: #c53030;
-  border: 1px solid #fed7d7;
+  background: color-mix(in srgb, var(--app-danger) 10%, transparent);
+  color: var(--app-danger-text);
+  border: 1px solid color-mix(in srgb, var(--app-danger) 35%, transparent);
 }
 
 .alert-success {
-  background: #f0fdf4;
-  color: #15803d;
-  border: 1px solid #bbf7d0;
+  background: color-mix(in srgb, var(--app-success) 10%, transparent);
+  color: var(--app-success-text);
+  border: 1px solid color-mix(in srgb, var(--app-success) 35%, transparent);
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────

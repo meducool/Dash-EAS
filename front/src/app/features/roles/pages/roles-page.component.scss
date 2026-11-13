@@ -3,14 +3,14 @@
 
 // Internal tokens (mirror _page-layout internals)
 $_red:     var(--app-primary);
-$_text:    #0f172a;
-$_muted:   #64748b;
-$_dim:     #94a3b8;
-$_bg:      #f1f5f9;
-$_surface: #ffffff;
-$_surface-2: #f8fafc;
-$_border:  #e8edf3;
-$_border-2: #d0d9e4;
+$_text: var(--app-text);
+$_muted: var(--app-text-muted);
+$_dim: var(--app-text-subtle);
+$_bg: var(--app-surface-2);
+$_surface: var(--app-surface);
+$_surface-2: var(--app-surface-2);
+$_border: var(--app-border);
+$_border-2: var(--app-border-strong);
 
 // ── Table-card spacing ───────────────────────────────────────────────────────
 .table-card {
@@ -39,7 +39,7 @@ $_border-2: #d0d9e4;
   font-size: 0.68rem;
   font-weight: 600;
   background: rgba(59, 130, 246, 0.08);
-  color: #1d4ed8;
+  color: var(--app-info-text);
   border: 1px solid rgba(59, 130, 246, 0.18);
   white-space: nowrap;
 }
@@ -174,7 +174,7 @@ $_border-2: #d0d9e4;
   &:hover {
     background: $_bg !important;
     color: $_text !important;
-    border-color: #c4cdd8 !important;
+    border-color: var(--app-border-strong) !important;
   }
 }
 

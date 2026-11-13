@@ -3,9 +3,9 @@
 
 // Tokens mirror _page-layout (kept local: the mixin does not export them).
 $_red:      var(--app-primary);
-$_text:     #0f172a;
-$_muted:    #64748b;
-$_border:   #e8edf3;
+$_text: var(--app-text);
+$_muted: var(--app-text-muted);
+$_border: var(--app-border);
 
 // ── Modal headers (correction, movements) ────────────────────────────────────
 .modal-header h2 { line-height: 1.25; }
@@ -55,16 +55,16 @@ $_border:   #e8edf3;
   font-weight: 500;
   text-transform: none;
   letter-spacing: 0;
-  color: #94a3b8;
+  color: var(--app-text-subtle);
 }
 
 .form-error {
   margin: 0;
   padding: 0.6rem 0.8rem;
-  border: 1px solid #fecdd3;
+  border: 1px solid color-mix(in srgb, var(--app-danger) 35%, transparent);
   border-radius: 8px;
-  background: #fff1f2;
-  color: #be123c;
+  background: color-mix(in srgb, var(--app-danger) 10%, transparent);
+  color: var(--app-danger-text);
   font-size: 0.85rem;
 }
 
@@ -86,9 +86,9 @@ $_border:   #e8edf3;
   gap: 0.5rem;
   min-height: 2.25rem;
   padding: 0.4rem 0.8rem;
-  border: 1px solid #d0d9e4;
+  border: 1px solid var(--app-border-strong);
   border-radius: 8px;
-  background: #fff;
+  background: var(--app-surface);
   color: $_text;
   font-size: 0.85rem;
   font-weight: 500;
@@ -105,12 +105,12 @@ $_border:   #e8edf3;
     cursor: pointer;
   }
 
-  &:hover { border-color: #c4cdd8; background: #f8fafc; }
+  &:hover { border-color: var(--app-border-strong); background: var(--app-surface-2); }
 
   &:has(input:checked) {
     border-color: color-mix(in srgb, var(--app-primary) 40%, transparent);
     background: color-mix(in srgb, var(--app-primary) 6%, transparent);
-    color: #b91c1c;
+    color: var(--app-danger-text);
   }
 
   &:has(input:focus-visible) { box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 15%, transparent); }
@@ -121,8 +121,8 @@ $_border:   #e8edf3;
 .movements-table {
   .mv-num { font-variant-numeric: tabular-nums; }
   .mv-delta { font-weight: 700; }
-  .mv-delta-up { color: #15803d; }
-  .mv-delta-down { color: #dc2626; }
+  .mv-delta-up { color: var(--app-success-text); }
+  .mv-delta-down { color: var(--app-danger-text); }
 }
 
 .mv-chip {
@@ -133,10 +133,10 @@ $_border:   #e8edf3;
   font-weight: 600;
   white-space: nowrap;
 
-  &.mv-green    { background: #ebf8f2; color: #1f7a52; }
-  &.mv-red      { background: #fff5f5; color: #c53030; }
-  &.mv-blue     { background: #ebf8ff; color: #2b6cb0; }
-  &.mv-orange   { background: #fff7ed; color: #c05621; }
-  &.mv-grey     { background: #edf2f7; color: #4a5568; }
-  &.mv-dark-red { background: #fff5f5; color: #9b2c2c; }
+  &.mv-green    { background: color-mix(in srgb, var(--app-success) 10%, transparent); color: var(--app-success-text); }
+  &.mv-red      { background: color-mix(in srgb, var(--app-danger) 10%, transparent); color: var(--app-danger-text); }
+  &.mv-blue     { background: color-mix(in srgb, var(--app-info) 10%, transparent); color: var(--app-info-text); }
+  &.mv-orange   { background: color-mix(in srgb, var(--app-warning) 10%, transparent); color: var(--app-warning-text); }
+  &.mv-grey     { background: var(--app-surface-3); color: var(--app-text-muted); }
+  &.mv-dark-red { background: color-mix(in srgb, var(--app-danger) 10%, transparent); color: var(--app-danger-text); }
 }

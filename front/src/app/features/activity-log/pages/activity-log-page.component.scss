@@ -2,11 +2,11 @@
 @include layout.page-layout();
 
 $_red:     var(--app-primary);
-$_text:    #0f172a;
-$_muted:   #64748b;
-$_surface: #ffffff;
-$_border:  #e8edf3;
-$_bg:      #f7fafc;
+$_text: var(--app-text);
+$_muted: var(--app-text-muted);
+$_surface: var(--app-surface);
+$_border: var(--app-border);
+$_bg: var(--app-surface-2);
 
 // ── Page header ───────────────────────────────────────────────────────────────
 .page-header {
@@ -63,7 +63,7 @@ $_bg:      #f7fafc;
   background: $_bg;
   color: $_muted;
   border: 1px solid $_border;
-  &:hover { background: #edf2f7; }
+  &:hover { background: var(--app-surface-3); }
 }
 
 // ── Table ─────────────────────────────────────────────────────────────────────
@@ -162,19 +162,19 @@ $_bg:      #f7fafc;
 .entity-badge {
   letter-spacing: 0.02em;
 
-  &.entity-vente       { background: color-mix(in srgb, var(--app-primary) 8%, transparent);  color: #c0020b; }
-  &.entity-achat       { background: rgba(59, 130, 246, 0.1);  color: #1d4ed8; }
-  &.entity-service     { background: rgba(168, 85, 247, 0.1);  color: #7c3aed; }
-  &.entity-compte      { background: rgba(16, 185, 129, 0.10); color: #065f46; }
-  &.entity-transaction { background: rgba(245, 158, 11, 0.12); color: #92400e; }
+  &.entity-vente       { background: color-mix(in srgb, var(--app-primary) 8%, transparent);  color: var(--app-danger-text); }
+  &.entity-achat       { background: rgba(59, 130, 246, 0.1);  color: var(--app-info-text); }
+  &.entity-service     { background: rgba(168, 85, 247, 0.1);  color: var(--app-violet-text); }
+  &.entity-compte      { background: rgba(16, 185, 129, 0.10); color: var(--app-success-text); }
+  &.entity-transaction { background: rgba(245, 158, 11, 0.12); color: var(--app-warning-text); }
 }
 
 .action-badge {
-  &.badge-success { background: rgba(72, 187, 120, 0.12); color: #276749; }
-  &.badge-blue    { background: rgba(59, 130, 246, 0.1);  color: #1d4ed8; }
-  &.badge-danger  { background: rgba(245, 101, 101, 0.12); color: #c53030; }
-  &.badge-purple  { background: rgba(168, 85, 247, 0.1);  color: #6d28d9; }
-  &.badge-warning { background: rgba(237, 137, 54, 0.12); color: #c05621; }
+  &.badge-success { background: rgba(72, 187, 120, 0.12); color: var(--app-success-text); }
+  &.badge-blue    { background: rgba(59, 130, 246, 0.1);  color: var(--app-info-text); }
+  &.badge-danger  { background: rgba(245, 101, 101, 0.12); color: var(--app-danger-text); }
+  &.badge-purple  { background: rgba(168, 85, 247, 0.1);  color: var(--app-violet-text); }
+  &.badge-warning { background: rgba(237, 137, 54, 0.12); color: var(--app-warning-text); }
 }
 
 // ── Empty state ───────────────────────────────────────────────────────────────
@@ -346,8 +346,8 @@ $_bg:      #f7fafc;
     word-break: break-word;
   }
 
-  .val-before { color: #c53030; }
-  .val-after  { color: #276749; }
+  .val-before { color: var(--app-danger-text); }
+  .val-after  { color: var(--app-success-text); }
 
   .row-changed {
     background: rgba(251, 191, 36, 0.08);

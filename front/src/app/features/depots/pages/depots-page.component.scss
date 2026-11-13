@@ -17,7 +17,7 @@
     flex: 1;
     min-width: 0;
     padding: 0.55rem 0.75rem;
-    border: 1px solid #d0d9e4;
+    border: 1px solid var(--app-border-strong);
     border-radius: 8px;
     font-size: 0.875rem;
 
@@ -29,8 +29,8 @@
   margin: 0;
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
-  background: #fff1f2;
-  color: #be123c;
+  background: color-mix(in srgb, var(--app-danger) 10%, transparent);
+  color: var(--app-danger-text);
   font-size: 0.82rem;
 }
 
@@ -38,7 +38,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  border: 1px solid #e8edf3;
+  border: 1px solid var(--app-border);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -50,18 +50,18 @@
   min-height: 2.9rem;
   padding: 0.4rem 0.9rem;
 
-  & + & { border-top: 1px solid #e8edf3; }
-  &:hover { background: #f8fafc; }
+  & + & { border-top: 1px solid var(--app-border); }
+  &:hover { background: var(--app-surface-2); }
 }
 
-.depot-name { flex: 1; min-width: 0; font-weight: 600; color: #0f172a; overflow-wrap: anywhere; }
-.depot-count { font-size: 0.8rem; color: #94a3b8; white-space: nowrap; }
+.depot-name { flex: 1; min-width: 0; font-weight: 600; color: var(--app-text); overflow-wrap: anywhere; }
+.depot-count { font-size: 0.8rem; color: var(--app-text-subtle); white-space: nowrap; }
 
 .depot-rename {
   flex: 1;
   min-width: 0;
   padding: 0.4rem 0.6rem;
-  border: 1px solid #d0d9e4;
+  border: 1px solid var(--app-border-strong);
   border-radius: 8px;
   font-size: 0.875rem;
 
@@ -77,5 +77,5 @@
 .depot-footer {
   margin: 0;
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--app-text-muted);
 }

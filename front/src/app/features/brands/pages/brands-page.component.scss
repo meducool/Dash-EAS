@@ -5,10 +5,10 @@
 // ── Profils de pneus ─────────────────────────────────────────────────────────
 .profiles-chip {
   padding: 0.2rem 0.65rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--app-border);
   border-radius: 999px;
-  background: #f8fafc;
-  color: #334155;
+  background: var(--app-surface-2);
+  color: var(--app-text-muted);
   font-size: 0.78rem;
   font-weight: 600;
   white-space: nowrap;
@@ -27,7 +27,7 @@
 .modal-subtitle {
   margin: 0.2rem 0 0;
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--app-text-muted);
 }
 
 .profile-add {
@@ -41,8 +41,8 @@
   margin: 0;
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
-  background: #fff1f2;
-  color: #be123c;
+  background: color-mix(in srgb, var(--app-danger) 10%, transparent);
+  color: var(--app-danger-text);
   font-size: 0.82rem;
 }
 
@@ -50,7 +50,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  border: 1px solid #e8edf3;
+  border: 1px solid var(--app-border);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -62,12 +62,12 @@
   min-height: 2.75rem;
   padding: 0.4rem 0.75rem;
 
-  & + & { border-top: 1px solid #e8edf3; }
-  &:hover { background: #f8fafc; }
+  & + & { border-top: 1px solid var(--app-border); }
+  &:hover { background: var(--app-surface-2); }
 }
 
-.profile-name { flex: 1; min-width: 0; font-weight: 600; color: #0f172a; overflow-wrap: anywhere; }
-.profile-count { font-size: 0.78rem; color: #94a3b8; white-space: nowrap; }
+.profile-name { flex: 1; min-width: 0; font-weight: 600; color: var(--app-text); overflow-wrap: anywhere; }
+.profile-count { font-size: 0.78rem; color: var(--app-text-subtle); white-space: nowrap; }
 .profile-rename { flex: 1; min-width: 0; }
 
 .profile-actions {
@@ -83,13 +83,13 @@
   min-width: 2.2rem;
   padding: 0.1rem 0.45rem;
   border-radius: 6px;
-  background: #f1f5f9;
-  color: #334155;
+  background: var(--app-surface-3);
+  color: var(--app-text-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.78rem;
   font-weight: 700;
   text-align: center;
 }
 
-.profile-code--missing { color: #94a3b8; font-weight: 400; }
+.profile-code--missing { color: var(--app-text-subtle); font-weight: 400; }
 .profile-code-input { flex: 0 0 6.5rem !important; max-width: 6.5rem; }

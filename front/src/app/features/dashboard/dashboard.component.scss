@@ -1,21 +1,21 @@
 // ─── Modernised Light — Pneuma POS Dashboard ────────────────────────────────
 $red:          var(--app-primary);
 $red-pale:     color-mix(in srgb, var(--app-primary) 8%, transparent);
-$blue:         #3b82f6;
+$blue: var(--app-info);
 $blue-pale:    rgba(59, 130, 246, 0.08);
-$green:        #10b981;
-$amber:        #f59e0b;
+$green: var(--app-success);
+$amber: var(--app-warning);
 
-$bg:           #f1f5f9;
-$surface:      #ffffff;
-$surface-2:    #f8fafc;
+$bg: var(--app-background);
+$surface: var(--app-surface);
+$surface-2: var(--app-surface-2);
 
-$border:       #e8edf3;
-$border-hover: #d0d9e4;
+$border: var(--app-border);
+$border-hover: var(--app-border-strong);
 
-$text:         #0f172a;
-$text-muted:   #64748b;
-$text-dim:     #94a3b8;
+$text: var(--app-text);
+$text-muted: var(--app-text-muted);
+$text-dim: var(--app-text-subtle);
 
 // ─── Shell ───────────────────────────────────────────────────────────────────
 .dashboard-container {
@@ -86,11 +86,11 @@ $text-dim:     #94a3b8;
   gap: 0.45rem;
   padding: 0.32rem 0.75rem;
   border-radius: 999px;
-  background: #fff5f5;
-  color: #c53030;
+  background: color-mix(in srgb, var(--app-danger) 10%, transparent);
+  color: var(--app-danger-text);
   font-size: 0.76rem;
   font-weight: 600;
-  border: 1px solid #fed7d7;
+  border: 1px solid color-mix(in srgb, var(--app-danger) 35%, transparent);
 }
 
 .kpi-loading-spinner {
@@ -256,9 +256,9 @@ $text-dim:     #94a3b8;
     letter-spacing: 0.02em;
 
     &--parts {
-      background: #eff6ff;
-      color: #1d4ed8;
-      border-color: #bfdbfe;
+      background: color-mix(in srgb, var(--app-info) 10%, transparent);
+      color: var(--app-info-text);
+      border-color: color-mix(in srgb, var(--app-info) 35%, transparent);
     }
   }
 
@@ -279,48 +279,48 @@ $text-dim:     #94a3b8;
   // ── Variants ──
   &.highlight-red {
     border-top: 3px solid $red;
-    background: linear-gradient(160deg, #fff5f5 0%, $surface 50%);
+    background: linear-gradient(160deg, color-mix(in srgb, var(--app-danger) 10%, transparent) 0%, $surface 50%);
 
     .kpi-icon {
-      background: #fff0f0;
-      border-color: #fecaca;
-      color: #c53030;
+      background: color-mix(in srgb, var(--app-danger) 10%, transparent);
+      border-color: color-mix(in srgb, var(--app-danger) 35%, transparent);
+      color: var(--app-danger-text);
     }
 
     .kpi-badge {
-      background: #fff0f0;
-      color: #c53030;
-      border-color: #fecaca;
+      background: color-mix(in srgb, var(--app-danger) 10%, transparent);
+      color: var(--app-danger-text);
+      border-color: color-mix(in srgb, var(--app-danger) 35%, transparent);
     }
   }
 
   &.highlight-blue {
     border-top: 3px solid $blue;
-    background: linear-gradient(160deg, #eff6ff 0%, $surface 50%);
+    background: linear-gradient(160deg, color-mix(in srgb, var(--app-info) 10%, transparent) 0%, $surface 50%);
 
     .kpi-icon {
-      background: #dbeafe;
-      border-color: #bfdbfe;
-      color: #1d4ed8;
+      background: color-mix(in srgb, var(--app-info) 10%, transparent);
+      border-color: color-mix(in srgb, var(--app-info) 35%, transparent);
+      color: var(--app-info-text);
     }
 
     .kpi-badge {
-      background: #dbeafe;
-      color: #1d4ed8;
-      border-color: #bfdbfe;
+      background: color-mix(in srgb, var(--app-info) 10%, transparent);
+      color: var(--app-info-text);
+      border-color: color-mix(in srgb, var(--app-info) 35%, transparent);
     }
   }
 
   &.warning-card {
     .kpi-icon {
-      background: #fffbeb;
-      border-color: #fde68a;
-      color: #b45309;
+      background: color-mix(in srgb, var(--app-warning) 10%, transparent);
+      border-color: color-mix(in srgb, var(--app-warning) 35%, transparent);
+      color: var(--app-warning-text);
     }
   }
 
   &.negative-card .kpi-val {
-    color: #dc2626;
+    color: var(--app-danger-text);
   }
 }
 
@@ -404,7 +404,7 @@ $text-dim:     #94a3b8;
   box-shadow: 0 2px 8px color-mix(in srgb, var(--app-primary) 30%, transparent);
 
   &--service {
-    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+    background: linear-gradient(135deg, var(--app-info) 0%, #60a5fa 100%);
     box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
   }
 }
@@ -432,7 +432,7 @@ $text-dim:     #94a3b8;
     margin-left: 0.12em;
   }
 
-  &.negative { color: #dc2626; }
+  &.negative { color: var(--app-danger-text); }
 }
 
 // ─── Quick links ─────────────────────────────────────────────────────────────

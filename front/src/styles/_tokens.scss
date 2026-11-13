@@ -8,6 +8,8 @@
   // Brand (overridden by ThemeService)
   --app-primary: #ff2d37;
   --app-accent: #1e293b;
+  // Brand red used as a text colour (links, emphasis): darker on light, lighter on dark.
+  --app-primary-text: color-mix(in srgb, var(--app-primary) 82%, #000);
 
   // Neutrals
   --app-background: #f8fafc;      // page background
@@ -49,6 +51,7 @@
 }
 
 :root[data-theme-resolved='dark'] {
+  --app-primary-text: color-mix(in srgb, var(--app-primary) 72%, #fff);
   --app-background: #0b1120;
   --app-surface: #111a2e;
   --app-surface-2: #172238;

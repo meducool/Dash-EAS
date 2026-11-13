@@ -24,7 +24,7 @@
 }
 
 .modal-content {
-  background: #fff;
+  background: var(--app-surface);
   border-radius: 16px;
   width: 100%;
   max-width: 960px;
@@ -106,7 +106,7 @@
     border-radius: 6px;
     font-size: 0.85rem;
     color: $text-dark;
-    background: #fff;
+    background: var(--app-surface);
     outline: none;
     font-family: inherit;
 
@@ -133,7 +133,7 @@
   border-radius: 6px;
 
   &:hover { background: $bg-body; }
-  &.danger:hover { color: #dc2626; }
+  &.danger:hover { color: var(--app-danger-text); }
 }
 
 .btn-add-line {
@@ -144,7 +144,7 @@
   padding: 0.5rem 1rem;
   font-size: 0.85rem;
   font-weight: 600;
-  color: $primary-dark;
+  color: var(--app-primary-text);
   cursor: pointer;
   transition: all 0.15s;
 
@@ -160,7 +160,7 @@
   font-size: 0.95rem;
   color: $text-dark;
 
-  strong { color: $primary-dark; }
+  strong { color: var(--app-primary-text); }
 }
 
 /* ---------- Modal Footer ---------- */
