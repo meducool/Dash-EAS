@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Products\ProductService;
+use App\Domain\Purchases\PurchasePriceService;
 use App\Http\Requests\Products\StoreProductRequest;
 use App\Http\Requests\Products\UpdateProductRequest;
 use App\Http\Resources\Products\ProductResource;
@@ -101,5 +102,22 @@ class ProductController extends Controller
     public function filters(): JsonResponse
     {
         return response()->json($this->productService->filters());
+    }
+
+    /**
+     * Purchase price(s) of a product from its purchases — "PU Achat" of the sale form.
+     * Highest price proposed; every price listed when they differ (to check by hand).
+     */
+    public function purchasePrices(Request $request, Product $product, PurchasePriceService $prices): JsonResponse
+    {
+        $validated = $request->validate(['stock_id' => ['nullable', 'integer']]);
+
+        return response()->json($prices->forProduct($product->id, isset($validated['stock_id']) ? (int) $validated['stock_id'] : null));
+    }
+
+    /** Purchase history of a product (date, supplier, lot, quantity, unit price) — product sheet. */
+    public function purchaseHistory(Product $product, PurchasePriceService $prices): JsonResponse
+    {
+        return response()->json($prices->history($product->id));
     }
 }

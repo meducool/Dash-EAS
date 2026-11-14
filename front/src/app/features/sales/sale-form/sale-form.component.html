@@ -208,6 +208,13 @@
         <div class="form-control">
           <label>PU Achat (DH)</label>
           <input type="number" name="cur_purchase_price" [(ngModel)]="currentItem.purchase_price" step="0.01">
+          @if (purchasePriceInfo(); as info) {
+            @if (info.multiple) {
+              <span class="purchase-price-note warn" [title]="purchasePriceTitle">⚠️ {{ info.prices.length }} prix d'achat ({{ info.prices[info.prices.length - 1].unit_price | number:'1.2-2' }} – {{ info.price | number:'1.2-2' }}) : le plus haut est proposé, à vérifier</span>
+            } @else if (info.price !== null) {
+              <span class="purchase-price-note" [title]="purchasePriceTitle">Prix des achats{{ info.scope === 'product' ? ' (autres lots)' : '' }}</span>
+            }
+          }
         </div>
         <div class="form-control">
           <label>PU Vente (DH)</label>

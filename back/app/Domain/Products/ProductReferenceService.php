@@ -29,6 +29,61 @@ class ProductReferenceService
         return $this->unique($this->base($data, $productId), $exceptId);
     }
 
+    /**
+     * Lookups memoised while {@see withCache()} runs (bulk use: price-list imports).
+     *
+     * @var array<string, mixed>|null
+     */
+    private ?array $cache = null;
+
+    /**
+     * The reference a tyre with these characteristics would get, before the
+     * uniqueness suffix — null when it cannot be built (dimensions unknown, not
+     * a tyre). Used as a matching key between price-list lines and products.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function baseReference(array $data): ?string
+    {
+        if (($data['type'] ?? 'tyre') !== 'tyre') {
+            return null;
+        }
+        $base = $this->base($data, null);
+
+        return str_starts_with($base, 'T') && str_ends_with($base, 'XXXXXXX') ? null : $base;
+    }
+
+    /**
+     * Runs $callback with brand / profile lookups memoised (many references in a row).
+     *
+     * @template T
+     *
+     * @param  callable(): T  $callback
+     * @return T
+     */
+    public function withCache(callable $callback): mixed
+    {
+        $previous = $this->cache;
+        $this->cache = $previous ?? [];
+        try {
+            return $callback();
+        } finally {
+            $this->cache = $previous;
+        }
+    }
+
+    private function remember(string $key, callable $resolve): mixed
+    {
+        if ($this->cache === null) {
+            return $resolve();
+        }
+        if (! array_key_exists($key, $this->cache)) {
+            $this->cache[$key] = $resolve();
+        }
+
+        return $this->cache[$key];
+    }
+
     /** Upper-case, trimmed, no spaces — the shape of every reference. */
     public static function normalize(?string $reference): string
     {
@@ -54,7 +109,9 @@ class ProductReferenceService
             return 'T'.$sequence; // dimensions unknown: numbered tyre reference
         }
 
-        $brand = ! empty($data['brand_id']) ? Brand::find($data['brand_id']) : null;
+        $brand = ! empty($data['brand_id'])
+            ? $this->remember('brand:'.$data['brand_id'], fn () => Brand::find($data['brand_id']))
+            : null;
         $brandCode = $brand ? $this->brandCode($brand) : '';
 
         $reference = $brandCode.$width.$height.$diameter
@@ -97,10 +154,10 @@ class ProductReferenceService
         }
 
         if ($brand) {
-            $known = BrandProfile::query()
+            $known = $this->remember('profile:'.$brand->id.':'.mb_strtolower($profile), fn () => BrandProfile::query()
                 ->where('brand_id', $brand->id)
                 ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower($profile)])
-                ->value('code');
+                ->value('code'));
             if (self::normalize($known) !== '') {
                 return self::normalize($known);
             }

@@ -7,6 +7,7 @@ use App\Http\Controllers\CityController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductImageController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SupplierPaymentController;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +36,15 @@ Route::middleware('permission:view products')->group(function () {
     Route::get('products-filters', [ProductController::class, 'filters']);
     Route::get('products/{product}', [ProductController::class, 'show']);
 });
+// Purchase history of a product (product sheet): purchase prices are purchase data.
+Route::get('products/{product}/purchase-history', [ProductController::class, 'purchaseHistory'])->middleware('permission:view purchases');
+// Purchase prices of a product (sale form « PU Achat »): whoever records or edits a sale.
+Route::get('products/{product}/purchase-prices', [ProductController::class, 'purchasePrices'])->middleware('permission:create sales|edit sales');
+// Photos of an article (product sheet, drag & drop): first = main photo.
+Route::get('products/{product}/images', [ProductImageController::class, 'index'])->middleware('permission:view products');
+Route::post('products/{product}/images', [ProductImageController::class, 'store'])->middleware('permission:edit products');
+Route::put('products/{product}/images/order', [ProductImageController::class, 'reorder'])->middleware('permission:edit products');
+Route::delete('product-images/{image}', [ProductImageController::class, 'destroy'])->middleware('permission:edit products');
 Route::get('products-reference-preview', [ProductController::class, 'referencePreview'])->middleware('permission:create products');
 Route::post('products', [ProductController::class, 'store'])->middleware('permission:create products');
 Route::put('products/{product}', [ProductController::class, 'update'])->middleware('permission:edit products');

@@ -1,0 +1,220 @@
+<div class="wp">
+  @if (readOnly()) {
+    <p class="wp-banner wp-banner-history">🕘 Lot remplacé par un plus récent : consultation seule.</p>
+  }
+  <p class="wp-banner">
+    🔒 <strong>Seules les lignes approuvées sont envoyées</strong>, et seulement quand vous cliquez sur « 🚀 Publier ».
+    Prix proposé = meilleure offre fournisseur TTC × (1 + marge boutique) ; à la publication il devient le prix normal du produit (un prix promo éventuel est retiré).
+  </p>
+
+  <!-- Batch -->
+  <div class="wp-bar">
+    <div class="wp-bar-info">
+      @if (batch(); as b) {
+        <span>Lot <strong>#{{ b.id }}</strong> calculé le {{ b.created_at | date:'dd/MM/yyyy à HH:mm' }}{{ b.created_by_name ? ' par ' + b.created_by_name : '' }}</span>
+        <span class="wp-muted">· marge {{ b.margin_percent | number:'1.0-2' }} %</span>
+        @if (b.catalogue_read_at) { <span class="wp-muted">· catalogue du site lu le {{ b.catalogue_read_at | date:'dd/MM/yyyy à HH:mm' }}</span> }
+      } @else {
+        <span class="wp-muted">Aucune proposition calculée pour l'instant.</span>
+      }
+    </div>
+    <div class="wp-bar-buttons">
+    @if (canApprove() && batch()) {
+      <button type="button" class="btn btn-primary btn-sm" (click)="publish()" [disabled]="publishing() || !batch()!.statuses.approved"
+              title="Envoie les lignes approuvées à la boutique WooCommerce">
+        {{ publishing() ? '⏳ Publication…' : '🚀 Publier ' + batch()!.statuses.approved + ' ligne(s) approuvée(s)' }}
+      </button>
+    }
+    @if (canGenerate()) {
+      <button type="button" class="btn btn-secondary btn-sm" (click)="generate()" [disabled]="generating()"
+              title="Compare le POS (offres fournisseurs, stock, photos) avec le dernier catalogue lu du site">
+        {{ generating() ? '⏳ Calcul…' : '🧮 Calculer les propositions' }}
+      </button>
+    }
+    </div>
+  </div>
+
+  @if (batch(); as b) {
+    <p class="wp-counts">
+      {{ b.counts.update }} mise(s) à jour · {{ b.counts.create }} création(s) · {{ b.counts.with_alerts }} avec alerte
+      <span class="wp-muted">— non proposés : {{ b.counts.unchanged }} déjà à jour, {{ b.counts.no_price_skipped }} sans offre fournisseur (pas de prix),
+        {{ b.counts.variable_skipped }} produit(s) variable(s)</span>
+    </p>
+  }
+
+  @if (notice(); as n) {
+    <p class="wp-notice" [class.ok]="n.kind === 'ok'" [class.error]="n.kind === 'error'" role="status">{{ n.text }}</p>
+  }
+
+  <!-- Status tabs -->
+  <div class="wp-tabs" role="tablist" aria-label="Statut des propositions">
+    @for (s of STATUS_TABS; track s) {
+      @if (!readOnly() || s !== 'approved') {
+      <button type="button" role="tab" class="wp-tab" [class.active]="status() === s" [attr.aria-selected]="status() === s" (click)="setStatus(s)">
+        {{ TAB_LABELS[s || 'all'] }}
+        @if (s && batch()) { <span class="wp-tab-count">{{ batch()!.statuses[s] }}</span> }
+      </button>
+      }
+    }
+  </div>
+
+  <!-- Filters -->
+  <form class="wp-filters" (ngSubmit)="applyFilters()">
+    <input class="form-control" name="wp_search" placeholder="Référence ou libellé…" [ngModel]="search()" (ngModelChange)="search.set($event)">
+    <select class="form-control" name="wp_action" [ngModel]="action()" (ngModelChange)="action.set($event); applyFilters()">
+      <option value="">Mises à jour et créations</option>
+      <option value="update">Mises à jour</option>
+      <option value="create">Créations</option>
+    </select>
+    <select class="form-control" name="wp_alert" [ngModel]="alert()" (ngModelChange)="alert.set($event); applyFilters()">
+      <option value="">Toutes les alertes</option>
+      <option value="none">Sans alerte</option>
+      <option value="any">Avec alerte</option>
+      @for (a of ALERTS; track a) { <option [value]="a">{{ ALERT_LABELS[a] }}</option> }
+    </select>
+    <button type="submit" class="btn btn-secondary btn-sm">🔍</button>
+  </form>
+
+  <!-- Bulk actions (approver) -->
+  @if (canApprove() && batch()) {
+    <div class="wp-actions">
+      <span class="wp-muted">{{ selectedCount() }} sélectionnée(s)</span>
+      <button type="button" class="btn btn-primary btn-sm" [disabled]="!selectedCount() || deciding()" (click)="decide('approve')">✅ Approuver</button>
+      <button type="button" class="btn btn-secondary btn-sm" [disabled]="!selectedCount() || deciding()" (click)="decide('reject')">✖ Rejeter</button>
+      <button type="button" class="btn btn-secondary btn-sm" [disabled]="!selectedCount() || deciding()" (click)="decide('reset')">↩ Remettre à décider</button>
+      <span class="wp-sep"></span>
+      <button type="button" class="btn btn-secondary btn-sm" [disabled]="deciding() || !batch()!.statuses.proposed" (click)="approveAllWithoutAlert()"
+              title="Les lignes avec alerte restent à décider une par une">✅ Approuver tout ce qui est sans alerte</button>
+    </div>
+  }
+
+  <div class="table-card">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            @if (canApprove()) {
+              <th class="wp-check"><input type="checkbox" [checked]="allSelected()" (change)="toggleAll()" aria-label="Tout sélectionner"></th>
+            }
+            <th>Article</th>
+            <th>Action</th>
+            <th class="text-end">Prix site → proposé</th>
+            <th>Disponibilité</th>
+            <th class="text-center">Photos</th>
+            <th>Alertes</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading()) {
+            <tr><td colspan="8" class="wp-empty">Chargement…</td></tr>
+          } @else {
+            @for (row of rows(); track row.id) {
+              <tr [class.wp-row-selected]="isSelected(row.id)">
+                @if (canApprove()) {
+                  <td class="wp-check">
+                    @if (canDecide(row)) {
+                      <input type="checkbox" [checked]="isSelected(row.id)" (change)="toggle(row.id)" [attr.aria-label]="'Sélectionner ' + (row.product?.reference || row.id)">
+                    }
+                  </td>
+                }
+                <td>
+                  <span class="wp-mono">{{ row.product?.reference || row.proposed.sku || '-' }}</span>
+                  <span class="wp-label">{{ row.product?.label || row.proposed.name }}</span>
+                  @if (row.woo?.permalink) {
+                    <a class="wp-site-link" [href]="row.woo!.permalink" target="_blank" rel="noopener noreferrer">Voir sur le site ↗</a>
+                  }
+                </td>
+                <td>
+                  <span class="wp-chip" [class.wp-chip-create]="row.action === 'create'">{{ row.action === 'create' ? 'Création' : 'Mise à jour' }}</span>
+                </td>
+                <td class="text-end wp-num">
+                  @if (editingId() === row.id) {
+                    <form class="wp-price-form" (ngSubmit)="savePrice(row)">
+                      <input class="form-control wp-price-input" name="price" inputmode="decimal" [ngModel]="priceInput()" (ngModelChange)="priceInput.set($event)" aria-label="Prix à publier">
+                      <button type="submit" class="btn btn-primary btn-sm" title="Enregistrer">✓</button>
+                      <button type="button" class="btn btn-secondary btn-sm" (click)="cancelPrice()" title="Annuler">✕</button>
+                      @if (row.price_override != null) {
+                        <button type="button" class="btn-link" (click)="savePrice(row, true)">Prix calculé</button>
+                      }
+                    </form>
+                  } @else {
+                    @if (row.fields.includes('price') || row.action === 'create') {
+                      <span class="wp-muted">{{ row.current?.price != null ? (row.current!.price | number:'1.2-2') : '—' }}</span>
+                      → <strong>{{ row.final_price | number:'1.2-2' }} DH</strong>
+                      @if (priceDelta(row); as d) {
+                        <span class="wp-delta" [class.up]="d > 0" [class.down]="d < 0">{{ d > 0 ? '+' : '' }}{{ d | number:'1.0-1' }} %</span>
+                      }
+                    } @else {
+                      <span class="wp-muted">{{ row.current?.price != null ? (row.current!.price | number:'1.2-2') + ' DH' : '—' }} (inchangé)</span>
+                    }
+                    <span class="wp-sub">
+                      Offre {{ row.current?.best_offer_ttc != null ? (row.current!.best_offer_ttc | number:'1.2-2') : '—' }}
+                      @if (row.current?.purchase_cost != null) { · achat {{ row.current!.purchase_cost | number:'1.2-2' }} }
+                    </span>
+                    @if (canDecide(row)) {
+                      <button type="button" class="btn-link wp-edit" (click)="startPrice(row)">✏️ Modifier le prix</button>
+                    }
+                  }
+                </td>
+                <td>
+                  @if (row.fields.includes('stock') || row.action === 'create') {
+                    @if (row.action === 'update') { <span class="wp-muted">{{ stockLabel(row.current) }}</span> → }
+                    <strong>{{ stockLabel(row.proposed) }}</strong>
+                  } @else {
+                    <span class="wp-muted">{{ stockLabel(row.current) }} (inchangé)</span>
+                  }
+                  <span class="wp-sub">Stock boutique : {{ row.current?.pos_stock ?? 0 }}</span>
+                </td>
+                <td class="text-center">
+                  @if (row.proposed.images?.length) {
+                    <span class="wp-thumbs">
+                      @for (img of row.proposed.images!.slice(0, 3); track img.id) { <img [src]="img.url" alt="" loading="lazy"> }
+                    </span>
+                    <span class="wp-sub">+{{ row.proposed.images!.length }}</span>
+                  } @else {
+                    <span class="wp-muted">{{ row.current?.images_count ?? 0 }} sur le site</span>
+                  }
+                </td>
+                <td>
+                  @for (a of row.alerts; track a) {
+                    <span class="wp-alert" [class.wp-alert-strong]="a === 'below_cost'">{{ ALERT_LABELS[a] || a }}</span>
+                  } @empty { <span class="wp-muted">—</span> }
+                </td>
+                <td>
+                  <span [class]="'wp-status wp-status-' + row.status">{{ STATUS_LABELS[row.status] }}</span>
+                  @if (row.published_at) {
+                    <span class="wp-sub">Publiée le {{ row.published_at | date:'dd/MM HH:mm' }}</span>
+                  } @else if (row.decided_by_name) {
+                    <span class="wp-sub">{{ row.decided_by_name }}, {{ row.decided_at | date:'dd/MM HH:mm' }}</span>
+                  }
+                  @if (row.error) {
+                    <span class="wp-error" [class.wp-warning]="row.status === 'published'">{{ row.error }}</span>
+                  }
+                  @if (canDecide(row)) {
+                    <span class="wp-row-actions">
+                      @if (row.status !== 'approved') { <button type="button" class="btn-link" (click)="decide('approve', [row.id])" [disabled]="deciding()">Approuver</button> }
+                      @if (row.status !== 'rejected') { <button type="button" class="btn-link wp-reject" (click)="decide('reject', [row.id])" [disabled]="deciding()">Rejeter</button> }
+                    </span>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="8" class="wp-empty">
+                {{ batch() ? 'Aucune ligne pour ces filtres.' : 'Lisez le catalogue du site, renseignez la marge boutique, puis calculez les propositions.' }}
+              </td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  @if (lastPage() > 1) {
+    <div class="wp-pagination">
+      <button type="button" class="btn btn-secondary btn-sm" [disabled]="page() === 1" (click)="goToPage(page() - 1)">‹ Précédent</button>
+      <span class="wp-muted">Page {{ page() }} / {{ lastPage() }} · {{ total() }} ligne(s)</span>
+      <button type="button" class="btn btn-secondary btn-sm" [disabled]="page() === lastPage()" (click)="goToPage(page() + 1)">Suivant ›</button>
+    </div>
+  }
+</div>

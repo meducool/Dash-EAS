@@ -104,6 +104,13 @@ export const routes: Routes = [
       import('./features/purchases/pages/purchases-page.component').then((m) => m.PurchasesPageComponent),
   },
   {
+    path: 'tarifs-fournisseurs',
+    canActivate: [authGuard, permissionGuard],
+    data: { permission: 'view supplier-prices' },
+    loadComponent: () =>
+      import('./features/supplier-prices/pages/supplier-prices-page.component').then((m) => m.SupplierPricesPageComponent),
+  },
+  {
     path: 'stock',
     canActivate: [authGuard, permissionGuard],
     data: { permission: 'view stock' },

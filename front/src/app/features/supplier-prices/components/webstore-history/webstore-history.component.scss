@@ -1,0 +1,38 @@
+@use '../../../_page-layout' as layout;
+@include layout.page-layout();
+
+.wh { display: flex; flex-direction: column; gap: 0.9rem; }
+.wh-muted { color: var(--app-text-subtle); }
+.wh-ok { color: var(--app-success-text); font-weight: 600; }
+.wh-bad { color: var(--app-danger-text); font-weight: 700; }
+.wh-empty { padding: 1.5rem; text-align: center; color: var(--app-text-subtle); }
+
+.wh-error {
+  margin: 0;
+  padding: 0.6rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  background: color-mix(in srgb, var(--app-danger) 10%, transparent);
+  color: var(--app-danger-text);
+}
+
+.wh-chip {
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.wh-chip-open { background: color-mix(in srgb, var(--app-info) 12%, transparent); color: var(--app-info-text); }
+
+.wh-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.text-end { text-align: right; }
+.text-center { text-align: center; }

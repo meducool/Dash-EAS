@@ -458,6 +458,17 @@ $_radius-md: 12px;
 .text-muted   { color: $_muted; }
 .text-small   { font-size: 0.8125rem; }
 
+.purchase-price-note {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: var(--app-text-muted);
+  cursor: help;
+
+  &.warn { color: var(--app-warning-text); font-weight: 600; }
+}
+
 // ── Responsive ────────────────────────────────────────────────────────────────
 @media (max-width: 768px) {
   .form-container { gap: 0.875rem; }

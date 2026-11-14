@@ -1,0 +1,59 @@
+<div class="wh">
+  @if (error()) { <p class="wh-error">{{ error() }}</p> }
+
+  <div class="table-card">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Lot</th>
+            <th>Calculé le</th>
+            <th>Par</th>
+            <th class="text-end">Marge</th>
+            <th class="text-center">Proposées</th>
+            <th class="text-center">Publiées</th>
+            <th class="text-center">Échecs</th>
+            <th class="text-center">Rejetées</th>
+            <th class="text-center">Non traitées</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading()) {
+            <tr><td colspan="10" class="wh-empty">Chargement…</td></tr>
+          } @else {
+            @for (row of rows(); track row.id) {
+              <tr>
+                <td>
+                  <strong>#{{ row.id }}</strong>
+                  @if (row.status === 'open') { <span class="wh-chip wh-chip-open">En cours</span> }
+                </td>
+                <td>{{ row.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ row.created_by_name || '—' }}</td>
+                <td class="text-end">{{ row.margin_percent | number:'1.0-2' }} %</td>
+                <td class="text-center">{{ (row.counts?.update ?? 0) + (row.counts?.create ?? 0) }}</td>
+                <td class="text-center wh-ok">{{ count(row, 'published') || '—' }}</td>
+                <td class="text-center" [class.wh-bad]="count(row, 'failed') > 0">{{ count(row, 'failed') || '—' }}</td>
+                <td class="text-center">{{ count(row, 'rejected') || '—' }}</td>
+                <td class="text-center wh-muted" title="À décider, approuvées non publiées, ou remplacées par un lot plus récent">
+                  {{ (count(row, 'proposed') + count(row, 'approved') + count(row, 'superseded')) || '—' }}
+                </td>
+                <td class="text-end"><button type="button" class="btn-link" (click)="open.emit(row.id)">Voir les lignes ›</button></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="10" class="wh-empty">Aucun lot calculé pour l'instant.</td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  @if (lastPage() > 1) {
+    <div class="wh-pagination">
+      <button type="button" class="btn btn-secondary btn-sm" [disabled]="page() === 1" (click)="goToPage(page() - 1)">‹ Précédent</button>
+      <span class="wh-muted">Page {{ page() }} / {{ lastPage() }}</span>
+      <button type="button" class="btn btn-secondary btn-sm" [disabled]="page() === lastPage()" (click)="goToPage(page() + 1)">Suivant ›</button>
+    </div>
+  }
+</div>

@@ -40,6 +40,73 @@
         </div>
       </div>
 
+      <!-- Photos: drop files on the area, drag a photo to change the order (1st = main) -->
+      <div class="detail-section">
+        <h3 class="section-title">
+          📷 Photos
+          <span class="mv-count">({{ images().length }}/{{ maxImages() }})</span>
+        </h3>
+
+        <div class="table-loading" *ngIf="imagesLoading()">Chargement...</div>
+
+        <div *ngIf="!imagesLoading()"
+             class="photo-zone"
+             [class.photo-zone--active]="dropActive()"
+             [class.photo-zone--editable]="canEditPhotos"
+             (dragover)="onDragOver($event)"
+             (dragleave)="onDragLeave($event)"
+             (drop)="onDrop($event)">
+
+          <div class="photo-grid" *ngIf="canEditPhotos || images().length > 0; else noPhotos">
+            <!-- Photos -->
+            <figure class="photo-slot photo-slot--filled"
+                    *ngFor="let img of images(); let i = index"
+                    [class.photo-slot--main]="i === 0"
+                    [class.photo-slot--dragging]="dragIndex() === i"
+                    [attr.draggable]="canEditPhotos"
+                    (dragstart)="onPhotoDragStart($event, i)"
+                    (dragend)="onPhotoDragEnd()"
+                    (drop)="onDrop($event, i)">
+              <button type="button" class="photo-thumb" (click)="openViewer(i)" [title]="img.original_name || 'Voir la photo'">
+                <img [src]="img.url" [alt]="img.original_name || 'Photo ' + (i + 1)" loading="lazy">
+              </button>
+              <span class="photo-badge" *ngIf="i === 0">★ Principale</span>
+              <div class="photo-actions" *ngIf="canEditPhotos">
+                <button type="button" class="photo-action" *ngIf="i !== 0" (click)="setMainPhoto(i)" title="Définir comme photo principale">★</button>
+                <button type="button" class="photo-action photo-action--danger" (click)="deletePhoto(img)" title="Supprimer la photo">🗑</button>
+              </div>
+            </figure>
+
+            <!-- Files being sent -->
+            <div class="photo-slot photo-slot--uploading" *ngFor="let u of uploadingSlots()">
+              <span class="photo-spinner"></span>
+              <span>Envoi…</span>
+            </div>
+
+            <!-- Empty slots: click to choose, or drop files anywhere on the area -->
+            <ng-container *ngIf="canEditPhotos">
+              <button type="button" class="photo-slot photo-slot--empty"
+                      *ngFor="let e of emptySlots(); let first = first"
+                      (click)="photoInput.click()"
+                      [title]="'Ajouter des photos'">
+                <span class="photo-plus">+</span>
+                <span class="photo-hint" *ngIf="first">{{ images().length === 0 ? 'Photo principale' : 'Ajouter' }}</span>
+              </button>
+            </ng-container>
+          </div>
+
+          <p class="photo-help" *ngIf="canEditPhotos">
+            Glissez-déposez vos photos ici ou cliquez sur un emplacement · JPG, PNG, WebP · réduites automatiquement avant l'envoi.
+            <ng-container *ngIf="images().length > 1"> Faites glisser une photo pour changer l'ordre : la première est la photo principale.</ng-container>
+          </p>
+          <div class="photo-drop-overlay" *ngIf="dropActive()">📥 Déposez les photos pour les ajouter</div>
+          <input #photoInput type="file" hidden multiple [accept]="photoAccept" (change)="onFileInput($event)">
+        </div>
+
+        <p class="photo-error" *ngIf="imageError()">{{ imageError() }}</p>
+        <ng-template #noPhotos><p class="empty-msg">Aucune photo.</p></ng-template>
+      </div>
+
       <!-- Tyre characteristics -->
       <div class="detail-section" *ngIf="isTyre">
         <h3 class="section-title">Caractéristiques pneu</h3>
@@ -170,6 +237,58 @@
         </ng-container>
       </div>
 
+      <!-- Purchase history: price and supplier of every purchase -->
+      <div class="detail-section" *ngIf="!isService && authService.hasPermission('view purchases')">
+        <h3 class="section-title collapsible" (click)="togglePurchases()">
+          🧾 Historique des achats
+          <span class="mv-count" *ngIf="purchaseHistory() as h">({{ h.data.length }})</span>
+          <span class="collapse-icon">{{ showPurchases() ? '▾' : '▸' }}</span>
+        </h3>
+
+        <div *ngIf="showPurchases()">
+          <div class="table-loading" *ngIf="purchasesLoading()">Chargement...</div>
+
+          <ng-container *ngIf="!purchasesLoading() && purchaseHistory() as h">
+            <div class="ph-summary" *ngIf="h.summary.purchases_count > 0">
+              <span>Dernier prix <strong>{{ h.summary.last_price | number:'1.2-2' }} DH</strong></span>
+              <span>Min – max <strong>{{ h.summary.min_price | number:'1.2-2' }} – {{ h.summary.max_price | number:'1.2-2' }} DH</strong></span>
+              <span title="Moyenne pondérée par les quantités">Prix moyen <strong>{{ h.summary.average_price | number:'1.2-2' }} DH</strong></span>
+              <span>{{ h.summary.purchases_count }} achat(s) · {{ h.summary.quantity }} unité(s) · {{ h.summary.suppliers_count }} fournisseur(s)</span>
+            </div>
+
+            <table class="mv-table" *ngIf="h.data.length > 0; else noPurchases">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Achat</th>
+                  <th>Fournisseur</th>
+                  <th>Dépôt</th>
+                  <th class="text-center">Qté</th>
+                  <th class="text-end">PU achat</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let l of h.data" [class.ph-cancelled]="l.cancelled">
+                  <td class="mv-date">{{ l.date | date:'dd/MM/yyyy' }}</td>
+                  <td>
+                    <a class="ph-link" [href]="'/achats?id=' + l.purchase_id" target="_blank" rel="noopener" title="Ouvrir l'achat dans un nouvel onglet">N° {{ l.purchase_id }}</a>
+                    <span class="ph-doc" *ngIf="l.bl_number || l.invoice_number">{{ l.invoice_number ? 'Fact. ' + l.invoice_number : 'BL ' + l.bl_number }}</span>
+                    <span class="mv-chip ph-chip-cancel" *ngIf="l.cancelled">Annulé</span>
+                  </td>
+                  <td>{{ l.supplier?.name || '-' }}</td>
+                  <td>{{ l.depot || '-' }}</td>
+                  <td class="text-center">{{ l.quantity }}</td>
+                  <td class="text-end ph-price" [class.ph-max]="!l.cancelled && h.summary.min_price !== h.summary.max_price && l.unit_price === h.summary.max_price">{{ l.unit_price | number:'1.2-2' }} DH</td>
+                </tr>
+              </tbody>
+            </table>
+            <ng-template #noPurchases>
+              <p class="empty-msg">Aucun achat enregistré pour cet article.</p>
+            </ng-template>
+          </ng-container>
+        </div>
+      </div>
+
       <!-- Stock movements history -->
       <div class="detail-section" *ngIf="!isService && authService.hasPermission('view stock-movements')">
         <h3 class="section-title collapsible" (click)="toggleMovements()">
@@ -242,6 +361,21 @@
     </div>
 
   </div>
+</div>
+
+<!-- Photo viewer -->
+<div class="photo-viewer" *ngIf="viewerIndex() !== null && images()[viewerIndex()!] as img" (click)="closeViewer()">
+  <button type="button" class="viewer-close" (click)="closeViewer()" title="Fermer (Échap)">✕</button>
+  <button type="button" class="viewer-nav viewer-prev" *ngIf="images().length > 1" (click)="$event.stopPropagation(); stepViewer(-1)" title="Précédente (←)">‹</button>
+  <figure class="viewer-figure" (click)="$event.stopPropagation()">
+    <img [src]="img.url" [alt]="img.original_name || 'Photo'">
+    <figcaption>
+      {{ viewerIndex()! + 1 }} / {{ images().length }}
+      <span *ngIf="viewerIndex() === 0"> · ★ Principale</span>
+      <span *ngIf="img.original_name"> · {{ img.original_name }}</span>
+    </figcaption>
+  </figure>
+  <button type="button" class="viewer-nav viewer-next" *ngIf="images().length > 1" (click)="$event.stopPropagation(); stepViewer(1)" title="Suivante (→)">›</button>
 </div>
 
 <ng-template #dash><span class="value">-</span></ng-template>

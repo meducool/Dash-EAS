@@ -1,0 +1,477 @@
+<div class="page-container">
+  <div class="header">
+    <div class="title-section">
+      <h1>Tarifs Fournisseurs</h1>
+      <p class="subtitle">Prix lus dans les fichiers Excel de vos fournisseurs, comparés référence par référence (prix TTC tels que lus).</p>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn btn-secondary" (click)="downloadTemplate()" [disabled]="downloadingTemplate()"
+              title="Modèle standard, toutes marques, à remplir dans Google Sheets ou Excel">{{ downloadingTemplate() ? '…' : '⬇️ Modèle Google Sheets' }}</button>
+      <button type="button" class="btn-icon" (click)="showGuide.set(!showGuide())" [attr.aria-expanded]="showGuide()" title="Comment utiliser le modèle">❔</button>
+      @if (canManage) {
+        <button type="button" class="btn btn-primary" (click)="openCreate()">+ Ajouter un tarif</button>
+      }
+    </div>
+  </div>
+
+  @if (showGuide()) {
+    <section class="card sp-guide" aria-labelledby="sp-guide-title">
+      <div class="sp-guide-head">
+        <h2 id="sp-guide-title">Modèle de tarif Google Sheets</h2>
+        <button type="button" class="btn-icon btn-sm" aria-label="Fermer" (click)="showGuide.set(false)">✕</button>
+      </div>
+      <ol>
+        <li><strong>Téléchargez le modèle</strong> (bouton « Modèle Google Sheets ») : onglet <em>Tarif</em> avec les colonnes Référence, Marque, Profil, Dimension, IC/IV, RUNFLAT, Prix TTC — valable pour toutes les marques.</li>
+        <li>Dans Google Drive : <strong>Nouveau › Importation de fichiers</strong>, puis ouvrez-le avec Google Sheets (ou Fichier › Importer). Envoyez-le au fournisseur, ou remplissez-le vous-même.</li>
+        <li>Une ligne par pneu. <strong>Marque</strong> : choisie dans la liste (onglet <em>Marques</em>, avec les profils connus). <strong>Dimension</strong> : <code>205/55R16</code>. <strong>IC/IV</strong> : <code>91V</code>, ajouter <code>XL</code> si renforcé (<code>94V XL</code>). <strong>RUNFLAT</strong> : Oui / Non. <strong>Prix TTC</strong> (fournisseur) en chiffres, sans « DH ». Le prix de vente est calculé ici avec la marge.</li>
+        <li>Ne renommez ni l'onglet <em>Tarif</em> ni les en-têtes. L'onglet <em>Mode d'emploi</em> (avec des exemples) n'est jamais importé.</li>
+        <li><strong>Partager › Tous les utilisateurs disposant du lien</strong> (lecteur), copiez le lien.</li>
+        <li>Ici : <strong>+ Ajouter un tarif › Lien en ligne</strong>, collez le lien et cochez « Relire chaque nuit » : les changements du fournisseur arrivent tout seuls.</li>
+      </ol>
+    </section>
+  }
+
+  @if (summary(); as s) {
+    <div class="summary-cards">
+      <div class="summary-card info">
+        <div class="card-icon">📄</div>
+        <div><p class="card-label">Tarifs actifs</p><p class="card-value">{{ s.files_count }}</p></div>
+      </div>
+      <div class="summary-card balance">
+        <div class="card-icon">🏢</div>
+        <div><p class="card-label">Fournisseurs</p><p class="card-value">{{ s.suppliers_count }}</p></div>
+      </div>
+      <div class="summary-card margin">
+        <div class="card-icon">🛞</div>
+        <div><p class="card-label">Lignes de prix</p><p class="card-value">{{ s.items_count | number:'1.0-0' }}</p></div>
+      </div>
+      <div class="summary-card income">
+        <div class="card-icon">🏭</div>
+        <div><p class="card-label">Marques</p><p class="card-value">{{ s.brands_count }}</p></div>
+      </div>
+    </div>
+  }
+
+  <div class="card sp-margin-bar">
+    <div class="sp-margin-text">
+      <strong>💹 Prix de vente</strong>
+      <span class="sp-muted">= Prix TTC du fournisseur + marge. Un tarif peut avoir sa propre marge (onglet Fichiers).</span>
+    </div>
+    @if (canEditMargin()) {
+      <form class="sp-margin-form" (ngSubmit)="saveDefaultMargin()">
+        <label for="sp-default-margin">Marge par défaut</label>
+        <input id="sp-default-margin" class="sp-select sp-margin-input" name="default_margin" inputmode="decimal" autocomplete="off"
+               [ngModel]="marginInput()" (ngModelChange)="marginInput.set($event)">
+        <span>%</span>
+        <button type="submit" class="btn btn-primary btn-sm" [disabled]="savingMargin()">{{ savingMargin() ? '…' : 'Enregistrer' }}</button>
+      </form>
+    } @else {
+      <span class="sp-margin-value">Marge par défaut : <strong>{{ defaultMargin() | number:'1.0-2' }} %</strong></span>
+    }
+    @if (marginMessage()) { <span class="sp-small sp-muted" role="status">{{ marginMessage() }}</span> }
+  </div>
+
+  <nav class="sp-tabs" role="tablist" aria-label="Sections des tarifs">
+    <button type="button" role="tab" class="sp-tab" [class.active]="tab() === 'compare'" [attr.aria-selected]="tab() === 'compare'" (click)="setTab('compare')">🔍 Comparateur</button>
+    <button type="button" role="tab" class="sp-tab" [class.active]="tab() === 'brands'" [attr.aria-selected]="tab() === 'brands'" (click)="setTab('brands')">🏭 Marques <span class="sp-tab-count">{{ brands().length }}</span></button>
+    <button type="button" role="tab" class="sp-tab" [class.active]="tab() === 'files'" [attr.aria-selected]="tab() === 'files'" (click)="setTab('files')">📄 Fichiers <span class="sp-tab-count">{{ files().length }}</span></button>
+    @if (authService.hasPermission('view webstore')) {
+      <button type="button" role="tab" class="sp-tab" [class.active]="tab() === 'webstore'" [attr.aria-selected]="tab() === 'webstore'" (click)="setTab('webstore')">🌐 Boutique en ligne</button>
+    }
+  </nav>
+
+  @if (tab() === 'webstore') {
+    <app-webstore-tab></app-webstore-tab>
+  }
+
+  @if (tab() === 'compare') {
+    <form class="search-hero" (ngSubmit)="runSearch()">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="search" class="search-input" name="search" autocomplete="off" aria-label="Référence ou dimension"
+               placeholder="Référence ou dimension : 2055516, 205/55R16 91V, Primacy…"
+               [ngModel]="search()" (ngModelChange)="search.set($event)">
+        @if (search() || activeFilters()) {
+          <button type="button" class="reset-btn" (click)="resetSearch()" title="Effacer">✕</button>
+        }
+        <button type="submit" class="search-btn">Rechercher</button>
+      </div>
+      <div class="sp-filters">
+        <select class="sp-select" name="brand" aria-label="Marque" [ngModel]="filterBrand()" (ngModelChange)="filterBrand.set($event); runSearch()">
+          <option value="">Toutes les marques</option>
+          @for (b of brands(); track brandValue(b)) {
+            @if (b.name) {
+              <option [value]="brandValue(b)">{{ b.name }}{{ b.identified ? '' : ' (non reconnue)' }}</option>
+            }
+          }
+        </select>
+        <select class="sp-select" name="supplier" aria-label="Fournisseur" [ngModel]="filterSupplier()" (ngModelChange)="filterSupplier.set($event); runSearch()">
+          <option value="">Tous les fournisseurs</option>
+          @for (s of supplierOptions(); track s.id) {
+            <option [value]="s.id">{{ s.name }}</option>
+          }
+        </select>
+        <select class="sp-select" name="runflat" aria-label="Runflat" [ngModel]="filterRunflat()" (ngModelChange)="filterRunflat.set($event); runSearch()">
+          <option value="">Runflat : tous</option>
+          <option value="1">Runflat seulement{{ filterOptions() ? ' (' + filterOptions()!.runflat_count + ')' : '' }}</option>
+          <option value="0">Sans runflat</option>
+        </select>
+        <select class="sp-select" name="xl" aria-label="Renforcé XL" [ngModel]="filterXl()" (ngModelChange)="filterXl.set($event); runSearch()">
+          <option value="">XL : tous</option>
+          <option value="1">XL seulement{{ filterOptions() ? ' (' + filterOptions()!.reinforced_count + ')' : '' }}</option>
+          <option value="0">Sans XL</option>
+        </select>
+        <select class="sp-select" name="speed" aria-label="Indice de vitesse" [ngModel]="filterSpeed()" (ngModelChange)="filterSpeed.set($event); runSearch()">
+          <option value="">Indice de vitesse</option>
+          @for (s of filterOptions()?.speed_indexes ?? []; track s.value) {
+            <option [value]="s.value">{{ s.value }}{{ s.kmh ? ' — ' + s.kmh + ' km/h' : '' }} ({{ s.count }})</option>
+          }
+        </select>
+        @if (filterSpeed()) {
+          <label class="sp-check sp-check-inline" title="Un pneu W ou Y convient aussi à un véhicule homologué V">
+            <input type="checkbox" name="speed_min" [ngModel]="filterSpeedMin()" (ngModelChange)="filterSpeedMin.set($event); runSearch()"> et plus rapide
+          </label>
+        }
+        <select class="sp-select" name="load" aria-label="Indice de charge" [ngModel]="filterLoad()" (ngModelChange)="filterLoad.set($event); runSearch()">
+          <option value="">Indice de charge</option>
+          @for (l of filterOptions()?.load_indexes ?? []; track l.value) {
+            <option [value]="l.value">{{ l.value }} ({{ l.count }})</option>
+          }
+        </select>
+        <span class="search-hint">{{ total() }} pneu{{ total() > 1 ? 's' : '' }}{{ truncated() ? ' — résultats limités, affinez la recherche' : '' }}</span>
+      </div>
+    </form>
+
+    @if (error()) {
+      <p class="sp-alert danger" role="alert">{{ error() }}</p>
+    }
+
+    <div class="card table-card">
+      @if (loading()) {
+        <div class="sp-empty"><div class="spinner"></div> Chargement...</div>
+      } @else if (groups().length === 0) {
+        <div class="sp-empty">
+          @if (files().length === 0) {
+            Aucun tarif importé.
+            @if (canManage) { <button type="button" class="btn btn-text" (click)="openCreate()">Ajouter un premier tarif</button> }
+          } @else {
+            Aucun prix ne correspond à cette recherche.
+          }
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table sp-table">
+            <thead>
+              <tr>
+                <th class="sp-col-toggle"></th>
+                <th>Pneu</th>
+                <th>Dimension</th>
+                <th class="text-center">Offres</th>
+                <th class="text-end">Meilleur prix</th>
+                <th class="text-end">Écart</th>
+                <th>Catalogue</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (g of groups(); track g.key) {
+                <tr class="sp-group" [class.open]="isExpanded(g)" (click)="toggle(g)">
+                  <td class="sp-col-toggle">
+                    <button type="button" class="sp-chevron" [attr.aria-expanded]="isExpanded(g)" [attr.aria-label]="(isExpanded(g) ? 'Masquer' : 'Voir') + ' les offres'" (click)="$event.stopPropagation(); toggle(g)">{{ isExpanded(g) ? '▾' : '▸' }}</button>
+                  </td>
+                  <td>
+                    <div class="sp-tyre">
+                      <span class="sp-brand">{{ g.brand || 'Marque ?' }}</span>
+                      @if (g.profile) { <span class="sp-profile">{{ g.profile }}</span> }
+                      @if (!g.identified) { <span class="badge sp-badge-warn" title="Marque ou dimension non reconnue : comparée seule">non identifié</span> }
+                    </div>
+                    @if (!g.dimension) { <div class="sp-designation">{{ g.offers[0].designation }}</div> }
+                  </td>
+                  <td class="sp-dim">
+                    {{ g.dimension || '—' }}
+                    @if (indexes(g)) { <span class="sp-indexes">{{ indexes(g) }}</span> }
+                  </td>
+                  <td class="text-center">
+                    <span class="sp-offers">{{ g.offers_count }}</span>
+                    <span class="sp-muted"> · {{ g.suppliers_count }} fourn.</span>
+                  </td>
+                  <td class="text-end"><span class="sp-best">{{ g.best_price | number:'1.2-2' }} DH</span></td>
+                  <td class="text-end sp-muted">{{ g.spread > 0 ? '+' + (g.spread | number:'1.2-2') + ' DH' : '—' }}</td>
+                  <td>
+                    @if (g.product) {
+                      <span class="sp-ref" [title]="'Produit du catalogue ' + g.product.reference">{{ g.product.reference }}</span>
+                      <span class="sp-muted"> · stock {{ g.product.stock_quantity ?? 0 }}</span>
+                    } @else if (g.match_key && !g.match_key.startsWith('X-')) {
+                      <span class="sp-muted" title="Référence qui sera générée à la création du produit">{{ g.match_key }} (nouveau)</span>
+                    } @else {
+                      <span class="sp-muted">—</span>
+                    }
+                  </td>
+                </tr>
+                @if (isExpanded(g)) {
+                  <tr class="sp-offers-row">
+                    <td></td>
+                    <td colspan="6">
+                      <table class="sp-offers-table">
+                        <thead>
+                          <tr>
+                            <th>Fournisseur</th>
+                            <th>Désignation (fichier)</th>
+                            <th>Réf. fournisseur</th>
+                            <th>Dispo.</th>
+                            <th class="text-end">Prix TTC</th>
+                            <th class="text-end">Prix de vente</th>
+                            <th class="text-end">Marge</th>
+                            @if (canBuy) { <th></th> }
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (o of g.offers; track o.id) {
+                            <tr [class.best]="o.is_best">
+                              <td>
+                                <strong>{{ o.supplier?.name }}</strong>
+                                <div class="sp-muted sp-small">{{ o.file?.name }}@if (o.file?.last_imported_at) { · {{ o.file?.last_imported_at | date:'dd/MM/yyyy' }} }</div>
+                              </td>
+                              <td class="sp-designation">{{ o.designation }}</td>
+                              <td>{{ o.supplier_reference || '—' }}</td>
+                              <td>{{ o.availability || '—' }}</td>
+                              <td class="text-end">
+                                <span class="sp-price">{{ o.price | number:'1.2-2' }} DH</span>
+                                @if (o.is_best && g.offers_count > 1) { <span class="badge sp-badge-best">Meilleur prix</span> }
+                              </td>
+                              <td class="text-end sp-price">{{ o.sale_price | number:'1.2-2' }} DH</td>
+                              <td class="text-end">
+                                <span class="sp-margin">+{{ o.margin | number:'1.2-2' }} DH</span>
+                                <div class="sp-muted sp-small">{{ o.margin_percent | number:'1.0-2' }} %</div>
+                              </td>
+                              @if (canBuy) {
+                                <td class="text-end">
+                                  <button type="button" class="btn btn-secondary btn-sm" [disabled]="buyingId() !== null || !g.identified"
+                                          [title]="g.identified ? 'Créer le produit si besoin et ouvrir un achat chez ce fournisseur' : 'Marque ou dimension non reconnue'"
+                                          (click)="buy(o)">{{ buyingId() === o.id ? '…' : '📦 Acheter' }}</button>
+                                </td>
+                              }
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (lastPage() > 1) {
+          <div class="sp-pagination">
+            <button type="button" class="btn btn-secondary btn-sm" [disabled]="page() === 1" (click)="goToPage(page() - 1)">‹ Précédent</button>
+            <span class="sp-muted">Page {{ page() }} / {{ lastPage() }}</span>
+            <button type="button" class="btn btn-secondary btn-sm" [disabled]="page() === lastPage()" (click)="goToPage(page() + 1)">Suivant ›</button>
+          </div>
+        }
+      }
+    </div>
+  }
+
+  @if (tab() === 'brands') {
+    <div class="sp-brands-head">
+      <input type="search" class="sp-select" placeholder="Filtrer les marques…" aria-label="Filtrer les marques"
+             [ngModel]="brandFilter()" (ngModelChange)="brandFilter.set($event)">
+    </div>
+    @if (visibleBrands().length === 0) {
+      <div class="card sp-empty">Aucune marque dans les tarifs.</div>
+    } @else {
+      <div class="sp-brand-grid">
+        @for (b of visibleBrands(); track brandValue(b) + b.items_count) {
+          <button type="button" class="card sp-brand-card" [disabled]="!b.name" (click)="showBrand(b)">
+            <span class="sp-brand-name">{{ b.name || 'Marque non indiquée' }}</span>
+            @if (!b.identified && b.name) { <span class="badge sp-badge-warn">absente du catalogue</span> }
+            <span class="sp-muted sp-small">{{ b.items_count | number:'1.0-0' }} ligne{{ b.items_count > 1 ? 's' : '' }} · {{ b.suppliers_count }} fournisseur{{ b.suppliers_count > 1 ? 's' : '' }}</span>
+            <span class="sp-brand-range">{{ b.min_price | number:'1.0-0' }} – {{ b.max_price | number:'1.0-0' }} DH</span>
+          </button>
+        }
+      </div>
+    }
+  }
+
+  @if (tab() === 'files') {
+    @if (fileMessage()) {
+      <p class="sp-alert info" role="status">{{ fileMessage() }}</p>
+    }
+    <div class="card table-card">
+      @if (loadingFiles()) {
+        <div class="sp-empty"><div class="spinner"></div> Chargement...</div>
+      } @else if (files().length === 0) {
+        <div class="sp-empty">Aucun tarif. @if (canManage) { <button type="button" class="btn btn-text" (click)="openCreate()">Ajouter un tarif</button> }</div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Fournisseur</th>
+                <th>Tarif</th>
+                <th>Source</th>
+                <th class="text-end">Lignes</th>
+                <th class="text-end">Marge</th>
+                <th>Dernière lecture</th>
+                <th>Statut</th>
+                @if (canManage) { <th class="text-end">Actions</th> }
+              </tr>
+            </thead>
+            <tbody>
+              @for (f of files(); track f.id) {
+                <tr [class.sp-inactive]="!f.is_active">
+                  <td><strong>{{ f.supplier?.name }}</strong></td>
+                  <td>
+                    {{ f.name }}
+                    @if (f.last_error) { <div class="sp-file-error">⚠️ {{ f.last_error }}</div> }
+                  </td>
+                  <td>
+                    @if (f.source_type === 'url') {
+                      <span class="badge sp-badge-info" [title]="f.source_url || ''">🔗 Lien{{ f.auto_refresh ? ' · chaque nuit' : '' }}</span>
+                    } @else {
+                      <span class="badge sp-badge-neutral" [title]="f.original_filename || ''">📎 Fichier</span>
+                    }
+                  </td>
+                  <td class="text-end">
+                    {{ f.rows_count | number:'1.0-0' }}
+                    <div class="sp-muted sp-small">{{ f.identified_count | number:'1.0-0' }} identifiés</div>
+                  </td>
+                  <td class="text-end">
+                    {{ fileMargin(f) | number:'1.0-2' }} %
+                    @if (f.margin_percent === null) { <div class="sp-muted sp-small">par défaut</div> }
+                  </td>
+                  <td>{{ f.last_imported_at ? (f.last_imported_at | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
+                  <td>
+                    @if (canManage) {
+                      <button type="button" class="badge sp-toggle" [class.on]="f.is_active" [disabled]="busyFileId() === f.id"
+                              [title]="f.is_active ? 'Exclure ce tarif de la comparaison' : 'Inclure ce tarif dans la comparaison'"
+                              (click)="toggleActive(f)">{{ f.is_active ? 'Actif' : 'Inactif' }}</button>
+                    } @else {
+                      <span class="badge sp-toggle" [class.on]="f.is_active">{{ f.is_active ? 'Actif' : 'Inactif' }}</span>
+                    }
+                  </td>
+                  @if (canManage) {
+                    <td class="text-end actions-cell">
+                      <button type="button" class="btn-icon btn-sm" title="Relire le tarif" [disabled]="busyFileId() === f.id" (click)="refresh(f)">{{ busyFileId() === f.id ? '…' : '🔄' }}</button>
+                      <button type="button" class="btn-icon btn-sm" title="Modifier / colonnes" [disabled]="busyFileId() === f.id" (click)="openEdit(f)">✏️</button>
+                      <button type="button" class="btn-icon btn-sm text-danger" title="Supprimer" [disabled]="busyFileId() === f.id" (click)="remove(f)">🗑️</button>
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+@if (formOpen()) {
+  <div class="modal-overlay" (click)="closeForm()">
+    <div class="modal-container sp-modal" role="dialog" aria-modal="true" aria-labelledby="sp-form-title" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 id="sp-form-title">{{ form().id ? 'Modifier le tarif' : 'Ajouter un tarif fournisseur' }}</h2>
+        <button type="button" class="btn-icon btn-sm" aria-label="Fermer" (click)="closeForm()">✕</button>
+      </div>
+      <form class="modal-body sp-form" id="sp-form" (ngSubmit)="save()">
+        <div class="sp-form-grid">
+          <div class="form-group">
+            <label for="sp-supplier">Fournisseur *</label>
+            <select id="sp-supplier" class="form-control" name="supplier_id" [ngModel]="form().supplier_id" (ngModelChange)="patchForm({ supplier_id: $event ? +$event : null })">
+              <option [ngValue]="null">— Choisir —</option>
+              @for (s of suppliers(); track s.id) { <option [ngValue]="s.id">{{ s.name }}</option> }
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="sp-name">Nom du tarif *</label>
+            <input id="sp-name" class="form-control" name="name" maxlength="150" placeholder="ex : Tarif tourisme novembre"
+                   [ngModel]="form().name" (ngModelChange)="patchForm({ name: $event })">
+          </div>
+        </div>
+
+        @if (canEditMargin()) {
+          <div class="form-group sp-margin-field">
+            <label for="sp-margin">Marge de ce tarif (%)</label>
+            <input id="sp-margin" class="form-control" name="margin" inputmode="decimal" autocomplete="off"
+                   [placeholder]="'Vide = marge par défaut (' + defaultMargin() + ' %)'"
+                   [ngModel]="form().margin" (ngModelChange)="patchForm({ margin: $event })">
+            <span class="sp-help">Prix de vente = Prix TTC × (1 + marge). Changer la marge ne relit pas le fichier.</span>
+          </div>
+        }
+
+        @if (!form().id) {
+          <div class="sp-source-switch" role="radiogroup" aria-label="Source du tarif">
+            <label class="sp-radio" [class.active]="form().source_type === 'upload'">
+              <input type="radio" name="source_type" value="upload" [ngModel]="form().source_type" (ngModelChange)="patchForm({ source_type: $event })"> 📎 Téléverser un fichier
+            </label>
+            <label class="sp-radio" [class.active]="form().source_type === 'url'">
+              <input type="radio" name="source_type" value="url" [ngModel]="form().source_type" (ngModelChange)="patchForm({ source_type: $event })"> 🔗 Lien en ligne
+            </label>
+          </div>
+        }
+
+        @if (form().source_type === 'upload') {
+          <div class="form-group">
+            <label for="sp-file">{{ form().id ? 'Remplacer le fichier (facultatif)' : 'Fichier Excel *' }}</label>
+            <input id="sp-file" type="file" class="form-control" accept=".xlsx,.xls,.ods,.csv" (change)="onFileChosen($event)">
+            <span class="sp-help">.xlsx, .xls, .ods ou .csv — 15 Mo maximum. Les colonnes sont reconnues automatiquement.</span>
+          </div>
+        } @else {
+          <div class="form-group">
+            <label for="sp-url">Lien du tarif *</label>
+            <input id="sp-url" type="url" class="form-control" name="source_url" maxlength="2048"
+                   placeholder="https://docs.google.com/spreadsheets/d/…"
+                   [ngModel]="form().source_url" (ngModelChange)="patchForm({ source_url: $event })">
+            <span class="sp-help">Google Sheets, OneDrive / SharePoint, Dropbox ou lien direct vers un .xlsx — le fichier doit être partagé publiquement.
+              Le plus simple : <button type="button" class="btn btn-text btn-sm sp-inline-link" (click)="downloadTemplate()">le modèle standard</button>, qui se lit sans réglage.</span>
+          </div>
+          <label class="sp-check">
+            <input type="checkbox" name="auto_refresh" [ngModel]="form().auto_refresh" (ngModelChange)="patchForm({ auto_refresh: $event })">
+            Relire ce lien chaque nuit (06:00)
+          </label>
+        }
+
+        @if (formHeaders()) {
+          <fieldset class="sp-mapping">
+            <legend>Colonnes du fichier</legend>
+            <p class="sp-help">Indiquez au minimum la colonne <strong>Prix</strong> et la <strong>Désignation</strong> (ou la Dimension). Laissez vide ce qui n'existe pas.</p>
+            <div class="sp-mapping-grid">
+              @for (field of FIELDS; track field) {
+                <div class="form-group">
+                  <label [for]="'sp-map-' + field">{{ FIELD_LABELS[field] }}</label>
+                  <select [id]="'sp-map-' + field" class="form-control" [name]="'map_' + field"
+                          [ngModel]="form().mapping[field] || ''" (ngModelChange)="setMapping(field, $event)">
+                    <option value="">—</option>
+                    @for (letter of headerLetters(); track letter) { <option [value]="letter">{{ columnLabel(letter) }}</option> }
+                  </select>
+                </div>
+              }
+            </div>
+            @if (formPreview().length) {
+              <div class="table-responsive sp-preview">
+                <table class="sp-offers-table">
+                  <thead><tr>@for (letter of headerLetters(); track letter) { <th>{{ letter }}</th> }</tr></thead>
+                  <tbody>
+                    @for (row of formPreview(); track $index) {
+                      <tr>@for (letter of headerLetters(); track letter) { <td>{{ row[letter] }}</td> }</tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </fieldset>
+        }
+
+        @if (formError()) {
+          <p class="sp-alert danger" role="alert">{{ formError() }}</p>
+        }
+      </form>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeForm()" [disabled]="saving()">Annuler</button>
+        <button type="submit" form="sp-form" class="btn btn-primary" [disabled]="saving()">{{ saving() ? 'Lecture du fichier…' : (form().id ? 'Enregistrer' : 'Importer') }}</button>
+      </div>
+    </div>
+  </div>
+}

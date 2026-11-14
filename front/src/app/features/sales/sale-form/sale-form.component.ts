@@ -8,7 +8,7 @@ import { debounceTime, distinctUntilChanged, finalize, switchMap, takeUntil } fr
 import { Sale, SalePayload } from '../../../core/models/sale.model';
 import { SALE_STATUSES, SALE_STATUS_LABELS, SALE_STATUS_TRANSITIONS, SaleStatus } from '../../../core/constants/status.constants';
 import { Product } from '../../../core/models/product.model';
-import { ProductService } from '../../../core/services/product.service';
+import { ProductPurchasePrices, ProductService } from '../../../core/services/product.service';
 import { ManagedUser } from '../../../core/models/user-manage.model';
 import { Carrier } from '../../carriers/models/carrier.model';
 import { Partner } from '../../partners/models/partner.model';
@@ -58,6 +58,8 @@ export class SaleFormComponent implements OnInit, OnDestroy {
   productSearch = signal('');
   loadingProducts = signal(false);
   stocks = signal<Stock[]>([]);
+  /** Purchase prices found for the line being typed (PU Achat filled from purchases). */
+  purchasePriceInfo = signal<ProductPurchasePrices | null>(null);
   loadingStocks = signal(false);
   noStockAvailable = signal(false);
 
@@ -234,12 +236,15 @@ export class SaleFormComponent implements OnInit, OnDestroy {
       this.currentItem.linkedProduct = product;
 
       if (product.type === 'service') {
+        this.purchasePriceInfo.set(null);
         this.stocks.set([]);
         this.noStockAvailable.set(false);
         this.currentItem.purchase_price = 0;
         this.currentItem.selling_price = Number(product.service?.selling_price ?? 0);
       } else {
         this.loadStocksForProduct(id);
+        // Parts sold without a lot still get their purchase price.
+        this.fillPurchasePrice(id, null);
       }
     } else {
       this.currentItem.linkedProduct = null;
@@ -296,7 +301,36 @@ export class SaleFormComponent implements OnInit, OnDestroy {
       if (stock.purchase_price != null) {
         this.currentItem.purchase_price = Number(stock.purchase_price);
       }
+      if (this.currentItem.product_id) {
+        this.fillPurchasePrice(Number(this.currentItem.product_id), stock.id);
+      }
     }
+  }
+
+  /**
+   * PU Achat from the purchases of the lot (else of the product). Several
+   * prices: the highest is put in and the mention under the field asks for a check.
+   */
+  fillPurchasePrice(productId: number, stockId: number | null): void {
+    this.purchasePriceInfo.set(null);
+    this.productService.getPurchasePrices(productId, stockId).subscribe({
+      next: (info) => {
+        // The user may have moved to another product / lot meanwhile.
+        if (Number(this.currentItem.product_id) !== productId || (stockId !== null && this.currentItem.stock_id !== stockId)) return;
+        this.purchasePriceInfo.set(info);
+        if (info.price !== null) {
+          this.currentItem.purchase_price = info.price;
+        }
+      },
+    });
+  }
+
+  get purchasePriceTitle(): string {
+    const info = this.purchasePriceInfo();
+    if (!info) return '';
+    return info.prices
+      .map((p) => `${p.unit_price.toFixed(2)} DH — ${p.purchases_count} achat(s), dernier le ${p.last_date?.substring(0, 10)}${p.suppliers.length ? ' (' + p.suppliers.join(', ') + ')' : ''}`)
+      .join('\n');
   }
 
   get selectedStock(): Stock | null {

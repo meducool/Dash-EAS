@@ -19,6 +19,7 @@ class ProductService
         private StockMovementService $movements,
         private ProductReferenceService $references,
         private ActivityLogService $activityLog,
+        private ProductImageService $images,
     ) {}
 
     /**
@@ -153,7 +154,8 @@ class ProductService
 
     public function delete(Product $product): void
     {
-        $product->delete();
+        // Files removed only once the article is really gone (rows follow the FK cascade).
+        $this->images->afterProductDeleted($product, fn () => $product->delete());
     }
 
     public function toggleActive(Product $product): Product

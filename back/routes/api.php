@@ -12,6 +12,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     require __DIR__.'/api/sales.php';
     require __DIR__.'/api/purchases.php';
     require __DIR__.'/api/stock.php';
+    require __DIR__.'/api/supplier_prices.php';
+    require __DIR__.'/api/webstore.php';
     require __DIR__.'/api/service_orders.php';
     require __DIR__.'/api/shipments.php';
     require __DIR__.'/api/admin.php';

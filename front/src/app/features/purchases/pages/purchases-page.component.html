@@ -277,7 +277,7 @@
       <button class="btn-icon" (click)="closeForm()">✕</button>
     </div>
     <div class="modal-body p-0">
-      <app-purchase-form [purchase]="selectedPurchase()" (save)="onFormSaved()" (cancel)="closeForm()"></app-purchase-form>
+      <app-purchase-form [purchase]="selectedPurchase()" [prefill]="purchasePrefill()" (save)="onFormSaved()" (cancel)="closeForm()"></app-purchase-form>
     </div>
   </div>
 </div>

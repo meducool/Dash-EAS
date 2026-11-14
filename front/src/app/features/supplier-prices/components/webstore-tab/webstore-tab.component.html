@@ -1,0 +1,224 @@
+<div class="ws">
+  <!-- Status + actions -->
+  <div class="ws-bar">
+    <div class="ws-bar-info">
+      <span class="ws-step">Seules les lignes approuvées sont envoyées au site</span>
+      @if (summary()?.store_url) {
+        <span>Site : <strong>{{ summary()!.store_url }}</strong></span>
+      } @else {
+        <span class="ws-muted">Aucun site connecté</span>
+      }
+      @if (summary()?.last_pull_at) {
+        <span class="ws-muted">· catalogue lu le {{ summary()!.last_pull_at | date:'dd/MM/yyyy à HH:mm' }}</span>
+      }
+    </div>
+    @if (canManage) {
+      <div class="ws-bar-actions">
+        <button type="button" class="btn btn-secondary btn-sm" (click)="showSettings.set(!showSettings())">⚙️ Connexion</button>
+        <button type="button" class="btn btn-primary btn-sm" (click)="pull()" [disabled]="pulling() || !settings()?.has_credentials"
+                title="Lit tous les produits du site et les relie aux articles par SKU — ne modifie rien sur le site">
+          {{ pulling() ? '⏳ Lecture…' : '🔄 Lire le catalogue du site' }}
+        </button>
+      </div>
+    }
+  </div>
+
+  @if (notice(); as n) {
+    <p class="ws-notice" [class.ok]="n.kind === 'ok'" [class.error]="n.kind === 'error'" role="status">{{ n.text }}</p>
+  }
+
+  <!-- Connection settings (Administrator) -->
+  @if (canManage && showSettings()) {
+    <form class="ws-settings" (ngSubmit)="saveSettings()" autocomplete="off">
+      <div class="ws-field ws-field-wide">
+        <label for="ws-url">Adresse de la boutique</label>
+        <input id="ws-url" class="form-control" name="store_url" placeholder="https://www.ma-boutique.ma"
+               [ngModel]="urlInput()" (ngModelChange)="urlInput.set($event)">
+      </div>
+      <div class="ws-field">
+        <label for="ws-key">Clé client (ck_…)</label>
+        <input id="ws-key" class="form-control" name="consumer_key" autocomplete="off" spellcheck="false"
+               [placeholder]="settings()?.consumer_key_hint ? 'Enregistrée (…' + settings()!.consumer_key_hint + ') — laisser vide pour garder' : 'ck_…'"
+               [ngModel]="keyInput()" (ngModelChange)="keyInput.set($event)">
+      </div>
+      <div class="ws-field">
+        <label for="ws-secret">Secret client (cs_…)</label>
+        <input id="ws-secret" type="password" class="form-control" name="consumer_secret" autocomplete="new-password"
+               [placeholder]="settings()?.has_credentials ? 'Enregistré — laisser vide pour garder' : 'cs_…'"
+               [ngModel]="secretInput()" (ngModelChange)="secretInput.set($event)">
+      </div>
+      <div class="ws-field ws-field-small">
+        <label for="ws-margin">Marge boutique (%)</label>
+        <input id="ws-margin" class="form-control" name="margin_percent" inputmode="decimal" placeholder="ex. 20"
+               [ngModel]="marginInput()" (ngModelChange)="marginInput.set($event)">
+      </div>
+      <div class="ws-field ws-field-small">
+        <label for="ws-create-status">Nouveaux produits créés</label>
+        <select id="ws-create-status" class="form-control" name="create_status" [ngModel]="createStatusInput()" (ngModelChange)="createStatusInput.set($event)">
+          <option value="draft">En brouillon (à vérifier sur WordPress)</option>
+          <option value="publish">Publiés directement</option>
+        </select>
+      </div>
+      <label class="ws-check ws-field-wide">
+        <input type="checkbox" name="auto_prepare" [ngModel]="autoPrepareInput()" (ngModelChange)="autoPrepareInput.set($event)">
+        Préparer automatiquement un lot chaque matin (06:30, après la relecture des tarifs) — <strong>jamais publié sans votre approbation</strong>.
+        Un lot contenant des lignes approuvées non publiées n'est jamais remplacé.
+      </label>
+      <div class="ws-settings-actions">
+        <button type="submit" class="btn btn-primary btn-sm" [disabled]="saving()">{{ saving() ? '…' : 'Enregistrer' }}</button>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="testConnection()" [disabled]="testing() || !settings()?.has_credentials">
+          {{ testing() ? '…' : '🔌 Tester la connexion' }}
+        </button>
+        @if (settings()?.has_credentials) {
+          <button type="button" class="btn-link ws-danger-link" (click)="clearCredentials()">Effacer les clés</button>
+        }
+      </div>
+      <p class="ws-help">
+        Créez les clés dans WordPress : <strong>WooCommerce › Réglages › Avancé › API REST › Ajouter une clé</strong>.
+        Droits <strong>Lecture/Écriture</strong> nécessaires pour publier (<strong>Lecture</strong> suffit pour lire le catalogue).
+        Les clés sont chiffrées dans la base et ne sont jamais réaffichées. Le site doit être en <strong>https</strong>.
+        La marge servira à calculer le prix proposé sur le site : prix TTC fournisseur × (1 + marge).
+      </p>
+    </form>
+  }
+
+  <!-- Morning preparation: last result -->
+  @if (shopStatus(); as st) {
+    @if (st.auto.last_result; as r) {
+      <p class="ws-auto" [class.ok]="r.status === 'ok'" [class.error]="r.status === 'error'">
+        🌅 Préparation automatique{{ st.auto.last_run_at ? ' du ' + (st.auto.last_run_at | date:'dd/MM à HH:mm') : '' }} : {{ r.message }}
+        @if (toDecide() > 0) { <button type="button" class="btn-link" (click)="openView('proposals')">{{ toDecide() }} ligne(s) à décider →</button> }
+      </p>
+    } @else if (st.auto.enabled) {
+      <p class="ws-auto">🌅 Préparation automatique activée : un lot sera prêt chaque matin vers 06:30.</p>
+    }
+  }
+
+  <nav class="ws-views" role="tablist" aria-label="Boutique en ligne">
+    <button type="button" role="tab" class="ws-view" [class.active]="view() === 'report'" [attr.aria-selected]="view() === 'report'" (click)="openView('report')">📊 Correspondance SKU</button>
+    <button type="button" role="tab" class="ws-view" [class.active]="view() === 'proposals' && historyBatchId() === null" [attr.aria-selected]="view() === 'proposals'" (click)="openView('proposals')">
+      ✅ Propositions @if (toDecide() > 0) { <span class="ws-badge" [attr.aria-label]="toDecide() + ' à décider'">{{ toDecide() }}</span> }
+    </button>
+    <button type="button" role="tab" class="ws-view" [class.active]="view() === 'history' || historyBatchId() !== null" [attr.aria-selected]="view() === 'history'" (click)="openView('history')">🕘 Historique</button>
+    @if (canManage) {
+      <span class="ws-views-spacer"></span>
+      <button type="button" class="btn btn-secondary btn-sm ws-prepare" (click)="prepareNow()" [disabled]="preparing() || !settings()?.has_credentials"
+              title="Relit le catalogue du site et calcule les propositions, comme chaque matin à 06:30 — ne publie rien">
+        {{ preparing() ? '⏳…' : '🌅 Préparer maintenant' }}
+      </button>
+    }
+  </nav>
+
+  @if (view() === 'history') {
+    <app-webstore-history (open)="openHistoryBatch($event)"></app-webstore-history>
+  } @else if (view() === 'proposals' && historyBatchId() !== null) {
+    <button type="button" class="btn-link ws-back" (click)="openView('history')">‹ Retour à l'historique</button>
+    <app-webstore-proposals [batchId]="historyBatchId()"></app-webstore-proposals>
+  } @else if (view() === 'proposals') {
+    <app-webstore-proposals></app-webstore-proposals>
+  } @else {
+  <!-- Summary: one card per matching status (click = filter) -->
+  <div class="ws-cards" role="tablist" aria-label="Correspondance par SKU">
+    @for (s of STATUSES; track s) {
+      <button type="button" role="tab" class="ws-card" [class.active]="status() === s" [attr.aria-selected]="status() === s"
+              [class.warn]="s !== 'matched' && count(s) > 0" (click)="setStatus(s)" [title]="STATUS_HELP[s]">
+        <span class="ws-card-value">{{ count(s) }}</span>
+        <span class="ws-card-label">{{ STATUS_LABELS[s] }}</span>
+      </button>
+    }
+  </div>
+
+  <p class="ws-status-help">
+    {{ STATUS_HELP[status()] }}
+    @if ((summary()?.variable ?? 0) > 0 && status() !== 'pos_only') {
+      <br><span class="ws-muted">ℹ️ {{ summary()!.variable }} produit(s) variable(s) sur le site : leurs SKU sont sur les variations, non lues à cette étape.</span>
+    }
+  </p>
+
+  <form class="ws-search" (ngSubmit)="runSearch()">
+    <input class="form-control" name="ws_search" [placeholder]="isPosOnly() ? 'Référence ou libellé…' : 'SKU ou nom du produit…'"
+           [ngModel]="search()" (ngModelChange)="search.set($event)">
+    <button type="submit" class="btn btn-secondary btn-sm">🔍 Rechercher</button>
+  </form>
+
+  @if (reportError()) {
+    <p class="ws-notice error">{{ reportError() }}</p>
+  }
+
+  <div class="table-card">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            @if (!isPosOnly()) {
+              <th>SKU site</th>
+              <th>Produit sur le site</th>
+              <th>Statut</th>
+              <th class="text-end">Prix site</th>
+              <th>Stock site</th>
+              <th class="text-center">Photos site</th>
+            }
+            <th>Article POS</th>
+            <th class="text-center">Stock POS</th>
+            <th class="text-center">Photos POS</th>
+            <th class="text-end">Offre fournisseur (TTC)</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading()) {
+            <tr><td [attr.colspan]="isPosOnly() ? 4 : 10" class="ws-empty">Chargement…</td></tr>
+          } @else if (!hasCatalogue() && !isPosOnly()) {
+            <tr><td colspan="10" class="ws-empty">
+              Le catalogue du site n'a pas encore été lu.
+              @if (canManage) { Configurez la connexion puis cliquez sur « 🔄 Lire le catalogue du site ». }
+            </td></tr>
+          } @else {
+            @for (row of rows(); track $index) {
+              <tr>
+                @if (row.woo; as w) {
+                  <td class="ws-mono">{{ w.sku || '—' }}</td>
+                  <td>
+                    @if (w.permalink) {
+                      <a [href]="w.permalink" target="_blank" rel="noopener noreferrer" title="Voir sur le site">{{ w.name }} ↗</a>
+                    } @else { {{ w.name }} }
+                    @if (w.type === 'variable') { <span class="ws-chip">variable</span> }
+                  </td>
+                  <td><span class="ws-chip" [class.ws-chip-ok]="w.status === 'publish'">{{ wooStatus(w.status) }}</span></td>
+                  <td class="text-end ws-num">{{ w.price != null ? (w.price | number:'1.2-2') + ' DH' : '-' }}</td>
+                  <td>{{ wooStock(row) }}</td>
+                  <td class="text-center">{{ w.images_count }}</td>
+                }
+                @if (row.product; as p) {
+                  <td>
+                    <span class="ws-mono">{{ p.reference }}</span>
+                    <span class="ws-label">{{ p.label }}</span>
+                  </td>
+                  <td class="text-center">{{ p.stock ?? 0 }}</td>
+                  <td class="text-center" [class.ws-missing]="!p.images_count">{{ p.images_count ?? 0 }}</td>
+                  <td class="text-end ws-num">
+                    @if (p.best_offer_ttc != null) {
+                      {{ p.best_offer_ttc | number:'1.2-2' }} DH <span class="ws-muted">({{ p.offers_count }})</span>
+                    } @else { <span class="ws-muted">—</span> }
+                  </td>
+                } @else {
+                  <td colspan="4" class="ws-muted">Aucun article du POS avec ce SKU</td>
+                }
+              </tr>
+            } @empty {
+              <tr><td [attr.colspan]="isPosOnly() ? 4 : 10" class="ws-empty">Aucun produit dans cette catégorie.</td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  @if (lastPage() > 1) {
+    <div class="ws-pagination">
+      <button type="button" class="btn btn-secondary btn-sm" [disabled]="page() === 1" (click)="goToPage(page() - 1)">‹ Précédent</button>
+      <span class="ws-muted">Page {{ page() }} / {{ lastPage() }} · {{ total() }} produit(s)</span>
+      <button type="button" class="btn btn-secondary btn-sm" [disabled]="page() === lastPage()" (click)="goToPage(page() + 1)">Suivant ›</button>
+    </div>
+  }
+  }
+</div>

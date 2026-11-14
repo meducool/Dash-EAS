@@ -76,6 +76,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'import stock',
             'view stock-movements',
 
+            // Tarifs fournisseurs (price lists: view = search/compare, manage = files)
+            'view supplier-prices',
+            'manage supplier-prices',
+
             // Cash flow / Transactions
             'view cash-flow',
             'create cash-flow',
@@ -138,6 +142,12 @@ class RolesAndPermissionsSeeder extends Seeder
 
             // Reporting (Administrator only)
             'view reporting',
+
+            // Boutique en ligne / WooCommerce (Administrator only): view = report,
+            // manage = connection + catalogue read, approve = publish to the site.
+            'view webstore',
+            'manage webstore',
+            'approve webstore',
         ];
 
         foreach ($permissions as $permission) {
@@ -168,6 +178,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'edit hr-charges',
             'delete hr-charges',
             'view reporting',
+            'view webstore',
+            'manage webstore',
+            'approve webstore',
         ]));
 
         $commercial = Role::findOrCreate('Commercial');
@@ -232,6 +245,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'create stock',
             'edit stock',
             'view stock-movements',
+
+            // Tarifs fournisseurs (consultation only — price lists managed by Admin/Manager)
+            'view supplier-prices',
 
             // Cash flow
             'view cash-flow',

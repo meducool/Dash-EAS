@@ -30,6 +30,12 @@ class Product extends Model
         return $this->hasMany(Stock::class);
     }
 
+    /** Photos, main photo first. */
+    public function images()
+    {
+        return $this->hasMany(ProductImage::class)->orderBy('position')->orderBy('id');
+    }
+
     public function tyre()
     {
         return $this->hasOne(ProductTyre::class);

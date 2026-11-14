@@ -353,3 +353,239 @@
   .modal-body { padding: 1rem; }
   .detail-grid { grid-template-columns: 1fr; }
 }
+
+// ── Purchase history ───────────────────────────────────────────────────────
+.ph-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.25rem;
+  margin-bottom: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  background: var(--app-surface-2);
+  font-size: 0.8rem;
+  color: var(--app-text-muted);
+
+  strong { color: var(--app-text); font-variant-numeric: tabular-nums; }
+}
+
+.ph-link { color: var(--app-primary); font-weight: 600; text-decoration: none; &:hover { text-decoration: underline; } }
+.ph-doc { margin-left: 0.4rem; font-size: 0.75rem; color: var(--app-text-subtle); }
+.ph-price { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ph-max { color: var(--app-warning-text); }
+.ph-cancelled td { opacity: 0.55; text-decoration: line-through; }
+.ph-chip-cancel { margin-left: 0.4rem; background: color-mix(in srgb, var(--app-danger) 12%, transparent); color: var(--app-danger-text); text-decoration: none; }
+.mv-table .text-end { text-align: right; }
+
+// ── Photos ─────────────────────────────────────────────────────────────────
+.photo-zone {
+  position: relative;
+  border-radius: 12px;
+  transition: background 0.15s, outline-color 0.15s;
+  outline: 2px dashed transparent;
+  outline-offset: 4px;
+
+  &--active {
+    outline-color: var(--app-primary);
+    background: color-mix(in srgb, var(--app-primary) 6%, transparent);
+  }
+}
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.75rem;
+}
+
+.photo-slot {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--app-text-subtle);
+}
+
+.photo-slot--filled {
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-2);
+
+  &[draggable='true'] { cursor: grab; }
+  &:hover .photo-actions,
+  &:focus-within .photo-actions { opacity: 1; }
+}
+
+.photo-slot--main { border: 2px solid var(--app-primary); }
+.photo-slot--dragging { opacity: 0.4; }
+
+.photo-thumb {
+  all: unset;
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: zoom-in;
+
+  img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+  &:focus-visible { outline: 2px solid var(--app-primary); outline-offset: -2px; }
+}
+
+.photo-badge {
+  position: absolute;
+  left: 0.35rem;
+  top: 0.35rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--app-primary);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.photo-actions {
+  position: absolute;
+  right: 0.3rem;
+  top: 0.3rem;
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+
+  @media (hover: none) { opacity: 1; }
+}
+
+.photo-action {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-text);
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 1;
+
+  &:hover { background: var(--app-surface-3); }
+  &--danger:hover { background: color-mix(in srgb, var(--app-danger) 14%, var(--app-surface)); }
+}
+
+.photo-slot--empty {
+  border: 2px dashed var(--app-border-strong);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--app-text-subtle);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--app-primary);
+    color: var(--app-primary);
+    background: color-mix(in srgb, var(--app-primary) 5%, transparent);
+    outline: none;
+  }
+}
+
+.photo-plus { font-size: 1.6rem; line-height: 1; font-weight: 300; }
+.photo-hint { font-weight: 600; }
+
+.photo-slot--uploading {
+  border: 2px dashed var(--app-primary);
+  background: color-mix(in srgb, var(--app-primary) 5%, transparent);
+  color: var(--app-primary);
+}
+
+.photo-spinner {
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--app-primary) 25%, transparent);
+  border-top-color: var(--app-primary);
+  animation: photo-spin 0.8s linear infinite;
+}
+
+@keyframes photo-spin { to { transform: rotate(360deg); } }
+
+.photo-help {
+  margin: 0.6rem 0 0;
+  font-size: 0.75rem;
+  color: var(--app-text-subtle);
+}
+
+.photo-drop-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--app-surface) 80%, transparent);
+  color: var(--app-primary);
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.photo-error {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  white-space: pre-line;
+  font-size: 0.8rem;
+  background: color-mix(in srgb, var(--app-danger) 10%, transparent);
+  color: var(--app-danger-text);
+}
+
+// Viewer (above the product modal)
+.photo-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.85);
+}
+
+.viewer-figure {
+  margin: 0;
+  max-width: min(1100px, calc(100vw - 7rem));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+
+  img { max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 8px; }
+  figcaption { color: #e2e8f0; font-size: 0.8rem; text-align: center; }
+}
+
+.viewer-close,
+.viewer-nav {
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:hover { background: rgba(255, 255, 255, 0.25); }
+}
+
+.viewer-close { position: absolute; top: 1rem; right: 1rem; width: 2.5rem; height: 2.5rem; font-size: 1.1rem; }
+.viewer-nav { width: 2.75rem; height: 2.75rem; font-size: 1.8rem; line-height: 1; }
+
+@media (max-width: 576px) {
+  .photo-grid { grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+  .viewer-figure { max-width: 100%; }
+  .viewer-nav { position: absolute; bottom: 1.5rem; }
+  .viewer-prev { left: 1.5rem; }
+  .viewer-next { right: 1.5rem; }
+}

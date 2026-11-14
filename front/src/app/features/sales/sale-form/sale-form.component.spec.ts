@@ -8,7 +8,10 @@ import { StockService } from '../../../core/services/stock.service';
 import { ClientService } from '../../clients/data-access/client.service';
 import { CityService } from '../../../core/services/city.service';
 
-const productServiceStub = { getProducts: () => of({ data: [] }) };
+const productServiceStub = {
+  getProducts: () => of({ data: [] }),
+  getPurchasePrices: vi.fn(() => of({ price: null, multiple: false, scope: null, prices: [] })),
+};
 const stockServiceStub = { getStocks: () => of({ data: [] }) };
 const clientServiceStub = {
   getClients: () => of([]),
@@ -173,6 +176,39 @@ describe('SaleFormComponent', () => {
     it('restricts TERMINEE to going back to LIVRE or MONTE only', () => {
       comp.formData.status = 'TERMINEE';
       expect(comp.statusOptions).toEqual(['TERMINEE', 'LIVRE', 'MONTE']);
+    });
+  });
+
+  describe('fillPurchasePrice', () => {
+    it('puts the highest purchase price in PU Achat and keeps the details for the check', () => {
+      productServiceStub.getPurchasePrices.mockReturnValueOnce(of({
+        price: 950,
+        multiple: true,
+        scope: 'stock',
+        prices: [
+          { unit_price: 950, purchases_count: 1, quantity: 4, last_date: '2026-09-01', last_purchase_id: 2, suppliers: ['BETA'] },
+          { unit_price: 800, purchases_count: 2, quantity: 8, last_date: '2026-10-01', last_purchase_id: 3, suppliers: ['ALPHA'] },
+        ],
+      }) as any);
+      comp.currentItem = { ...oneItem(), product_id: 7, stock_id: 3, purchase_price: 0 };
+
+      comp.fillPurchasePrice(7, 3);
+
+      expect(productServiceStub.getPurchasePrices).toHaveBeenCalledWith(7, 3);
+      expect(comp.currentItem.purchase_price).toBe(950);
+      expect(comp.purchasePriceInfo()?.multiple).toBe(true);
+      expect(comp.purchasePriceTitle).toContain('800.00 DH — 2 achat(s)');
+    });
+
+    it('ignores an answer for a product the user already left, and keeps the price when never bought', () => {
+      comp.currentItem = { ...oneItem(), product_id: 8, stock_id: null, purchase_price: 120 };
+      productServiceStub.getPurchasePrices.mockReturnValueOnce(of({ price: 500, multiple: false, scope: 'product', prices: [] }) as any);
+      comp.fillPurchasePrice(7, null);
+      expect(comp.currentItem.purchase_price).toBe(120);
+
+      comp.fillPurchasePrice(8, null); // default stub: never bought
+      expect(comp.currentItem.purchase_price).toBe(120);
+      expect(comp.purchasePriceInfo()?.price).toBeNull();
     });
   });
 });

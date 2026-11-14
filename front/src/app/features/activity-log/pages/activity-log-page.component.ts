@@ -218,6 +218,7 @@ export class ActivityLogPageComponent implements OnInit {
       compte: 'Compte',
       transaction: 'Transaction',
       produit: 'Produit',
+      boutique: 'Boutique en ligne',
     };
     return map[type] ?? type;
   }

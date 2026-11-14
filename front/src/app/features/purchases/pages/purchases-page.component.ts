@@ -1,14 +1,14 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PurchaseService } from '../data-access/purchase.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Purchase, PurchaseSummary } from '../models/purchase.model';
 import { PURCHASE_STATUSES, PURCHASE_STATUS_LABELS, PURCHASE_STATUS_TRANSITIONS, PAYMENT_STATUSES, PAYMENT_STATUS_LABELS, PurchaseStatus } from '../../../core/constants/status.constants';
 import { PAYMENT_METHODS, paymentMethodClass } from '../../../core/constants/payment-method.constants';
-import { PurchaseFormComponent } from '../purchase-form/purchase-form.component';
+import { PurchaseFormComponent, PurchasePrefill } from '../purchase-form/purchase-form.component';
 import { PurchaseDetailComponent } from '../purchase-detail/purchase-detail.component';
 import { PurchasePaymentsComponent } from '../purchase-payments/purchase-payments.component';
 import { PurchaseReturnComponent } from '../purchase-return/purchase-return.component';
@@ -32,6 +32,9 @@ export class PurchasesPageComponent implements OnInit {
 
   private purchaseService = inject(PurchaseService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  /** Supplier / product / price put in a new purchase opened from Tarifs fournisseurs. */
+  readonly purchasePrefill = signal<PurchasePrefill | null>(null);
   private destroyRef = inject(DestroyRef);
   public authService = inject(AuthService);
 
@@ -95,6 +98,18 @@ export class PurchasesPageComponent implements OnInit {
     this.route.queryParamMap
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(params => {
+        // /achats?new=1&supplier_id=…&product_id=…&unit_price=… (from Tarifs fournisseurs)
+        if (params.get('new') === '1' && this.authService.hasPermission('create purchases')) {
+          const num = (key: string) => {
+            const value = Number(params.get(key));
+            return Number.isFinite(value) && value > 0 ? value : null;
+          };
+          this.purchasePrefill.set({ supplier_id: num('supplier_id'), product_id: num('product_id'), unit_price: num('unit_price') });
+          this.openForm();
+          this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+          return;
+        }
+
         const id = Number(params.get('id'));
         if (!Number.isFinite(id) || id <= 0) return;
 
@@ -253,6 +268,7 @@ export class PurchasesPageComponent implements OnInit {
 
   closeForm(): void {
     this.isFormOpen.set(false);
+    this.purchasePrefill.set(null);
     this.selectedPurchase.set(null);
   }
 

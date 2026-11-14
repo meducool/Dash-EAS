@@ -16,6 +16,12 @@ import { Stock, StockFilters, StockPayload } from '../../../core/models/stock.mo
 import { StockService } from '../../../core/services/stock.service';
 import { AuthService } from '../../../core/services/auth.service';
 
+export interface PurchasePrefill {
+  supplier_id?: number | null;
+  product_id?: number | null;
+  unit_price?: number | null;
+}
+
 @Component({
   selector: 'app-purchase-form',
   standalone: true,
@@ -36,6 +42,8 @@ export class PurchaseFormComponent implements OnInit {
   }
 
   @Input() purchase: Purchase | null = null;
+  /** New purchase started from elsewhere (Tarifs fournisseurs): supplier, product and price to put in. */
+  @Input() prefill: PurchasePrefill | null = null;
   @Output() save = new EventEmitter<void>();
   @Output() cancel = new EventEmitter<void>();
 
@@ -118,6 +126,7 @@ export class PurchaseFormComponent implements OnInit {
     if (!this.purchase) {
       this.loadSuppliers();
       this.loadCommercials();
+      this.applyPrefill();
       return;
     }
 
@@ -148,6 +157,23 @@ export class PurchaseFormComponent implements OnInit {
     });
   }
 
+  private applyPrefill(): void {
+    const prefill = this.prefill;
+    if (!prefill) return;
+    if (prefill.supplier_id) this.formData.supplier_id = prefill.supplier_id;
+    if (!prefill.product_id) return;
+
+    this.productService.getProduct(prefill.product_id).subscribe({
+      next: (product) => {
+        this.products.update((list) => [product, ...list.filter((p) => p.id !== product.id)]);
+        this.currentItem.product_id = product.id;
+        this.currentItem.linkedProduct = product;
+        this.currentItem.unit_price = prefill.unit_price ?? 0;
+        this.loadStocksForProduct(product.id, true);
+      },
+    });
+  }
+
   searchProducts(): void {
     this.loadingProducts.set(true);
     const filters: Record<string, string> = { per_page: '50', is_active: '1' };
@@ -157,6 +183,9 @@ export class PurchaseFormComponent implements OnInit {
     this.productService.getProducts(filters).subscribe({
       next: (res) => {
         let list = res.data;
+        // Keep a product put in from elsewhere selectable even if it is not in this page of results.
+        const selected = this.currentItem.linkedProduct as Product | null;
+        if (selected && !list.some((p) => p.id === selected.id)) list = [selected, ...list];
         this.products.set(list);
         this.loadingProducts.set(false);
       },

@@ -550,6 +550,25 @@ class ActivityLogService
         ]);
     }
 
+    /**
+     * Online shop decision (approve / reject / reset / manual price) on proposals of a batch.
+     *
+     * @param  array<string, mixed>  $properties
+     */
+    public function logWebstoreDecision(int $batchId, string $description, array $properties, ?int $userId, ?string $userName): void
+    {
+        $this->insert([
+            'action' => ActivityLog::ACTION_UPDATE,
+            'entity_type' => ActivityLog::ENTITY_WEBSTORE,
+            'entity_id' => $batchId,
+            'entity_label' => "Boutique en ligne — lot #{$batchId}",
+            'description' => 'Boutique en ligne : '.$description,
+            'properties' => $properties,
+            'user_id' => $userId,
+            'user_name' => $userName,
+        ]);
+    }
+
     /** A free-form UPDATE entry on a transaction (e.g. cheque deposited at the bank). */
     public function logTransactionNote(Transaction $transaction, string $description, array $snapshot, ?int $userId, ?string $userName): void
     {

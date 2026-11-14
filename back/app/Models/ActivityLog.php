@@ -37,6 +37,8 @@ class ActivityLog extends Model
 
     const ENTITY_PRODUCT = 'produit';
 
+    const ENTITY_WEBSTORE = 'boutique';
+
     protected $fillable = [
         'action',
         'entity_type',
