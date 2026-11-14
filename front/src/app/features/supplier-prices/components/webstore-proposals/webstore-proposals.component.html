@@ -37,7 +37,7 @@
   @if (batch(); as b) {
     <p class="wp-counts">
       {{ b.counts.update }} mise(s) à jour · {{ b.counts.create }} création(s) · {{ b.counts.with_alerts }} avec alerte
-      <span class="wp-muted">— non proposés : {{ b.counts.unchanged }} déjà à jour, {{ b.counts.no_price_skipped }} sans offre fournisseur (pas de prix),
+      <span class="wp-muted">— non proposés : {{ b.counts.unchanged }} déjà à jour, {{ b.counts.no_price_skipped }} sans offre fournisseur (pas de prix), {{ b.counts.duplicate_skipped ?? 0 }} doublon(s) probable(s) sur le site,
         {{ b.counts.variable_skipped }} produit(s) variable(s)</span>
     </p>
   }
@@ -121,6 +121,9 @@
                 <td>
                   <span class="wp-mono">{{ row.product?.reference || row.proposed.sku || '-' }}</span>
                   <span class="wp-label">{{ row.product?.label || row.proposed.name }}</span>
+                  @if (row.fields.includes('sku')) {
+                    <span class="wp-sku">SKU du site : <span class="wp-mono">{{ row.current?.sku || '(vide)' }}</span> → <strong class="wp-mono">{{ row.proposed.sku }}</strong></span>
+                  }
                   @if (row.woo?.permalink) {
                     <a class="wp-site-link" [href]="row.woo!.permalink" target="_blank" rel="noopener noreferrer">Voir sur le site ↗</a>
                   }

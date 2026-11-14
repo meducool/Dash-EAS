@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Domain\Webstore\WebstoreAutomation;
 use App\Domain\Webstore\WebstoreCatalogService;
 use App\Domain\Webstore\WebstoreLock;
+use App\Domain\Webstore\WebstoreMatcher;
 use App\Domain\Webstore\WebstoreProposalService;
 use App\Domain\Webstore\WebstorePublisher;
 use App\Models\WebstoreChange;
@@ -22,6 +23,7 @@ class WebstoreController extends Controller
         private WebstorePublisher $publisher,
         private WebstoreLock $lock,
         private WebstoreAutomation $automation,
+        private WebstoreMatcher $matcher,
     ) {}
 
     public function settings(): JsonResponse
@@ -156,5 +158,26 @@ class WebstoreController extends Controller
         $validated = $request->validate(['page' => ['nullable', 'integer', 'min:1']]);
 
         return response()->json($this->proposals->history((int) ($validated['page'] ?? 1)));
+    }
+
+    // ── Anti-duplication: association by hand ───────────────────────────────
+
+    /** Links a site product (unknown / empty SKU) to a POS article; its SKU correction is then proposed. */
+    public function link(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'woo_id' => ['required', 'integer', 'min:1'],
+            'product_id' => ['required', 'integer', 'min:1'],
+        ]);
+        $this->lock->run(fn () => $this->matcher->link((int) $validated['woo_id'], (int) $validated['product_id'], $request->user()));
+
+        return response()->json(['ok' => true, 'summary' => $this->catalog->summary()]);
+    }
+
+    public function unlink(Request $request, int $wooId): JsonResponse
+    {
+        $this->lock->run(fn () => $this->matcher->unlink($wooId, $request->user()));
+
+        return response()->json(['ok' => true, 'summary' => $this->catalog->summary()]);
     }
 }

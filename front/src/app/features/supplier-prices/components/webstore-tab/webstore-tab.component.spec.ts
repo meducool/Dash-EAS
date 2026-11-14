@@ -4,6 +4,7 @@ import { of, throwError } from 'rxjs';
 import { WebstoreTabComponent } from './webstore-tab.component';
 import { WebstoreService } from '../../data-access/webstore.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { ProductService } from '../../../../core/services/product.service';
 
 const summary = (over: Record<string, unknown> = {}) => ({
   site_total: 5, matched: 2, site_only: 1, no_sku: 1, duplicate: 1, pos_only: 3, variable: 0,
@@ -18,7 +19,8 @@ const settings = (over: Record<string, unknown> = {}) => ({
 });
 
 describe('WebstoreTabComponent', () => {
-  let service: Record<'settings' | 'updateSettings' | 'test' | 'pull' | 'report' | 'status' | 'prepareNow', ReturnType<typeof vi.fn>>;
+  let service: Record<'settings' | 'updateSettings' | 'test' | 'pull' | 'report' | 'status' | 'prepareNow' | 'link' | 'unlink', ReturnType<typeof vi.fn>>;
+  let products: { getProducts: ReturnType<typeof vi.fn> };
   let permissions: string[];
 
   const create = () => {
@@ -26,6 +28,7 @@ describe('WebstoreTabComponent', () => {
       providers: [
         { provide: WebstoreService, useValue: service },
         { provide: AuthService, useValue: { hasPermission: (p: string) => permissions.includes(p) } },
+        { provide: ProductService, useValue: products },
       ],
     });
     const comp = TestBed.runInInjectionContext(() => new WebstoreTabComponent());
@@ -44,6 +47,11 @@ describe('WebstoreTabComponent', () => {
       report: vi.fn(() => of(report())),
       status: vi.fn(() => of({ batch: null, auto: { enabled: false, last_run_at: null, last_result: null }, last_publish_at: null })),
       prepareNow: vi.fn(() => of({ status: 'ok', message: 'Lot #3 préparé.' })),
+      link: vi.fn(() => of({ ok: true, summary: summary({ matched: 3, site_only: 0 }) })),
+      unlink: vi.fn(() => of({ ok: true, summary: summary() })),
+    };
+    products = {
+      getProducts: vi.fn(() => of({ data: [{ id: 7, reference: 'REF7', type: 'tyre' }, { id: 8, reference: 'S8', type: 'service' }] })),
     };
   });
 
@@ -148,5 +156,37 @@ describe('WebstoreTabComponent', () => {
     expect(comp.historyBatchId()).toBe(2);
     comp.openView('history');
     expect(comp.historyBatchId()).toBeNull();
+  });
+
+  it('associates a site product with a searched article, never with a service', () => {
+    const comp = create();
+    comp.startLink(501);
+    expect(comp.linkingWooId()).toBe(501);
+    comp.linkSearch.set('a');
+    comp.searchArticles();
+    expect(products.getProducts).not.toHaveBeenCalled(); // 2 characters at least
+
+    comp.linkSearch.set('2055516');
+    comp.searchArticles();
+    expect(products.getProducts).toHaveBeenCalledWith({ search: '2055516', per_page: '8' });
+    expect(comp.linkResults().map((p) => p.id)).toEqual([7]);
+
+    service.report.mockClear();
+    service.report.mockReturnValue(of(report()));
+    comp.link(501, 7);
+    expect(service.link).toHaveBeenCalledWith(501, 7);
+    expect(comp.linkingWooId()).toBeNull();
+    expect(service.report).toHaveBeenCalledTimes(1); // report reloaded after the association
+    expect(comp.notice()?.kind).toBe('ok');
+  });
+
+  it('undoes an association after confirmation', () => {
+    vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true);
+    const comp = create();
+    comp.unlink(501);
+    expect(service.unlink).not.toHaveBeenCalled();
+    comp.unlink(501);
+    expect(service.unlink).toHaveBeenCalledWith(501);
+    expect(comp.linkLabel('manual')).toBe('associé à la main');
   });
 });

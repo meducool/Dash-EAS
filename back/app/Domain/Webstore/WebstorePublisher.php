@@ -30,6 +30,7 @@ class WebstorePublisher
         private WebstoreCatalogService $catalog,
         private WebstoreProposalService $proposals,
         private ActivityLogService $activityLog,
+        private WebstoreMatcher $matcher,
     ) {}
 
     /** @return array<string, mixed> */
@@ -166,6 +167,9 @@ class WebstorePublisher
     private function updatePayload(WebstoreChange $change, bool $photosReachable, array &$warnings): array
     {
         $payload = ['id' => $change->woo_id];
+        if (in_array('sku', $change->fields, true) && ! empty($change->proposed['sku'])) {
+            $payload['sku'] = (string) $change->proposed['sku'];
+        }
         if (in_array('price', $change->fields, true)) {
             $payload += $this->pricePayload($change);
         }
@@ -229,6 +233,9 @@ class WebstorePublisher
             $local->name = $change->proposed['name'] ?? '(sans nom)';
         }
         $local->save();
+        if ($change->action === WebstoreChange::CREATE && $change->product_id) {
+            $this->matcher->linkCreated($change->product_id, $row['woo_id']);
+        }
 
         $change->forceFill([
             'status' => WebstoreChange::PUBLISHED,

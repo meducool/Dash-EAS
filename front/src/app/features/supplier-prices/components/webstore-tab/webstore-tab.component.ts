@@ -3,6 +3,8 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../../../core/services/auth.service';
+import { ProductService } from '../../../../core/services/product.service';
+import { Product } from '../../../../core/models/product.model';
 import { WebstoreService } from '../../data-access/webstore.service';
 import { WebstoreProposalsComponent } from '../webstore-proposals/webstore-proposals.component';
 import { WebstoreHistoryComponent } from '../webstore-history/webstore-history.component';
@@ -33,6 +35,7 @@ interface Notice { kind: 'ok' | 'error' | 'info'; text: string }
 })
 export class WebstoreTabComponent implements OnInit {
   private service = inject(WebstoreService);
+  private productService = inject(ProductService);
   readonly authService = inject(AuthService);
 
   readonly STATUSES: WebstoreMatchStatus[] = ['matched', 'site_only', 'pos_only', 'no_sku', 'duplicate'];
@@ -75,6 +78,13 @@ export class WebstoreTabComponent implements OnInit {
   readonly summary = signal<WebstoreSummary | null>(null);
   readonly loading = signal(false);
   readonly reportError = signal('');
+
+  // ── Association by hand (anti-duplication) ──────────────────────────────
+  /** Site product whose article is being searched. */
+  readonly linkingWooId = signal<number | null>(null);
+  readonly linkSearch = signal('');
+  readonly linkResults = signal<Product[]>([]);
+  readonly linkBusy = signal(false);
 
   readonly hasCatalogue = computed(() => !!this.summary()?.last_pull_at);
   readonly isPosOnly = computed(() => this.status() === 'pos_only');
@@ -229,6 +239,52 @@ export class WebstoreTabComponent implements OnInit {
       },
       error: (err) => { this.loading.set(false); this.reportError.set(this.errorText(err)); },
     });
+  }
+
+  startLink(wooId: number): void {
+    this.linkingWooId.set(wooId);
+    this.linkSearch.set('');
+    this.linkResults.set([]);
+  }
+
+  cancelLink(): void {
+    this.linkingWooId.set(null);
+  }
+
+  searchArticles(): void {
+    const q = this.linkSearch().trim();
+    if (q.length < 2) return;
+    this.productService.getProducts({ search: q, per_page: '8' }).subscribe({
+      next: (res) => this.linkResults.set(res.data.filter((p) => p.type !== 'service')),
+      error: () => this.linkResults.set([]),
+    });
+  }
+
+  /** Same product on both sides: no creation, the site SKU becomes the POS reference (after approval). */
+  link(wooId: number, productId: number): void {
+    this.linkBusy.set(true);
+    this.service.link(wooId, productId).subscribe({
+      next: (res) => {
+        this.linkBusy.set(false);
+        this.linkingWooId.set(null);
+        this.summary.set(res.summary);
+        this.notice.set({ kind: 'ok', text: 'Produit associé. Si son SKU diffère de la référence POS, la correction sera proposée au prochain calcul.' });
+        this.loadReport();
+      },
+      error: (err) => { this.linkBusy.set(false); this.notice.set({ kind: 'error', text: this.errorText(err) }); },
+    });
+  }
+
+  unlink(wooId: number): void {
+    if (!confirm('Dissocier ce produit du site de son article POS ?')) return;
+    this.service.unlink(wooId).subscribe({
+      next: (res) => { this.summary.set(res.summary); this.notice.set({ kind: 'info', text: 'Association retirée.' }); this.loadReport(); },
+      error: (err) => this.notice.set({ kind: 'error', text: this.errorText(err) }),
+    });
+  }
+
+  linkLabel(link: string | null | undefined): string {
+    return link === 'manual' ? 'associé à la main' : link === 'created' ? 'créé par le POS' : link === 'sku' ? 'même SKU' : '';
   }
 
   count(status: WebstoreMatchStatus): number {

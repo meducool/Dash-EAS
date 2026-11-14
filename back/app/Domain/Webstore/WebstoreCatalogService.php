@@ -4,6 +4,7 @@ namespace App\Domain\Webstore;
 
 use App\Domain\Products\ProductReferenceService;
 use App\Models\Product;
+use App\Models\WebstoreLink;
 use App\Models\WebstoreProduct;
 use App\Models\WebstoreSetting;
 use Illuminate\Support\Carbon;
@@ -25,7 +26,10 @@ class WebstoreCatalogService
 
     public const STATUSES = [WebstoreProduct::MATCHED, WebstoreProduct::SITE_ONLY, WebstoreProduct::NO_SKU, WebstoreProduct::DUPLICATE, 'pos_only'];
 
-    public function __construct(private WooCommerceClient $client) {}
+    public function __construct(
+        private WooCommerceClient $client,
+        private WebstoreMatcher $matcher,
+    ) {}
 
     // ── Settings ─────────────────────────────────────────────────────────────
 
@@ -128,7 +132,7 @@ class WebstoreCatalogService
             $page++;
         } while ($page <= $result['total_pages']);
 
-        $rows = $this->match(array_values($rows));
+        $rows = $this->matcher->match(array_values($rows));
 
         DB::transaction(function () use ($rows) {
             WebstoreProduct::query()->delete();
@@ -137,6 +141,7 @@ class WebstoreCatalogService
                 WebstoreProduct::query()->insert(array_map(fn ($r) => $r + ['created_at' => $now, 'updated_at' => $now], $chunk));
             }
         });
+        $this->matcher->syncLinks($rows);
 
         $summary = $this->summary();
         $settings->forceFill(['last_pull_at' => now(), 'last_pull_summary' => $summary])->save();
@@ -180,37 +185,10 @@ class WebstoreCatalogService
         return preg_match('#^https?://#i', $url) ? mb_substr($url, 0, 500) : null;
     }
 
-    /**
-     * SKU matching: WooCommerce SKU (normalised) = POS reference.
-     *
-     * @param  array<int, array<string, mixed>>  $rows
-     * @return array<int, array<string, mixed>>
-     */
-    private function match(array $rows): array
-    {
-        $products = [];
-        foreach (Product::query()->pluck('id', 'reference') as $reference => $id) {
-            $products[ProductReferenceService::normalize((string) $reference)] = (int) $id;
-        }
-        $skuCounts = array_count_values(array_filter(array_column($rows, 'normalized_sku')));
-
-        foreach ($rows as &$row) {
-            $sku = $row['normalized_sku'];
-            $row['product_id'] = $sku !== null ? ($products[$sku] ?? null) : null;
-            $row['match_status'] = match (true) {
-                $sku === null || $sku === '' => WebstoreProduct::NO_SKU,
-                ($skuCounts[$sku] ?? 0) > 1 => WebstoreProduct::DUPLICATE,
-                $row['product_id'] !== null => WebstoreProduct::MATCHED,
-                default => WebstoreProduct::SITE_ONLY,
-            };
-        }
-
-        return $rows;
-    }
-
     private function forgetCatalogue(WebstoreSetting $settings): void
     {
         WebstoreProduct::query()->delete();
+        WebstoreLink::query()->delete(); // the links belonged to the previous shop
         $settings->last_pull_at = null;
         $settings->last_pull_summary = null;
     }
@@ -231,6 +209,8 @@ class WebstoreCatalogService
             'duplicate' => (int) ($counts[WebstoreProduct::DUPLICATE] ?? 0),
             'pos_only' => $this->posOnlyQuery()->count(),
             'variable' => WebstoreProduct::query()->where('type', 'variable')->count(),
+            'suspected_duplicates' => $this->posOnlyQuery()->whereIn('id', $this->suspectedProductIds())->count(),
+            'sku_to_fix' => $this->skuToFixCount(),
             'store_url' => $settings->store_url,
             'last_pull_at' => $settings->last_pull_at?->toIso8601String(),
         ];
@@ -255,13 +235,20 @@ class WebstoreCatalogService
             }
             $paginator = $query->paginate($perPage, ['*'], 'page', $page);
             $products = collect($paginator->items());
+            $suspects = WebstoreProduct::query()->whereIn('suggested_product_id', $products->pluck('id'))
+                ->get(['woo_id', 'name', 'permalink', 'suggested_product_id'])->groupBy('suggested_product_id');
             $rows = $products->map(fn (Product $p) => [
                 'match_status' => 'pos_only',
                 'woo' => null,
                 'product' => $this->productInfo($p),
+                // Probably already on the site under another SKU: never proposed in creation.
+                'suspected_duplicate' => ($s = $suspects->get($p->id)?->first())
+                    ? ['woo_id' => $s->woo_id, 'name' => $s->name, 'permalink' => $s->permalink]
+                    : null,
             ]);
         } else {
-            $query = WebstoreProduct::query()->where('match_status', $status)->with(['product.brand:id,name', 'product.tyre'])
+            $links = WebstoreLink::query()->pluck('source', 'woo_id');
+            $query = WebstoreProduct::query()->where('match_status', $status)->with(['product.brand:id,name', 'product.tyre', 'suggestedProduct.brand:id,name', 'suggestedProduct.tyre'])
                 ->orderBy($status === WebstoreProduct::DUPLICATE ? 'normalized_sku' : 'name')->orderBy('woo_id');
             if ($search !== '') {
                 $query->where(fn ($q) => $q->where('sku', 'like', $like)->orWhere('name', 'like', $like));
@@ -285,6 +272,11 @@ class WebstoreCatalogService
                     'permalink' => $w->permalink,
                 ],
                 'product' => $w->product ? $this->productInfo($w->product) : null,
+                'link' => $links[$w->woo_id] ?? null,
+                // Linked article whose reference differs from the site SKU: correction proposed.
+                'sku_mismatch' => $w->product !== null
+                    && ProductReferenceService::normalize($w->sku) !== ProductReferenceService::normalize($w->product->reference),
+                'suggestion' => $w->suggestedProduct ? $this->productInfo($w->suggestedProduct) : null,
             ]);
         }
 
@@ -300,6 +292,22 @@ class WebstoreCatalogService
             ],
             'summary' => $this->summary(),
         ];
+    }
+
+    /** @return array<int, int> POS articles a site product with another SKU looks like */
+    public function suspectedProductIds(): array
+    {
+        return WebstoreProduct::query()->whereNotNull('suggested_product_id')->distinct()->pluck('suggested_product_id')->map(fn ($id) => (int) $id)->all();
+    }
+
+    /** Linked site products whose SKU is not the POS reference. */
+    private function skuToFixCount(): int
+    {
+        return WebstoreProduct::query()->where('match_status', WebstoreProduct::MATCHED)
+            ->join('products', 'products.id', '=', 'webstore_products.product_id')
+            ->get(['webstore_products.normalized_sku', 'products.reference'])
+            ->filter(fn ($r) => $r->normalized_sku !== ProductReferenceService::normalize($r->reference))
+            ->count();
     }
 
     public function posOnlyQuery()

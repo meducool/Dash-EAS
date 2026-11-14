@@ -33,6 +33,7 @@ class WebstoreProduct extends Model
         'woo_modified_at',
         'match_status',
         'product_id',
+        'suggested_product_id',
     ];
 
     protected $casts = [
@@ -48,5 +49,11 @@ class WebstoreProduct extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    /** POS article this site product looks like (unknown / empty SKU). */
+    public function suggestedProduct(): BelongsTo
+    {
+        return $this->belongsTo(Product::class, 'suggested_product_id');
     }
 }

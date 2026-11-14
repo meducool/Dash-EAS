@@ -94,4 +94,15 @@ export class WebstoreService {
   batches(page = 1): Observable<WebstoreBatchHistory> {
     return this.http.get<WebstoreBatchHistory>(`${this.apiUrl}/batches`, { params: { page: String(page) } });
   }
+
+  // ── Anti-duplication ──────────────────────────────────────────────────────
+
+  /** Links a site product to a POS article; its SKU correction is then proposed. */
+  link(wooId: number, productId: number): Observable<{ ok: boolean; summary: WebstoreSummary }> {
+    return this.http.post<{ ok: boolean; summary: WebstoreSummary }>(`${this.apiUrl}/links`, { woo_id: wooId, product_id: productId });
+  }
+
+  unlink(wooId: number): Observable<{ ok: boolean; summary: WebstoreSummary }> {
+    return this.http.delete<{ ok: boolean; summary: WebstoreSummary }>(`${this.apiUrl}/links/${wooId}`);
+  }
 }

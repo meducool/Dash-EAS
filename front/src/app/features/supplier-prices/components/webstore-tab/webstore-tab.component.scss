@@ -176,6 +176,47 @@
   input { margin-top: 0.2rem; }
 }
 
+.ws-dedup {
+  margin: 0;
+  padding: 0.5rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  background: color-mix(in srgb, var(--app-warning) 12%, transparent);
+  color: var(--app-warning-text);
+}
+
+.ws-warn { display: block; margin-top: 0.2rem; font-size: 0.74rem; color: var(--app-warning-text); }
+.ws-suggest { display: block; margin-bottom: 0.3rem; font-size: 0.8rem; color: var(--app-text); }
+.ws-small { font-size: 0.75rem; }
+
+.ws-link-form {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+  max-width: 360px;
+
+  .form-control { flex: 1; min-width: 0; }
+}
+
+.ws-result {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  margin-top: 0.2rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--app-border);
+  border-radius: 6px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  font: inherit;
+  font-size: 0.78rem;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover { border-color: var(--app-primary); }
+}
+
 .ws-status-help { margin: 0; font-size: 0.82rem; color: var(--app-text-muted); }
 
 .ws-search {

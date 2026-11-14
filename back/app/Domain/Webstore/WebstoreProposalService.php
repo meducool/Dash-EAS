@@ -2,6 +2,7 @@
 
 namespace App\Domain\Webstore;
 
+use App\Domain\Products\ProductReferenceService;
 use App\Enums\PurchaseStatus;
 use App\Models\Product;
 use App\Models\User;
@@ -61,7 +62,8 @@ class WebstoreProposalService
         $figures = $this->figures($productIds);
 
         $lines = [];
-        $counts = ['create' => 0, 'update' => 0, 'unchanged' => 0, 'variable_skipped' => 0, 'no_price_skipped' => 0, 'with_alerts' => 0];
+        $counts = ['create' => 0, 'update' => 0, 'unchanged' => 0, 'variable_skipped' => 0, 'no_price_skipped' => 0, 'duplicate_skipped' => 0, 'with_alerts' => 0];
+        $suspected = array_flip($this->catalog->suspectedProductIds());
         foreach ($productIds as $id) {
             $product = $products->get($id);
             if (! $product) {
@@ -75,7 +77,13 @@ class WebstoreProposalService
 
                 continue;
             }
-            $line = $woo ? $this->updateLine($woo, $f, $margin) : $this->createLine($product, $f, $margin);
+            if (! $woo && isset($suspected[$id])) {
+                // Probably already on the site under another SKU: associate it instead of creating a duplicate.
+                $counts['duplicate_skipped']++;
+
+                continue;
+            }
+            $line = $woo ? $this->updateLine($woo, $product, $f, $margin) : $this->createLine($product, $f, $margin);
             if ($line === null) {
                 $counts[$woo ? 'unchanged' : 'no_price_skipped']++;
 
@@ -186,7 +194,7 @@ class WebstoreProposalService
      * @param  array<string, mixed>  $f
      * @return array<string, mixed>|null null = nothing to change
      */
-    private function updateLine(WebstoreProduct $woo, array $f, float $margin): ?array
+    private function updateLine(WebstoreProduct $woo, Product $product, array $f, float $margin): ?array
     {
         $sitePrice = $woo->regular_price ?? $woo->price;
         $price = $this->price($f['best_offer'], $margin);
@@ -209,12 +217,18 @@ class WebstoreProposalService
             $fields[] = 'images';
             $proposed['images'] = $f['images'];
         }
+        // Linked product whose SKU is not the POS reference: the site SKU is corrected (same product, no duplicate).
+        if (ProductReferenceService::normalize($woo->sku) !== ProductReferenceService::normalize($product->reference)) {
+            $fields[] = 'sku';
+            $proposed['sku'] = $product->reference;
+        }
         if ($fields === []) {
             return null;
         }
 
         $current = [
             'name' => $woo->name,
+            'sku' => $woo->sku,
             'status' => $woo->status,
             'price' => $sitePrice,
             'stock_status' => $woo->stock_status,

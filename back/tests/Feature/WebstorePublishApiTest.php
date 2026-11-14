@@ -192,6 +192,8 @@ class WebstorePublishApiTest extends TestCase
         $this->assertSame(WebstoreChange::PUBLISHED, $c1->status);
         $this->assertSame(900, $c1->woo_id);
         $this->assertDatabaseHas('webstore_products', ['woo_id' => 900, 'product_id' => $c1->product_id, 'match_status' => WebstoreProduct::MATCHED]);
+        // Linked at once: the next read will never propose it again in creation.
+        $this->assertDatabaseHas('webstore_links', ['woo_id' => 900, 'product_id' => $c1->product_id, 'source' => 'created']);
 
         $this->assertStringContainsString('modifié sur le site', $this->c['U2']->fresh()->error);
         $this->assertStringContainsString('introuvable', $this->c['U3']->fresh()->error);
@@ -250,5 +252,14 @@ class WebstorePublishApiTest extends TestCase
 
         $this->postJson('/api/webstore/publish')->assertOk();
         $this->assertSame('publish', $this->written[0]['create'][0]['status']);
+    }
+
+    public function test_a_sku_correction_is_sent_with_the_update(): void
+    {
+        $this->c['U1']->update(['fields' => ['sku'], 'proposed' => ['sku' => 'REF-POS-1']]);
+        WebstoreChange::query()->whereKeyNot($this->c['U1']->id)->update(['status' => WebstoreChange::REJECTED]);
+
+        $this->postJson('/api/webstore/publish')->assertOk()->assertJsonPath('published', 1);
+        $this->assertSame(['id' => 201, 'sku' => 'REF-POS-1'], $this->written[0]['update'][0]);
     }
 }

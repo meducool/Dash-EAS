@@ -555,13 +555,13 @@ class ActivityLogService
      *
      * @param  array<string, mixed>  $properties
      */
-    public function logWebstoreDecision(int $batchId, string $description, array $properties, ?int $userId, ?string $userName): void
+    public function logWebstoreDecision(int $batchId, string $description, array $properties, ?int $userId, ?string $userName, ?string $label = null): void
     {
         $this->insert([
             'action' => ActivityLog::ACTION_UPDATE,
             'entity_type' => ActivityLog::ENTITY_WEBSTORE,
             'entity_id' => $batchId,
-            'entity_label' => "Boutique en ligne — lot #{$batchId}",
+            'entity_label' => $label ?? "Boutique en ligne — lot #{$batchId}",
             'description' => 'Boutique en ligne : '.$description,
             'properties' => $properties,
             'user_id' => $userId,

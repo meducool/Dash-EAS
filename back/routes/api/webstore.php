@@ -25,3 +25,7 @@ Route::post('webstore/publish', [WebstoreController::class, 'publish'])->middlew
 Route::get('webstore/status', [WebstoreController::class, 'status'])->middleware('permission:view webstore');
 Route::get('webstore/batches', [WebstoreController::class, 'batches'])->middleware('permission:view webstore');
 Route::post('webstore/prepare', [WebstoreController::class, 'prepareNow'])->middleware(['permission:manage webstore', 'throttle:3,1']);
+
+// Anti-duplication: associate / dissociate a site product and a POS article by hand.
+Route::post('webstore/links', [WebstoreController::class, 'link'])->middleware('permission:manage webstore');
+Route::delete('webstore/links/{wooId}', [WebstoreController::class, 'unlink'])->whereNumber('wooId')->middleware('permission:manage webstore');

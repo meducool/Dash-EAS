@@ -128,6 +128,15 @@
     }
   </div>
 
+  @if ((summary()?.suspected_duplicates ?? 0) > 0 || (summary()?.sku_to_fix ?? 0) > 0) {
+    <p class="ws-dedup">
+      🛡️ Anti-doublon :
+      @if (summary()!.suspected_duplicates) { {{ summary()!.suspected_duplicates }} article(s) probablement déjà sur le site sous un autre SKU (jamais recréés) }
+      @if (summary()!.suspected_duplicates && summary()!.sku_to_fix) { · }
+      @if (summary()!.sku_to_fix) { {{ summary()!.sku_to_fix }} SKU du site à aligner sur la référence POS (proposés au calcul) }
+    </p>
+  }
+
   <p class="ws-status-help">
     {{ STATUS_HELP[status()] }}
     @if ((summary()?.variable ?? 0) > 0 && status() !== 'pos_only') {
@@ -192,6 +201,19 @@
                   <td>
                     <span class="ws-mono">{{ p.reference }}</span>
                     <span class="ws-label">{{ p.label }}</span>
+                    @if (row.link) { <span class="ws-chip ws-chip-ok" [title]="'Relié : ' + linkLabel(row.link)">🔗 {{ linkLabel(row.link) }}</span> }
+                    @if (row.sku_mismatch) {
+                      <span class="ws-warn">SKU du site à corriger → {{ p.reference }} (proposé au prochain calcul)</span>
+                    }
+                    @if (row.suspected_duplicate; as d) {
+                      <span class="ws-warn">⚠️ Doublon probable sur le site :
+                        @if (d.permalink) { <a [href]="d.permalink" target="_blank" rel="noopener noreferrer">{{ d.name }} ↗</a> } @else { {{ d.name }} }
+                        — pas de création, associez-le dans « {{ STATUS_LABELS.site_only }} »
+                      </span>
+                    }
+                    @if (canManage && row.woo && row.link === 'manual') {
+                      <button type="button" class="btn-link ws-small" (click)="unlink(row.woo.id)">Dissocier</button>
+                    }
                   </td>
                   <td class="text-center">{{ p.stock ?? 0 }}</td>
                   <td class="text-center" [class.ws-missing]="!p.images_count">{{ p.images_count ?? 0 }}</td>
@@ -201,7 +223,33 @@
                     } @else { <span class="ws-muted">—</span> }
                   </td>
                 } @else {
-                  <td colspan="4" class="ws-muted">Aucun article du POS avec ce SKU</td>
+                  <td colspan="4">
+                    @if (row.suggestion; as sug) {
+                      <span class="ws-suggest">💡 Ressemble à <span class="ws-mono">{{ sug.reference }}</span> — {{ sug.label }}</span>
+                      @if (canManage && row.woo) {
+                        <button type="button" class="btn btn-primary btn-sm" [disabled]="linkBusy()" (click)="link(row.woo.id, sug.id)">🔗 Associer à cet article</button>
+                      }
+                    } @else {
+                      <span class="ws-muted">Aucun article du POS avec ce SKU</span>
+                    }
+                    @if (canManage && row.woo) {
+                      @if (linkingWooId() === row.woo.id) {
+                        <form class="ws-link-form" (ngSubmit)="searchArticles()">
+                          <input class="form-control" name="link_search" placeholder="Référence, dimension, profil…" autocomplete="off"
+                                 [ngModel]="linkSearch()" (ngModelChange)="linkSearch.set($event)" aria-label="Rechercher l'article POS">
+                          <button type="submit" class="btn btn-secondary btn-sm">🔍</button>
+                          <button type="button" class="btn-link ws-small" (click)="cancelLink()">Annuler</button>
+                        </form>
+                        @for (p of linkResults(); track p.id) {
+                          <button type="button" class="ws-result" [disabled]="linkBusy()" (click)="link(row.woo.id, p.id)">
+                            <span class="ws-mono">{{ p.reference }}</span> {{ p.brand?.name }} {{ p.profile }}
+                          </button>
+                        }
+                      } @else {
+                        <button type="button" class="btn-link ws-small" (click)="startLink(row.woo.id)">{{ row.suggestion ? 'Choisir un autre article…' : '🔗 Associer à un article POS…' }}</button>
+                      }
+                    }
+                  </td>
                 }
               </tr>
             } @empty {

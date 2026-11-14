@@ -11,6 +11,10 @@ export interface WebstoreSummary {
   pos_only: number;
   /** Variable products (SKU on the variations: not matched for now). */
   variable: number;
+  /** POS articles probably already on the site under another SKU (never proposed in creation). */
+  suspected_duplicates?: number;
+  /** Linked site products whose SKU is not the POS reference (correction proposed). */
+  sku_to_fix?: number;
   store_url: string | null;
   last_pull_at: string | null;
 }
@@ -73,6 +77,14 @@ export interface WebstoreReportRow {
   match_status: WebstoreMatchStatus;
   woo: WebstoreWooProduct | null;
   product: WebstorePosProduct | null;
+  /** How the site product is linked to the article: same SKU, by hand, created by the POS. */
+  link?: 'sku' | 'manual' | 'created' | null;
+  /** Linked, but the site SKU is not the POS reference. */
+  sku_mismatch?: boolean;
+  /** POS article the site product looks like (unknown / empty SKU). */
+  suggestion?: WebstorePosProduct | null;
+  /** POS article probably already on the site under another SKU. */
+  suspected_duplicate?: { woo_id: number; name: string; permalink: string | null } | null;
 }
 
 export interface WebstoreReport {
@@ -91,8 +103,8 @@ export const WEBSTORE_STATUS_LABELS: Record<WebstoreMatchStatus, string> = {
 
 export const WEBSTORE_STATUS_HELP: Record<WebstoreMatchStatus, string> = {
   matched: 'Même SKU sur le site et dans le POS : ces produits pourront être mis à jour.',
-  site_only: 'SKU du site introuvable dans le POS : corrigez le SKU sur le site ou la référence de l\'article.',
-  no_sku: 'Produits du site sans SKU : impossible de les relier à un article.',
+  site_only: 'SKU du site introuvable dans le POS : associez-le à son article (suggestion 💡 ou recherche) — son SKU sera aligné sur la référence POS.',
+  no_sku: 'Produits du site sans SKU : associez-les à leur article POS, le SKU leur sera donné à la publication.',
   duplicate: 'Le même SKU est utilisé par plusieurs produits du site : à dédoublonner sur le site.',
   pos_only: 'Pneus et pièces actifs du POS absents du site : ils pourront être proposés en création.',
 };
@@ -130,6 +142,8 @@ export interface WebstoreBatch {
     unchanged: number;
     variable_skipped: number;
     no_price_skipped: number;
+    /** Probably already on the site under another SKU: not created. */
+    duplicate_skipped?: number;
     with_alerts: number;
   };
   statuses: Record<WebstoreChangeStatus, number>;
@@ -154,7 +168,7 @@ export interface WebstoreChange {
   id: number;
   action: WebstoreChangeAction;
   status: WebstoreChangeStatus;
-  fields: ('price' | 'stock' | 'images')[];
+  fields: ('price' | 'stock' | 'images' | 'sku')[];
   alerts: WebstoreAlert[];
   current: WebstoreChangeValues | null;
   proposed: WebstoreChangeValues;
