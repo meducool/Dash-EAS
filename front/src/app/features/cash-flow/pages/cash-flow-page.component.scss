@@ -384,3 +384,18 @@ $_border2: var(--app-border-strong);
   color: var(--app-danger-text);
   font-size: 0.82rem;
 }
+
+// Phones: title on its own line, amounts below it (nothing clipped).
+@media (max-width: 600px) {
+  .pending-header {
+    flex-wrap: wrap;
+    gap: 0.4rem 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+  .pending-amounts {
+    flex-wrap: wrap;
+    gap: 0.3rem 0.75rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+}

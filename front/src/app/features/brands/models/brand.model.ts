@@ -36,3 +36,10 @@ export interface PaginatedResponse<T> {
   per_page: number;
   total: number;
 }
+
+/** Profiles of one brand written several ways ("EcoContact 6" / "ECOCONTACT6"), most used first. */
+export interface ProfileDuplicateGroup {
+  brand_id: number;
+  brand: string;
+  profiles: BrandProfile[];
+}

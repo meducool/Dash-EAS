@@ -97,14 +97,20 @@ class SupplierPriceSearchService
         return $this->defaultMargin();
     }
 
+    /** Selling prices end in 0 or 5: rounded UP to this step (768.60 → 770, 761.20 → 765). */
+    public const SALE_PRICE_STEP = 5;
+
     /**
-     * Selling price = Prix TTC × (1 + margin %).
+     * Selling price = Prix TTC × (1 + margin %), rounded up to a price ending
+     * in 0 or 5. `margin` is the real amount earned once rounded.
      *
      * @return array{sale_price: float, margin: float, margin_percent: float}
      */
     public function salePrice(float $price, float $marginPercent): array
     {
-        $sale = round($price * (1 + $marginPercent / 100), 2);
+        // Cents first, so an exact 990.00 never becomes 995 through a float residue.
+        $raw = round($price * (1 + $marginPercent / 100), 2);
+        $sale = (float) (ceil($raw / self::SALE_PRICE_STEP) * self::SALE_PRICE_STEP);
 
         return ['sale_price' => $sale, 'margin' => round($sale - $price, 2), 'margin_percent' => round($marginPercent, 2)];
     }

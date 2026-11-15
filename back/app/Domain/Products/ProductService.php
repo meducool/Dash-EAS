@@ -2,6 +2,7 @@
 
 namespace App\Domain\Products;
 
+use App\Domain\SupplierPrices\SupplierProductMatcher;
 use App\Models\Brand;
 use App\Models\Product;
 use App\Models\Stock;
@@ -142,6 +143,56 @@ class ProductService
     public function previewReference(array $data): string
     {
         return $this->references->generate($data);
+    }
+
+    /**
+     * Tyres already in the catalogue with the same characteristics — brand,
+     * dimensions, load / speed indexes, runflat and profile (compared without
+     * case, spaces or punctuation: "EcoContact 6" = "ECOCONTACT6"). Shown by
+     * the product form before a second copy (and a "-2" reference) is created.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<int, array{id: int, reference: string, profile: ?string, is_active: bool, stock: int}>
+     */
+    public function similarTyres(array $data, ?int $exceptId = null): array
+    {
+        if (($data['type'] ?? 'tyre') !== 'tyre' || empty($data['tire_width']) || empty($data['tire_diameter']) || empty($data['brand_id'])) {
+            return [];
+        }
+        $num = fn ($v) => $v === null || $v === '' ? null : round((float) $v, 2);
+        $profileKey = SupplierProductMatcher::profileKey($data['profile'] ?? null);
+
+        $candidates = Product::query()
+            ->join('product_tyres', 'product_tyres.product_id', '=', 'products.id')
+            ->where('products.type', 'tyre')
+            ->where('products.brand_id', (int) $data['brand_id'])
+            ->where('product_tyres.tire_width', $num($data['tire_width']))
+            ->where('product_tyres.tire_diameter', $num($data['tire_diameter']))
+            ->when($num($data['tire_height'] ?? null) !== null,
+                fn ($q) => $q->where('product_tyres.tire_height', $num($data['tire_height'])),
+                fn ($q) => $q->whereNull('product_tyres.tire_height'))
+            ->when($exceptId, fn ($q) => $q->where('products.id', '!=', $exceptId))
+            ->get(['products.id', 'products.reference', 'products.profile', 'products.is_active',
+                'product_tyres.tire_load_index', 'product_tyres.tire_speed_index', 'product_tyres.tire_runflat']);
+
+        $same = fn ($a, $b) => mb_strtoupper(trim((string) $a)) === mb_strtoupper(trim((string) $b));
+        $found = $candidates->filter(fn ($p) => $same($p->tire_load_index, $data['tire_load_index'] ?? null)
+            && $same($p->tire_speed_index, $data['tire_speed_index'] ?? null)
+            && (bool) $p->tire_runflat === (bool) ($data['tire_runflat'] ?? false)
+            && SupplierProductMatcher::profileKey($p->profile) === $profileKey);
+        if ($found->isEmpty()) {
+            return [];
+        }
+        $stock = Stock::query()->whereIn('product_id', $found->pluck('id'))->groupBy('product_id')
+            ->selectRaw('product_id, SUM(quantity) as qty')->pluck('qty', 'product_id');
+
+        return $found->take(5)->map(fn ($p) => [
+            'id' => (int) $p->id,
+            'reference' => (string) $p->reference,
+            'profile' => $p->profile,
+            'is_active' => (bool) $p->is_active,
+            'stock' => (int) ($stock[$p->id] ?? 0),
+        ])->values()->all();
     }
 
     private function referenceTaken(string $reference, int $exceptId): bool

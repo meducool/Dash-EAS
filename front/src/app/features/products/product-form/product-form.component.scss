@@ -372,3 +372,19 @@
 }
 
 .field-hint--warn { color: var(--app-warning-text); }
+
+// Same tyre already in the catalogue (creation of a copy is confirmed).
+.existing-warning {
+  margin-top: 0.4rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  background: color-mix(in srgb, var(--app-warning) 14%, transparent);
+  color: var(--app-warning-text);
+
+  a { font-weight: 700; color: inherit; text-decoration: underline; }
+}
+
+.existing-item { display: inline-block; margin: 0 0.5rem 0 0.25rem; }
+.existing-meta { margin-left: 0.25rem; font-size: 0.72rem; opacity: 0.85; }

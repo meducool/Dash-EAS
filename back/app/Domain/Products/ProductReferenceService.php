@@ -12,7 +12,10 @@ use App\Models\Product;
  *   tyre    : {brand code}{width}{height}{diameter}{load}{speed}[RF]-{profile code}
  *             GITI 205/60R16 92H SYNERGY        → GT205601692H-SYN
  *             CONTINENTAL 225/40R19 89Y RFT S5  → C225401989YRF-S5
- *   part    : P + 7-digit product id              → P0000123
+ *   part    : {name initials}-{brand code}{code}  (code = OEM reference, else the code in the name)
+ *             FILTRE GAZOIL W55824               → FG-W55824
+ *             FILTRE GAZOIL + brand WIX, 4450    → FG-W4450
+ *             (no letter word or no code: P + 7-digit product id → P0000123)
  *   service : S + 7-digit product id              → S0000045
  *
  * The result is upper-case, without spaces, and made unique ("-2", "-3"…).
@@ -99,7 +102,7 @@ class ProductReferenceService
             return 'S'.$sequence;
         }
         if ($type !== 'tyre') {
-            return 'P'.$sequence;
+            return $this->partBase($data) ?? 'P'.$sequence;
         }
 
         $width = $this->number($data['tire_width'] ?? null);
@@ -122,6 +125,76 @@ class ProductReferenceService
         $profileCode = $this->profileCode($brand, $data['profile'] ?? null);
 
         return self::normalize($reference.($profileCode !== '' ? '-'.$profileCode : ''));
+    }
+
+    /** Small words left out of a part name's initials ("FILTRE A HUILE" → "FH"). */
+    private const PART_STOP_WORDS = ['A', 'À', 'AU', 'AUX', 'DE', 'DU', 'DES', 'D', 'LA', 'LE', 'LES', 'L', 'ET', 'EN', 'POUR', 'AVEC', 'SUR', 'PAR'];
+
+    /** Catalogue "brands" that are only placeholders: not put in a reference. */
+    private const PART_GENERIC_BRANDS = ['AUTRE', 'AUTRES', 'DIVERS', 'GENERIQUE', 'GÉNÉRIQUE', 'SANS MARQUE'];
+
+    /**
+     * Part: initials of the name's words, then the brand code, then the code —
+     * the OEM reference when there is one, else the first code written in the
+     * name (a word with at least 3 digits, never a viscosity "5W30" or a volume "5L"):
+     * "FILTRE GAZOIL W55824" → "FG-W55824". Null when the name gives no letter
+     * word or no code (the numbered P reference is used).
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function partBase(array $data): ?string
+    {
+        $profile = mb_strtoupper(trim((string) ($data['profile'] ?? '')));
+        if ($profile === '') {
+            return null;
+        }
+        $words = array_values(array_filter(preg_split("/[\s\/'’,()+]+/u", $profile), fn ($w) => $w !== ''));
+
+        $code = strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', (string) ($data['oem_reference'] ?? '')));
+        if ($code === '') {
+            foreach ($words as $word) {
+                $clean = (string) preg_replace('/[^A-Z0-9]/', '', $word);
+                if (preg_match_all('/\d/', $clean) >= 3 && ! preg_match('/^(\d{1,2}W\d{2}|\d+L)$/', $clean)) {
+                    $code = $clean;
+                    break;
+                }
+            }
+        }
+        if ($code === '') {
+            return null;
+        }
+
+        $initials = '';
+        foreach ($words as $word) {
+            $word = trim($word, '-.');
+            // Letters only: codes and sizes in the name ("W55824", "5W30", "5L") are not initials.
+            if ($word === '' || ! preg_match('/^\p{L}+$/u', $word) || in_array($word, self::PART_STOP_WORDS, true)) {
+                continue;
+            }
+            $initials .= mb_substr($word, 0, 1);
+            if (mb_strlen($initials) === 4) {
+                break;
+            }
+        }
+        $initials = (string) preg_replace('/[^A-Z]/', '', strtr($initials, ['À' => 'A', 'Â' => 'A', 'É' => 'E', 'È' => 'E', 'Ê' => 'E', 'Î' => 'I', 'Ô' => 'O', 'Û' => 'U', 'Ç' => 'C']));
+        if ($initials === '') {
+            return null;
+        }
+
+        $brand = ! empty($data['brand_id'])
+            ? $this->remember('brand:'.$data['brand_id'], fn () => Brand::find($data['brand_id']))
+            : null;
+        $brandCode = '';
+        if ($brand) {
+            $name = mb_strtoupper(trim((string) $brand->name));
+            // A "brand" that is a word of the name (FILTRE, PLAQUETTE) or a placeholder adds nothing.
+            $inName = (bool) preg_match('/(?<![\p{L}\d])'.preg_quote($name, '/').'(?![\p{L}\d])/u', $profile);
+            if (! $inName && ! in_array($name, self::PART_GENERIC_BRANDS, true)) {
+                $brandCode = $this->brandCode($brand);
+            }
+        }
+
+        return self::normalize(mb_substr($initials.'-'.$brandCode.$code, 0, 40));
     }
 
     /** 205 → "205", 17.5 → "175", 10.50 → "105". */

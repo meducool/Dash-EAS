@@ -530,6 +530,7 @@ class PurchaseService
 
             $before = (int) $stock->quantity;
             $stock->quantity = $before + $quantity;
+            $this->applyPurchasePrice($stock, $before, $unitPrice);
             $stock->save();
 
             $supplierName = $purchase->supplier?->name ?? null;
@@ -604,6 +605,7 @@ class PurchaseService
 
             $before = (int) $stock->quantity;
             $stock->quantity = $before + $quantity;
+            $this->applyPurchasePrice($stock, $before, (float) $item->unit_price);
             $stock->save();
 
             $supplierName = $purchase->supplier?->name ?? null;
@@ -618,5 +620,20 @@ class PurchaseService
                 $reason
             );
         }
+    }
+
+    /**
+     * Purchase price of the stock lot, kept up to date by every purchase:
+     * the lot was empty → the price of this purchase (last purchase price);
+     * it already held stock (1 or more) → the highest of its price and this one.
+     * A purchase line without price (0) leaves it alone.
+     */
+    private function applyPurchasePrice(Stock $stock, int $quantityBefore, float $unitPrice): void
+    {
+        if ($unitPrice <= 0) {
+            return;
+        }
+        $current = $stock->purchase_price !== null ? (float) $stock->purchase_price : 0.0;
+        $stock->purchase_price = round($quantityBefore >= 1 ? max($current, $unitPrice) : $unitPrice, 2);
     }
 }

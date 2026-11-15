@@ -1,9 +1,10 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BrandService } from '../data-access/brand.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { Brand, BrandPayload, BrandProfile } from '../models/brand.model';
+import { ProfileDuplicateGroup, Brand, BrandPayload, BrandProfile } from '../models/brand.model';
 import { BrandFormComponent } from '../components/brand-form/brand-form.component';
 import { AutoRefreshControlComponent } from '../../../shared/auto-refresh-control/auto-refresh-control.component';
 
@@ -164,6 +165,64 @@ export class BrandsPageComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.loadData();
+    this.loadDuplicates();
+  }
+
+  // ── Profils écrits de plusieurs façons ──────────────────────────────────
+  // "EcoContact 6" / "ECOCONTACT6": the same tyre would get two references,
+  // hence duplicates in the POS and on the shop. Merged here into one profile.
+  dupGroups = signal<ProfileDuplicateGroup[]>([]);
+  showDuplicates = signal(false);
+  /** Profile kept per group (key = brand id + first profile id). */
+  keepChoice = signal<Record<string, number>>({});
+  mergingGroup = signal<string | null>(null);
+  dupError = signal('');
+
+  readonly dupProfilesCount = computed(() => this.dupGroups().reduce((n, g) => n + g.profiles.length, 0));
+
+  groupKey(g: ProfileDuplicateGroup): string {
+    return `${g.brand_id}-${g.profiles.map((p) => p.id).sort((a, b) => a - b)[0]}`;
+  }
+
+  /** The profile kept: the one picked, else the most used (first). */
+  keptId(g: ProfileDuplicateGroup): number {
+    return this.keepChoice()[this.groupKey(g)] ?? g.profiles[0].id;
+  }
+
+  chooseKept(g: ProfileDuplicateGroup, id: number): void {
+    this.keepChoice.update((c) => ({ ...c, [this.groupKey(g)]: id }));
+  }
+
+  loadDuplicates(): void {
+    this.brandService.getProfileDuplicates().subscribe({
+      next: (res) => this.dupGroups.set(res.data),
+      error: () => this.dupGroups.set([]),
+    });
+  }
+
+  /** Merges every other profile of the group into the kept one, one after the other. */
+  async mergeGroup(g: ProfileDuplicateGroup): Promise<void> {
+    const keep = this.keptId(g);
+    const kept = g.profiles.find((p) => p.id === keep)!;
+    const others = g.profiles.filter((p) => p.id !== keep);
+    if (!confirm(`Fusionner ${others.map((p) => `« ${p.name} »`).join(', ')} dans « ${kept.name} » (${g.brand}) ?
+
+Les articles concernés prendront le nom « ${kept.name} ». Leurs références ne changent pas.`)) {
+      return;
+    }
+    this.mergingGroup.set(this.groupKey(g));
+    this.dupError.set('');
+    try {
+      for (const p of others) {
+        await firstValueFrom(this.brandService.mergeProfile(p.id, keep));
+      }
+    } catch (err: any) {
+      const errors = err?.error?.errors;
+      this.dupError.set((errors ? (Object.values(errors)[0] as string[])[0] : null) || 'La fusion a échoué.');
+    }
+    this.mergingGroup.set(null);
+    this.loadDuplicates();
     this.loadData();
   }
 

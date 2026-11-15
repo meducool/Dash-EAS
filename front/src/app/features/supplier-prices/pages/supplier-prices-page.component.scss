@@ -362,5 +362,21 @@
 .sp-preview { max-height: 14rem; overflow: auto; }
 
 @media (max-width: 640px) {
-  .sp-filters .sp-select { flex: 1 1 100%; }
+  .sp-filters .sp-select { flex: 1 1 calc(50% - 0.25rem); min-width: 0; } // two per row
+
+  // Every tab visible: two per row instead of a strip scrolling off screen.
+  .sp-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+  }
+  .sp-tab { justify-content: center; padding: 0.6rem 0.5rem; }
+
+  // Margin field and its button wrap inside the card.
+  .sp-margin-form { flex-wrap: wrap; }
+  .sp-margin-form .btn { margin-left: auto; }
 }
+
+// Selling price of the best offer, on the group line.
+.sp-sale { font-weight: 700; color: var(--app-text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sp-sale-margin { display: block; font-size: 0.72rem; }

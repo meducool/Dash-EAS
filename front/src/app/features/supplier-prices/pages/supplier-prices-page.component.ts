@@ -178,6 +178,11 @@ export class SupplierPricesPageComponent implements OnInit {
     this.service.filterOptions().subscribe({ next: (options) => this.filterOptions.set(options) });
   }
 
+  /** Cheapest offer of a group (its selling price is shown on the group line). */
+  bestOffer(g: SupplierPriceGroup): SupplierPriceOffer | null {
+    return g.offers.find((o) => o.is_best) ?? g.offers[0] ?? null;
+  }
+
   setTab(tab: Tab): void {
     this.tab.set(tab);
   }

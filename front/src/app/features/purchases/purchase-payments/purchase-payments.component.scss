@@ -16,7 +16,7 @@ $_border2: var(--app-border-strong);
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.35);
-  z-index: 100;
+  z-index: 1000; // above the sticky navbar (1000, earlier in the page)
   backdrop-filter: blur(1px);
 }
 
@@ -30,7 +30,7 @@ $_border2: var(--app-border-strong);
   max-width: 100vw;
   background: $_surface;
   border-left: 1px solid $_border;
-  z-index: 101;
+  z-index: 1000;
   display: flex;
   flex-direction: column;
   box-shadow: -8px 0 40px rgba(15, 23, 42, 0.12);

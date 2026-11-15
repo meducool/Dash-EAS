@@ -761,4 +761,33 @@ class ProductCrudTest extends TestCase
 
         $this->assertContains('Profil-'.$suffix, $response->json('profiles'));
     }
+
+    public function test_a_part_reference_is_built_from_its_name_and_brand(): void
+    {
+        Sanctum::actingAs($this->user, [], 'web');
+        $n = (string) random_int(10000, 99999);
+        $wix = Brand::query()->create(['name' => 'WIX'.strtoupper(substr(uniqid(), -4)), 'is_active' => true]);
+        $generic = Brand::query()->create(['name' => 'FILTRE', 'is_active' => true]);
+        $part = fn (array $data) => $this->postJson('/api/products', $data + ['type' => 'part', 'part_category' => 'filters'])->assertCreated()->json('reference');
+
+        // The name copied from the description: initials + the code written in it.
+        $this->assertSame("FG-W{$n}", $part(['profile' => "FILTRE GAZOIL W{$n}"]));
+        // Same again: made unique.
+        $this->assertSame("FG-W{$n}-2", $part(['profile' => "filtre gazoil W{$n}"]));
+        // Brand code (first letter when the brand has none) before the code.
+        $this->assertSame("FG-W{$n}1", $part(['profile' => "FILTRE GAZOIL {$n}1", 'brand_id' => $wix->id]));
+        // Small words and sizes out of the initials; a viscosity / volume is not a code.
+        $this->assertSame("FH-HC{$n}", $part(['profile' => "FILTRE A HUILE 5W30 HC{$n}"]));
+        // A catalogue "brand" that is a word of the name adds nothing.
+        $this->assertSame("FA-{$n}2", $part(['profile' => "FILTRE AIR {$n}2", 'brand_id' => $generic->id]));
+        // An OEM reference sent with the product wins over the name.
+        $this->assertSame("FA-03N{$n}", $part(['profile' => 'FILTRE AIR', 'oem_reference' => "03N {$n}"]));
+        // No code in the name: numbered reference.
+        $this->assertMatchesRegularExpression('/^P\d{7}$/', $part(['profile' => 'HUILE 5W30 5L']));
+
+        // The form's preview follows the same rule.
+        $this->getJson('/api/products-reference-preview?type=part&profile='.rawurlencode("FILTRE GAZOIL X{$n}"))
+            ->assertOk()
+            ->assertJsonPath('reference', "FG-X{$n}");
+    }
 }

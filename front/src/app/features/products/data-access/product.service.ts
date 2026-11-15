@@ -4,6 +4,15 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { PaginatedResponse, Product, ProductFilters, ProductPayload } from '../models/product.model';
 
+/** A tyre already in the catalogue with the same characteristics as the one being created. */
+export interface ExistingTyre {
+  id: number;
+  reference: string;
+  profile: string | null;
+  is_active: boolean;
+  stock: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -22,8 +31,9 @@ export class ProductService {
   }
 
   /** The reference (SKU) a new product with these characteristics would get. */
-  previewReference(params: Record<string, string>): Observable<{ reference: string }> {
-    return this.http.get<{ reference: string }>(`${environment.apiUrl}/products-reference-preview`, { params });
+  /** Reference the new product would get + tyres already in the catalogue with the same characteristics. */
+  previewReference(params: Record<string, string>): Observable<{ reference: string; existing?: ExistingTyre[] }> {
+    return this.http.get<{ reference: string; existing?: ExistingTyre[] }>(`${environment.apiUrl}/products-reference-preview`, { params });
   }
 
   getFilters(): Observable<ProductFilters> {

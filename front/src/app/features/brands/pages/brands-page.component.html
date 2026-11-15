@@ -12,6 +12,13 @@
     </div>
   </div>
 
+  <div class="dup-banner" *ngIf="dupGroups().length" role="status">
+    🧩 <strong>{{ dupProfilesCount() }} profils écrits de plusieurs façons</strong> dans {{ dupGroups().length }} groupe(s)
+    (ex. « {{ dupGroups()[0].profiles[0].name }} » / « {{ dupGroups()[0].profiles[1].name }} ») : un même pneu peut recevoir deux références,
+    donc un doublon au POS et sur la boutique.
+    <button type="button" class="btn btn-secondary btn-sm" (click)="showDuplicates.set(true)">Voir et fusionner</button>
+  </div>
+
   <div class="card filters-section">
     <div class="card-body">
       <div class="filters-row">
@@ -214,6 +221,44 @@
           </ng-template>
         </li>
       </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Profiles written several ways: merged into one (closes only with ✕ / Fermer). -->
+<div class="modal-overlay" *ngIf="showDuplicates()">
+  <div class="modal-container modal-md" role="dialog" aria-modal="true" aria-labelledby="dup-title">
+    <div class="modal-header">
+      <h2 id="dup-title">🧩 Profils écrits de plusieurs façons</h2>
+      <button type="button" class="btn-icon" (click)="showDuplicates.set(false)" aria-label="Fermer" title="Fermer">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="dup-help">
+        Pour chaque groupe, choisissez le nom à garder (le plus utilisé est proposé) puis « Fusionner » : les articles prennent ce nom
+        et les autres écritures disparaissent. <strong>Les références des articles existants ne changent pas</strong> ; les nouveaux pneus
+        auront tous la même référence.
+      </p>
+      <p class="dup-error" *ngIf="dupError()" role="alert">{{ dupError() }}</p>
+      <p class="dup-empty" *ngIf="!dupGroups().length">✅ Plus aucun profil en double.</p>
+
+      <div class="dup-group" *ngFor="let g of dupGroups()">
+        <div class="dup-group-head">
+          <strong>{{ g.brand }}</strong>
+          <button type="button" class="btn btn-primary btn-sm" *ngIf="authService.hasPermission('edit brands')"
+                  [disabled]="mergingGroup() !== null" (click)="mergeGroup(g)">
+            {{ mergingGroup() === groupKey(g) ? 'Fusion…' : 'Fusionner' }}
+          </button>
+        </div>
+        <label class="dup-option" *ngFor="let p of g.profiles" [class.kept]="keptId(g) === p.id">
+          <input type="radio" [name]="'keep-' + groupKey(g)" [checked]="keptId(g) === p.id" (change)="chooseKept(g, p.id)">
+          <span class="dup-name">{{ p.name }}</span>
+          <span class="dup-meta">{{ p.products_count }} article(s){{ p.code ? ' · code ' + p.code : '' }}</span>
+          <span class="dup-keep" *ngIf="keptId(g) === p.id">nom gardé</span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="showDuplicates.set(false)">Fermer</button>
     </div>
   </div>
 </div>

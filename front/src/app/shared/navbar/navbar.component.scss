@@ -524,9 +524,31 @@
 
   .nav-icon { width: 1.25rem; }
 
-  .navbar-user { margin-left: auto; }
+  // One row: logo … avatar · logout · ☰ (the drawer opens below).
+  .navbar-brand { display: contents; }
+  .brand-link { order: 0; }
+  .logo-edit { display: none; }
+  .navbar-user { order: 1; margin-left: auto; gap: 0.5rem; }
+  .menu-toggle { order: 2; }
 
   .user-info { display: none; }
+}
+
+// Phones: the logout button keeps only its icon.
+@media (max-width: 600px) {
+  .navbar { padding: 0.4rem 0.75rem; }
+  .brand-logo { height: 28px; max-width: 150px; }
+  .logout-label { display: none; }
+  .logout-icon { display: inline; }
+  .btn-logout {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

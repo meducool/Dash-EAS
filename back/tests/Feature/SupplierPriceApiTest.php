@@ -452,4 +452,15 @@ class SupplierPriceApiTest extends TestCase
             'supplier_id' => $this->supplier()->id, 'name' => 'Privé', 'source_type' => 'url', 'source_url' => 'https://example.org/tarif',
         ])->assertStatus(422)->assertJsonValidationErrors('source_url');
     }
+
+    public function test_the_selling_price_is_rounded_up_to_0_or_5(): void
+    {
+        $service = app(\App\Domain\SupplierPrices\SupplierPriceSearchService::class);
+
+        $this->assertSame(['sale_price' => 770.0, 'margin' => 140.0, 'margin_percent' => 22.0], $service->salePrice(630, 22)); // 768.60
+        $this->assertSame(765.0, $service->salePrice(700, 8.74)['sale_price']); // 761.18
+        $this->assertSame(765.0, $service->salePrice(765, 0)['sale_price']);     // already ends in 5
+        $this->assertSame(990.0, $service->salePrice(900, 10)['sale_price']);    // exact: no rounding up
+        $this->assertSame(630.0, $service->salePrice(630, 0)['sale_price']);
+    }
 }

@@ -84,7 +84,11 @@ class ProductController extends Controller
             'tire_runflat' => 'nullable|boolean',
         ]);
 
-        return response()->json(['reference' => $this->productService->previewReference($data)]);
+        return response()->json([
+            'reference' => $this->productService->previewReference($data),
+            // Same tyre already in the catalogue: the form warns before creating a copy.
+            'existing' => $this->productService->similarTyres($data),
+        ]);
     }
 
     public function destroy(Product $product): JsonResponse

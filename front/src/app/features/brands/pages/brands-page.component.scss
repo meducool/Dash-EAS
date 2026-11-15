@@ -96,3 +96,53 @@
 
 // Brand form: a narrow window instead of the full-width one.
 .modal-container.modal-form-window { width: min(620px, 95vw); }
+
+// Profiles written several ways (banner + merge window).
+.dup-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.7rem 1rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  background: color-mix(in srgb, var(--app-warning) 12%, transparent);
+  color: var(--app-warning-text);
+}
+
+.dup-help { margin: 0 0 1rem; font-size: 0.85rem; color: var(--app-text-muted); }
+.dup-error { margin: 0 0 1rem; color: var(--app-danger-text); font-size: 0.85rem; }
+.dup-empty { margin: 0; font-weight: 600; color: var(--app-success-text); }
+
+.dup-group {
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  background: var(--app-surface-2);
+}
+
+.dup-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.dup-option {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  cursor: pointer;
+
+  &.kept { background: color-mix(in srgb, var(--app-success) 10%, transparent); }
+}
+
+.dup-name { font-weight: 600; color: var(--app-text); }
+.dup-meta { font-size: 0.75rem; color: var(--app-text-subtle); }
+.dup-keep { margin-left: auto; font-size: 0.72rem; font-weight: 700; color: var(--app-success-text); }

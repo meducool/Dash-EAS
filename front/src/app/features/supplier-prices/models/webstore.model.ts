@@ -168,7 +168,7 @@ export interface WebstoreChange {
   id: number;
   action: WebstoreChangeAction;
   status: WebstoreChangeStatus;
-  fields: ('price' | 'stock' | 'images' | 'sku')[];
+  fields: ('price' | 'stock' | 'images' | 'sku' | 'name')[];
   alerts: WebstoreAlert[];
   current: WebstoreChangeValues | null;
   proposed: WebstoreChangeValues;

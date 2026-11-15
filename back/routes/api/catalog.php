@@ -29,6 +29,9 @@ Route::get('brands/{brand}/profiles', [BrandProfileController::class, 'index'])-
 Route::post('brands/{brand}/profiles', [BrandProfileController::class, 'store'])->middleware('permission:edit brands');
 Route::put('brand-profiles/{profile}', [BrandProfileController::class, 'update'])->middleware('permission:edit brands');
 Route::delete('brand-profiles/{profile}', [BrandProfileController::class, 'destroy'])->middleware('permission:edit brands');
+// Profiles written several ways ("EcoContact 6" / "ECOCONTACT6") and their merge.
+Route::get('brand-profiles-duplicates', [BrandProfileController::class, 'duplicates'])->middleware('permission:view brands');
+Route::post('brand-profiles/{profile}/merge', [BrandProfileController::class, 'merge'])->middleware('permission:edit brands');
 
 // Products
 Route::middleware('permission:view products')->group(function () {

@@ -44,4 +44,19 @@ class BrandProfileController extends Controller
 
         return response()->json(null, 204);
     }
+
+    /** Profiles written several ways under the same brand (Marques page). */
+    public function duplicates(): JsonResponse
+    {
+        return response()->json(['data' => $this->profiles->duplicates()]);
+    }
+
+    /** Merges this profile into another one of the same brand. */
+    public function merge(Request $request, BrandProfile $profile): JsonResponse
+    {
+        $validated = $request->validate(['into_id' => ['required', 'integer', 'exists:brand_profiles,id']]);
+        $user = $request->user();
+
+        return response()->json($this->profiles->merge($profile, BrandProfile::findOrFail($validated['into_id']), $user?->id, $user?->name));
+    }
 }

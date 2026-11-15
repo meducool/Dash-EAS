@@ -121,6 +121,9 @@
                 <td>
                   <span class="wp-mono">{{ row.product?.reference || row.proposed.sku || '-' }}</span>
                   <span class="wp-label">{{ row.product?.label || row.proposed.name }}</span>
+                  @if (row.fields.includes('name')) {
+                    <span class="wp-sku" [title]="'Ancien nom : ' + (row.current?.name || '')">Nom sur le site → <strong>{{ row.proposed.name }}</strong></span>
+                  }
                   @if (row.fields.includes('sku')) {
                     <span class="wp-sku">SKU du site : <span class="wp-mono">{{ row.current?.sku || '(vide)' }}</span> → <strong class="wp-mono">{{ row.proposed.sku }}</strong></span>
                   }

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Brand, BrandPayload, BrandProfile, PaginatedResponse } from '../models/brand.model';
+import { Brand, BrandPayload, BrandProfile, PaginatedResponse, ProfileDuplicateGroup } from '../models/brand.model';
 import { environment } from '../../../../environments/environment';
 
 @Injectable({
@@ -59,6 +59,16 @@ export class BrandService {
   /** Also renames the products of the brand that carry the old name. */
   renameProfile(profileId: number, name: string, code?: string | null): Observable<BrandProfile> {
     return this.http.put<BrandProfile>(`${environment.apiUrl}/brand-profiles/${profileId}`, { name, code: code?.trim() || null });
+  }
+
+  /** Profiles written several ways under the same brand (every brand). */
+  getProfileDuplicates(): Observable<{ data: ProfileDuplicateGroup[] }> {
+    return this.http.get<{ data: ProfileDuplicateGroup[] }>(`${environment.apiUrl}/brand-profiles-duplicates`);
+  }
+
+  /** Merges a profile into another of the same brand: its products take the kept name. */
+  mergeProfile(profileId: number, intoId: number): Observable<BrandProfile> {
+    return this.http.post<BrandProfile>(`${environment.apiUrl}/brand-profiles/${profileId}/merge`, { into_id: intoId });
   }
 
   deleteProfile(profileId: number): Observable<void> {

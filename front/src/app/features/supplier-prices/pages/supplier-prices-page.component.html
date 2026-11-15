@@ -168,6 +168,7 @@
                 <th>Dimension</th>
                 <th class="text-center">Offres</th>
                 <th class="text-end">Meilleur prix</th>
+                <th class="text-end" title="Prix de vente de la meilleure offre : prix TTC × (1 + marge)">Prix de vente</th>
                 <th class="text-end">Écart</th>
                 <th>Catalogue</th>
               </tr>
@@ -195,6 +196,12 @@
                     <span class="sp-muted"> · {{ g.suppliers_count }} fourn.</span>
                   </td>
                   <td class="text-end"><span class="sp-best">{{ g.best_price | number:'1.2-2' }} DH</span></td>
+                  <td class="text-end">
+                    @if (bestOffer(g); as b) {
+                      <span class="sp-sale">{{ b.sale_price | number:'1.2-2' }} DH</span>
+                      @if (b.margin_percent) { <span class="sp-muted sp-sale-margin">+{{ b.margin_percent | number:'1.0-2' }} %</span> }
+                    } @else { <span class="sp-muted">—</span> }
+                  </td>
                   <td class="text-end sp-muted">{{ g.spread > 0 ? '+' + (g.spread | number:'1.2-2') + ' DH' : '—' }}</td>
                   <td>
                     @if (g.product) {
@@ -210,7 +217,7 @@
                 @if (isExpanded(g)) {
                   <tr class="sp-offers-row">
                     <td></td>
-                    <td colspan="6">
+                    <td colspan="7">
                       <table class="sp-offers-table">
                         <thead>
                           <tr>

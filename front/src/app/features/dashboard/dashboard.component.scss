@@ -215,8 +215,10 @@ $text-dim: var(--app-text-subtle);
     letter-spacing: 0.12em;
   }
 
+  // Amount and « DH » always on one line; the size follows the card width.
   .kpi-val {
-    font-size: 1.7rem;
+    font-size: clamp(1.25rem, 1rem + 0.9vw, 1.7rem);
+    white-space: nowrap;
     font-weight: 800;
     color: $text;
     font-variant-numeric: tabular-nums;
@@ -558,9 +560,10 @@ $text-dim: var(--app-text-subtle);
   // Badges are absolutely positioned top-right on desktop; on narrower
   // mobile cards that clips their text against overflow:hidden, so let
   // them flow normally below the value instead.
-  .kpi-badge,
-  .kpi-badges {
+  .kpi-card .kpi-badge,
+  .kpi-card .kpi-badges {
     position: static;
+    align-self: flex-start;
     align-items: flex-start;
     margin-top: 0.75rem;
     white-space: normal;
@@ -582,9 +585,25 @@ $text-dim: var(--app-text-subtle);
     align-items: stretch;
   }
 
-  .kpi-filter-control { width: 100%; }
+  // In a column, a flex-basis would become the height: keep the field's own height.
+  .kpi-filter-control { width: 100%; flex: none; }
 
+  // Two compact cards per row: the 22 figures stay readable without endless scrolling.
   .kpi-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
   }
+
+  .kpi-card {
+    padding: 0.85rem 0.9rem;
+    border-radius: 12px;
+
+    .kpi-icon { width: 32px; height: 32px; font-size: 1rem; margin-bottom: 0.6rem; border-radius: 9px; }
+    .kpi-label { font-size: 0.6rem; letter-spacing: 0.08em; }
+    .kpi-val { font-size: 1.05rem; small { font-size: 0.7rem; } }
+    .kpi-sub { font-size: 0.68rem; }
+    .kpi-badge { font-size: 0.6rem; padding: 0.15rem 0.45rem; margin-top: 0.5rem; }
+  }
+
+  .kpi-group-header { margin: 1.75rem 0 0.9rem; }
 }

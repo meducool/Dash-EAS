@@ -263,4 +263,14 @@ class WebstoreProposalApiTest extends TestCase
         $this->postJson('/api/webstore/changes/decide', ['decision' => 'approve', 'ids' => [$a->id]])->assertOk()->assertJsonPath('updated', 0);
         $this->putJson("/api/webstore/changes/{$a->id}/price", ['price' => 900])->assertStatus(422);
     }
+
+    public function test_proposed_prices_are_rounded_up_to_0_or_5(): void
+    {
+        $this->p['R'] = $this->product('R', offer: 801); // 801 × 1.20 = 961.20
+
+        $this->postJson('/api/webstore/batches')->assertCreated();
+
+        $this->assertSame(965.0, (float) $this->line('R')->proposed['price']);
+        $this->assertSame(960.0, (float) $this->line('A')->proposed['price']); // 800 × 1.20: already round
+    }
 }

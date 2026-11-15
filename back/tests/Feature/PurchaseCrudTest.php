@@ -819,6 +819,49 @@ class PurchaseCrudTest extends TestCase
     // Helpers
     // -------------------------------------------------------------------------
 
+    // -------------------------------------------------------------------------
+    // Purchase price of the stock lot, kept up to date by every purchase
+    // -------------------------------------------------------------------------
+
+    private function buyAt(float $unitPrice): void
+    {
+        $this->postJson('/api/purchases', $this->validPayload([
+            'items' => [['product_id' => $this->product->id, 'stock_id' => $this->stock->id, 'quantity' => 2, 'unit_price' => $unitPrice]],
+        ]))->assertCreated();
+    }
+
+    public function test_lot_already_in_stock_keeps_the_highest_purchase_price(): void
+    {
+        Sanctum::actingAs($this->user, [], 'web'); // lot: 10 in stock at 100
+
+        $this->buyAt(120);
+        $this->assertEqualsWithDelta(120, (float) $this->stock->fresh()->purchase_price, 0.001);
+
+        $this->buyAt(90); // cheaper: the highest price stays
+        $this->assertEqualsWithDelta(120, (float) $this->stock->fresh()->purchase_price, 0.001);
+    }
+
+    public function test_empty_lot_takes_the_last_purchase_price(): void
+    {
+        Sanctum::actingAs($this->user, [], 'web');
+        $this->stock->update(['quantity' => 0, 'purchase_price' => 100]);
+
+        $this->buyAt(80);
+        $this->assertEqualsWithDelta(80, (float) $this->stock->fresh()->purchase_price, 0.001);
+    }
+
+    public function test_lot_without_price_is_filled_and_a_free_line_changes_nothing(): void
+    {
+        Sanctum::actingAs($this->user, [], 'web');
+        $this->stock->update(['quantity' => 0, 'purchase_price' => null]);
+
+        $this->buyAt(0);
+        $this->assertNull($this->stock->fresh()->purchase_price);
+
+        $this->buyAt(75);
+        $this->assertEqualsWithDelta(75, (float) $this->stock->fresh()->purchase_price, 0.001);
+    }
+
     private function validPayload(array $overrides = []): array
     {
         return array_merge([

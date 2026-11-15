@@ -396,6 +396,7 @@ $_danger:    var(--app-danger);
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
+    min-width: 0; // lets a grid cell shrink below the field's natural width
 
     label {
       font-size: 0.72rem;
@@ -406,6 +407,8 @@ $_danger:    var(--app-danger);
     }
 
     .form-control {
+      width: 100%;
+      min-width: 0;
       min-height: 2.25rem;
       padding: 0.45rem 0.7rem;
       border: 1px solid $_border-2;
@@ -784,18 +787,22 @@ $_danger:    var(--app-danger);
       .actions .btn { flex: 1; text-align: center; font-size: 0.8rem; padding: 0.5rem; }
     }
 
-    .summary-cards { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
+    // Doubled class: wins over a page's own column count (e.g. 4 on Ventes).
+    .summary-cards.summary-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+    // Icon above the text, so a whole amount (« 120,898.00 DH ») fits on one line.
     .summary-card {
-      padding: 0.875rem; gap: 0.6rem;
-      .card-icon { width: 34px; height: 34px; font-size: 1rem; border-radius: 8px; }
-      .card-label { font-size: 0.62rem; }
-      .card-value { font-size: 1.05rem; }
+      padding: 0.75rem 0.875rem; gap: 0.5rem;
+      flex-direction: column;
+      align-items: flex-start;
+      .card-icon { width: 30px; height: 30px; font-size: 0.95rem; border-radius: 8px; }
+      .card-label { font-size: 0.62rem; line-height: 1.3; }
+      .card-value { font-size: 1.05rem; white-space: nowrap; }
     }
 
     .filters-section {
       margin-bottom: 1.1rem;
       .card-body { padding: 0.875rem; }
-      .filters-grid, .filters-row { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+      .filters-grid.filters-grid, .filters-row.filters-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem 0.6rem; }
     }
 
     .filter-actions { grid-column: 1 / -1; justify-content: flex-end; }
@@ -803,6 +810,21 @@ $_danger:    var(--app-danger);
     .table {
       th, td { padding: 0.45rem 0.6rem; font-size: 0.76rem; }
       th { font-size: 0.65rem; }
+    }
+
+    // Row actions: smaller squares so the record itself stays in view.
+    .actions-cell .btn-icon,
+    .table .btn-icon {
+      width: 1.75rem;
+      height: 1.75rem;
+      font-size: 0.8rem;
+      border-radius: 6px;
+    }
+
+    // Wide tables scroll sideways: momentum scrolling and a visible scrollbar.
+    .table-responsive {
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
     }
 
     .pagination-wrapper {
@@ -822,9 +844,12 @@ $_danger:    var(--app-danger);
   }
 
   @media (max-width: 480px) {
-    .summary-cards { grid-template-columns: 1fr; }
-    .filters-section .filters-grid,
-    .filters-section .filters-row { grid-template-columns: 1fr; }
+    // Filters stay on two columns (the global search takes the full row):
+    // the list is reached without scrolling through fifteen stacked fields.
+    .filters-section .search-group,
+    .filters-section .filters-grid > .form-group:first-child { grid-column: 1 / -1; }
+    .filters-section .form-group label { font-size: 0.65rem; }
+    .filters-section .form-control { font-size: 0.8rem; padding: 0.4rem 0.5rem; }
     .header .actions .btn { font-size: 0.75rem; }
   }
 }

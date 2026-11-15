@@ -262,4 +262,13 @@ class WebstorePublishApiTest extends TestCase
         $this->postJson('/api/webstore/publish')->assertOk()->assertJsonPath('published', 1);
         $this->assertSame(['id' => 201, 'sku' => 'REF-POS-1'], $this->written[0]['update'][0]);
     }
+
+    public function test_a_rename_is_sent_with_the_update(): void
+    {
+        $this->c['U1']->update(['fields' => ['name'], 'proposed' => ['name' => 'Pneu Pirelli Cinturato P7 Blue 215/50 R17 95W']]);
+        WebstoreChange::query()->whereKeyNot($this->c['U1']->id)->update(['status' => WebstoreChange::REJECTED]);
+
+        $this->postJson('/api/webstore/publish')->assertOk()->assertJsonPath('published', 1);
+        $this->assertSame(['id' => 201, 'name' => 'Pneu Pirelli Cinturato P7 Blue 215/50 R17 95W'], $this->written[0]['update'][0]);
+    }
 }

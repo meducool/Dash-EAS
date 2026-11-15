@@ -210,7 +210,7 @@ class WebstoreDeduplicationTest extends TestCase
 
     public function test_upper_case_brands_are_written_like_the_site(): void
     {
-        $brand = Brand::query()->create(['name' => 'BF GOODRICH'.strtoupper(substr(uniqid(), -3)), 'is_active' => true]);
+        $brand = Brand::query()->create(['name' => 'BF GOODRICH'.substr(str_shuffle('ABCDEFGHJKLMNP'), 0, 3), 'is_active' => true]);
         $product = Product::query()->create(['type' => 'tyre', 'reference' => 'BFG'.uniqid(), 'brand_id' => $brand->id, 'profile' => 'All-Terrain T/A KO2', 'is_active' => true]);
         ProductTyre::query()->create(['product_id' => $product->id, 'tire_width' => 265, 'tire_height' => 70, 'tire_diameter' => 17,
             'tire_load_index' => '121', 'tire_speed_index' => 'S', 'tire_reinforced' => true]);
@@ -218,7 +218,7 @@ class WebstoreDeduplicationTest extends TestCase
         $name = app(WebstoreProposalService::class)->siteName($product->fresh(), 'x');
 
         $this->assertStringStartsWith('Pneu BF Goodrich', $name);
-        $this->assertStringEndsWith('All-Terrain T/A KO2 265/70 R17 121S XL', $name);
+        $this->assertStringEndsWith('All-Terrain T/A KO2 265/70 R17 121S', $name); // the model: no XL / RunFlat suffix
     }
 
     public function test_a_profile_typed_differently_is_still_recognised(): void
@@ -228,5 +228,24 @@ class WebstoreDeduplicationTest extends TestCase
 
         $this->postJson('/api/webstore/pull')->assertOk()->assertJsonPath('suspected_duplicates', 1);
         $this->assertSame($this->tyre->id, WebstoreProduct::query()->where('woo_id', 510)->value('suggested_product_id'));
+    }
+
+    public function test_existing_site_products_are_renamed_to_the_model(): void
+    {
+        $model = 'Pneu '.$this->brandName().' Speedline 205/55 R16 91V';
+        $this->tyre->update(['profile' => 'SPEEDLINE']); // capitals in the POS: written « Speedline » on the site
+        $this->siteProduct(530, $this->tyre->reference, 'PNEU '.$this->brandName().' 205/55R16 SPEEDLINE');
+        $this->postJson('/api/webstore/pull')->assertOk();
+
+        $this->postJson('/api/webstore/batches')->assertCreated();
+        $line = WebstoreChange::query()->where('woo_id', 530)->sole();
+        $this->assertContains('name', $line->fields);
+        $this->assertSame($model, $line->proposed['name']);
+
+        // Already named like the model: no rename.
+        $this->site[530]['name'] = $model;
+        $this->postJson('/api/webstore/pull')->assertOk();
+        $this->postJson('/api/webstore/batches')->assertCreated();
+        $this->assertNotContains('name', WebstoreChange::query()->where('woo_id', 530)->latest('id')->first()->fields);
     }
 }

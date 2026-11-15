@@ -167,6 +167,9 @@ class WebstorePublisher
     private function updatePayload(WebstoreChange $change, bool $photosReachable, array &$warnings): array
     {
         $payload = ['id' => $change->woo_id];
+        if (in_array('name', $change->fields, true) && ! empty($change->proposed['name'])) {
+            $payload['name'] = (string) $change->proposed['name'];
+        }
         if (in_array('sku', $change->fields, true) && ! empty($change->proposed['sku'])) {
             $payload['sku'] = (string) $change->proposed['sku'];
         }

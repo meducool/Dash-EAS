@@ -205,7 +205,11 @@
               <div class="text-small text-muted" *ngIf="purchase.with_invoice && purchase.invoice_number">{{ purchase.invoice_number }}</div>
             </td>
             <td class="clickable-cell" (click)="openDetail(purchase)">
-              <div class="fw-medium">{{ purchase.supplier?.name || '-' }}</div>
+              <!-- Supplier name: opens the supplier's account (statement, balance) -->
+              <a *ngIf="purchase.supplier?.id && authService.hasPermission('view suppliers'); else plainSupplier"
+                 class="fw-medium link-text client-link" [routerLink]="['/suppliers', purchase.supplier?.id]"
+                 (click)="$event.stopPropagation()" title="Ouvrir le compte du fournisseur">{{ purchase.supplier?.name || '-' }}</a>
+              <ng-template #plainSupplier><div class="fw-medium">{{ purchase.supplier?.name || '-' }}</div></ng-template>
               <div class="text-small text-muted">{{ purchase.commercial?.name || '-' }}</div>
             </td>
             <td>{{ purchase.total_quantity }}</td>

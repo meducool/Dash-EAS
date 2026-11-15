@@ -3,6 +3,7 @@
 namespace App\Domain\Webstore;
 
 use App\Domain\Products\ProductReferenceService;
+use App\Domain\SupplierPrices\SupplierPriceSearchService;
 use App\Enums\PurchaseStatus;
 use App\Models\Product;
 use App\Models\User;
@@ -169,9 +170,15 @@ class WebstoreProposalService
     }
 
     /** Site price = cheapest supplier price TTC × (1 + shop margin). */
+    /** Site price = cheapest offer TTC × (1 + shop margin), rounded UP to end in 0 or 5 (same rule as the comparator). */
     private function price(?float $bestOffer, float $margin): ?float
     {
-        return $bestOffer === null ? null : round($bestOffer * (1 + $margin / 100), 2);
+        if ($bestOffer === null) {
+            return null;
+        }
+        $step = SupplierPriceSearchService::SALE_PRICE_STEP;
+
+        return (float) (ceil(round($bestOffer * (1 + $margin / 100), 2) / $step) * $step);
     }
 
     /**
@@ -216,6 +223,12 @@ class WebstoreProposalService
         if ($f['images'] !== [] && $woo->images_count === 0) {
             $fields[] = 'images';
             $proposed['images'] = $f['images'];
+        }
+        // Every published tyre is named like the model: an existing site name that differs is renamed (after approval).
+        $name = $this->siteName($product, '');
+        if ($product->type === 'tyre' && $name !== '' && trim((string) preg_replace('/\s+/u', ' ', $woo->name)) !== $name) {
+            $fields[] = 'name';
+            $proposed['name'] = $name;
         }
         // Linked product whose SKU is not the POS reference: the site SKU is corrected (same product, no duplicate).
         if (ProductReferenceService::normalize($woo->sku) !== ProductReferenceService::normalize($product->reference)) {
@@ -311,28 +324,32 @@ class WebstoreProposalService
         $num = fn ($v) => rtrim(rtrim(number_format((float) $v, 2, '.', ''), '0'), '.');
         $dimension = $num($t->tire_width).($t->tire_height ? '/'.$num($t->tire_height) : '').' R'.$num($t->tire_diameter);
 
+        // The shop's model, for every published tyre: « Pneu Pirelli Cinturato P7 Blue 215/50 R17 95W ».
         return trim(preg_replace('/\s+/u', ' ', implode(' ', array_filter([
             'Pneu',
-            $this->brandLabel($product->brand?->name),
-            $product->profile,
+            $this->labelCase($product->brand?->name),
+            $this->labelCase($product->profile),
             $dimension,
             trim(($t->tire_load_index ?? '').($t->tire_speed_index ?? '')),
-            $t->tire_reinforced ? 'XL' : null,
-            $t->tire_runflat ? 'RunFlat' : null,
         ]))));
     }
 
-    /** "CONTINENTAL" → "Continental", "BF GOODRICH" → "BF Goodrich"; a brand already in mixed case is kept. */
-    private function brandLabel(?string $brand): ?string
+    /**
+     * A brand or profile written in capitals, written like the model:
+     * "PIRELLI" → "Pirelli", "CINTURATO P7 BLUE" → "Cinturato P7 Blue", "BF GOODRICH" → "BF Goodrich",
+     * "ALL-TERRAIN T/A KO2" → "All-Terrain T/A KO2". Words of ≤ 3 letters (BF, SUV, T/A) and words with
+     * digits (P7, KO2) stay as written; a text already in mixed case is kept.
+     */
+    private function labelCase(?string $text): ?string
     {
-        $brand = trim((string) $brand);
-        if ($brand === '' || $brand !== mb_strtoupper($brand)) {
-            return $brand ?: null;
+        $text = trim((string) $text);
+        if ($text === '' || $text !== mb_strtoupper($text)) {
+            return $text ?: null;
         }
 
         return implode(' ', array_map(
-            fn ($word) => mb_strlen($word) <= 3 ? $word : mb_convert_case($word, MB_CASE_TITLE),
-            preg_split('/\s+/u', $brand),
+            fn ($word) => mb_strlen($word) <= 3 || preg_match('/\d/', $word) ? $word : mb_convert_case(mb_strtolower($word), MB_CASE_TITLE),
+            preg_split('/\s+/u', $text),
         ));
     }
 

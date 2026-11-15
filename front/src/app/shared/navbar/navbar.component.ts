@@ -88,13 +88,14 @@ export class NavbarComponent implements OnDestroy {
         { route: '/depots', permission: 'view stock' },
       ],
     },
+    // Right after Produits & Inventaire: price lists are looked up daily.
+    { icon: '💲', label: 'Tarifs fournisseurs', route: '/tarifs-fournisseurs', permission: 'view supplier-prices' },
     {
       icon: '🤝',
       label: 'Tiers',
       children: [
         { icon: '🧑‍💼', label: 'Clients', route: '/clients', permission: 'view clients' },
         { icon: '🏢', label: 'Fournisseurs', route: '/suppliers', permission: 'view suppliers' },
-        { icon: '💲', label: 'Tarifs fournisseurs', route: '/tarifs-fournisseurs', permission: 'view supplier-prices' },
         { icon: '🚚', label: 'Transporteurs', route: '/carriers', permission: 'view carriers' },
         { icon: '🤝', label: 'Partenaires', route: '/partners', permission: 'view partners' },
         { icon: '🏭', label: 'Marques', route: '/brands', permission: 'view brands' },
