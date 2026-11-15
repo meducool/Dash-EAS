@@ -221,14 +221,14 @@
     </div>
   </ng-container>
 
-  <div class="modal-overlay" *ngIf="depositCheque() as dc" (click)="closeDeposit()">
+  <div class="modal-overlay" *ngIf="depositCheque() as dc">
     <div class="modal-container deposit-modal" role="dialog" aria-labelledby="deposit-title" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div>
           <h2 id="deposit-title">{{ depositMode() === 'deposit' ? 'Verser à la banque' : 'Marquer comme déjà versé' }}</h2>
           <p class="modal-subtitle">{{ dc.method }} · {{ dc.amount | number:'1.2-2' }} DH · {{ dc.date | date:'dd/MM/yyyy' }}</p>
         </div>
-        <button class="btn-icon" type="button" (click)="closeDeposit()" [disabled]="depositSaving()" aria-label="Fermer">✕</button>
+        <button type="button" class="btn-icon" (click)="closeDeposit()" [disabled]="depositSaving()" aria-label="Fermer" title="Fermer">✕</button>
       </div>
       <div class="modal-body">
         <p class="deposit-desc">{{ dc.description }}</p>

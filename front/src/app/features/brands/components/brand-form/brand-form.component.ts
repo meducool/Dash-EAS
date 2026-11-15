@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, signal, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Brand, BrandPayload } from '../../models/brand.model';
@@ -8,7 +8,7 @@ import { Brand, BrandPayload } from '../../models/brand.model';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './brand-form.component.html',
-  styleUrls: ['../../../sales/sale-form/sale-form.component.scss', './brand-form.component.scss']
+  styleUrls: ['./brand-form.component.scss']
 })
 export class BrandFormComponent implements OnInit, OnChanges {
   @Input() brand: Brand | null = null;
@@ -21,7 +21,9 @@ export class BrandFormComponent implements OnInit, OnChanges {
   };
 
   logoFile?: File;
-  logoPreview: string | null = null;
+  /** Signal: the FileReader answers outside any template event (zoneless app). */
+  logoPreview = signal<string | null>(null);
+  logoName = signal('');
 
   ngOnInit() {
     this.syncFormWithBrand();
@@ -41,7 +43,8 @@ export class BrandFormComponent implements OnInit, OnChanges {
         is_active: this.brand.is_active,
       };
       this.logoFile = undefined;
-      this.logoPreview = this.resolveLogoUrl(this.brand.logo);
+      this.logoPreview.set(this.resolveLogoUrl(this.brand.logo));
+      this.logoName.set('');
       return;
     }
 
@@ -51,7 +54,8 @@ export class BrandFormComponent implements OnInit, OnChanges {
       is_active: true,
     };
     this.logoFile = undefined;
-    this.logoPreview = null;
+    this.logoPreview.set(null);
+    this.logoName.set('');
   }
 
   private resolveLogoUrl(logo: string | null | undefined): string | null {
@@ -71,7 +75,8 @@ export class BrandFormComponent implements OnInit, OnChanges {
     if (input.files?.length) {
       this.logoFile = input.files[0];
       const reader = new FileReader();
-      reader.onload = () => this.logoPreview = reader.result as string;
+      this.logoName.set(this.logoFile.name);
+      reader.onload = () => this.logoPreview.set(reader.result as string);
       reader.readAsDataURL(this.logoFile);
     }
   }

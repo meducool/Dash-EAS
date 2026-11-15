@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Products\ProductReferenceService;
+use App\Domain\Webstore\WebstoreProposalService;
 use App\Domain\Webstore\WooCommerceClient;
 use App\Models\Brand;
 use App\Models\BrandProfile;
@@ -196,5 +197,36 @@ class WebstoreDeduplicationTest extends TestCase
 
         $this->putJson('/api/webstore/settings', ['store_url' => 'https://autre.example.com'])->assertOk();
         $this->assertSame(0, WebstoreLink::query()->count());
+    }
+
+    public function test_a_created_product_is_named_like_the_site_products(): void
+    {
+        $this->postJson('/api/webstore/pull')->assertOk(); // empty shop
+        $this->postJson('/api/webstore/batches')->assertCreated()->assertJsonPath('batch.counts.create', 1);
+
+        $line = WebstoreChange::query()->where('product_id', $this->tyre->id)->sole();
+        $this->assertSame('Pneu '.$this->brandName().' Speedline 205/55 R16 91V', $line->proposed['name']);
+    }
+
+    public function test_upper_case_brands_are_written_like_the_site(): void
+    {
+        $brand = Brand::query()->create(['name' => 'BF GOODRICH'.strtoupper(substr(uniqid(), -3)), 'is_active' => true]);
+        $product = Product::query()->create(['type' => 'tyre', 'reference' => 'BFG'.uniqid(), 'brand_id' => $brand->id, 'profile' => 'All-Terrain T/A KO2', 'is_active' => true]);
+        ProductTyre::query()->create(['product_id' => $product->id, 'tire_width' => 265, 'tire_height' => 70, 'tire_diameter' => 17,
+            'tire_load_index' => '121', 'tire_speed_index' => 'S', 'tire_reinforced' => true]);
+
+        $name = app(WebstoreProposalService::class)->siteName($product->fresh(), 'x');
+
+        $this->assertStringStartsWith('Pneu BF Goodrich', $name);
+        $this->assertStringEndsWith('All-Terrain T/A KO2 265/70 R17 121S XL', $name);
+    }
+
+    public function test_a_profile_typed_differently_is_still_recognised(): void
+    {
+        // "Speed Line" on the site, "Speedline" in the POS.
+        $this->siteProduct(510, 'AUTRE-SKU', 'Pneu '.$this->brandName().' SPEED LINE 205/55 R16 91V');
+
+        $this->postJson('/api/webstore/pull')->assertOk()->assertJsonPath('suspected_duplicates', 1);
+        $this->assertSame($this->tyre->id, WebstoreProduct::query()->where('woo_id', 510)->value('suggested_product_id'));
     }
 }

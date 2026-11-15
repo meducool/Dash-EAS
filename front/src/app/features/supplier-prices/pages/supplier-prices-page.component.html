@@ -369,7 +369,7 @@
 </div>
 
 @if (formOpen()) {
-  <div class="modal-overlay" (click)="closeForm()">
+  <div class="modal-overlay">
     <div class="modal-container sp-modal" role="dialog" aria-modal="true" aria-labelledby="sp-form-title" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2 id="sp-form-title">{{ form().id ? 'Modifier le tarif' : 'Ajouter un tarif fournisseur' }}</h2>

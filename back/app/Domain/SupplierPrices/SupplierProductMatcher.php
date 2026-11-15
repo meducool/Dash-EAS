@@ -66,7 +66,7 @@ class SupplierProductMatcher
             ->orderBy('products.id')
             ->each(function ($row) use (&$map) {
                 $key = $this->attributeKey($row->brand_id, $row->tire_width, $row->tire_height, $row->tire_diameter, $row->tire_load_index, $row->tire_speed_index);
-                $map[$key][] = ['id' => (int) $row->id, 'profile' => mb_strtolower(trim((string) $row->profile))];
+                $map[$key][] = ['id' => (int) $row->id, 'profile' => self::profileKey($row->profile)];
             });
 
         return $map;
@@ -82,7 +82,7 @@ class SupplierProductMatcher
             return null;
         }
         $candidates = $map[$this->attributeKey($item['brand_id'], $item['width'], $item['height'] ?? null, $item['diameter'], $item['load_index'] ?? null, $item['speed_index'] ?? null)] ?? [];
-        $profile = mb_strtolower(trim((string) ($item['profile'] ?? '')));
+        $profile = self::profileKey($item['profile'] ?? null);
         foreach ($candidates as $candidate) {
             if ($candidate['profile'] === $profile) {
                 return $candidate['id'];
@@ -90,6 +90,15 @@ class SupplierProductMatcher
         }
 
         return $profile === '' && count($candidates) === 1 ? $candidates[0]['id'] : null;
+    }
+
+    /**
+     * Profile compared without case, spaces or punctuation: "EcoContact 6" = "ECOCONTACT6",
+     * "Ultra Contact" = "UltraContact" (the same profile is often typed several ways).
+     */
+    public static function profileKey(?string $profile): string
+    {
+        return (string) preg_replace('/[^\p{L}\p{N}]+/u', '', mb_strtolower(trim((string) $profile)));
     }
 
     private function attributeKey(mixed $brandId, mixed $width, mixed $height, mixed $diameter, mixed $load, mixed $speed): string

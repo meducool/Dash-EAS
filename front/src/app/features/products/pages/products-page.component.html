@@ -213,11 +213,11 @@
   (edit)="closeViewModal(); openEditForm($event)"
 />
 
-<div class="modal-overlay" *ngIf="showForm()" (click)="closeForm()">
+<div class="modal-overlay" *ngIf="showForm()">
   <div class="modal-container" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h2>{{ editingProduct() ? 'Modifier le produit' : 'Nouveau produit' }}</h2>
-      <button class="btn-icon" (click)="closeForm()">&#10005;</button>
+      <button type="button" class="btn-icon" (click)="closeForm()" aria-label="Fermer" title="Fermer">✕</button>
     </div>
     <div class="modal-body">
       <app-product-form

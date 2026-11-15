@@ -1,0 +1,50 @@
+// Look of the app's windows for components with their own stylesheet (payments,
+// returns, detail windows, side panels): primary accent on top, light header,
+// square ✕ button, soft entrance. Widths, scrolling and content stay theirs.
+// Included LAST in the component stylesheet so it wins over the older rules:
+//   @use '../../_modal-shell' as shell;   (path relative to the component)
+//   @include shell.modal-shell();
+@mixin modal-shell() {
+  .modal-container,
+  .modal-content {
+    border-top: 4px solid var(--app-primary);
+    animation: shell-modal-in 0.22s ease;
+  }
+
+  .payment-panel { border-top: 4px solid var(--app-primary); }
+
+  @keyframes shell-modal-in {
+    from { transform: translateY(14px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .modal-header {
+    background: var(--app-surface);
+
+    h2 { font-size: 1.1rem; font-weight: 700; color: var(--app-text); }
+  }
+
+  .modal-header .btn-close,
+  .modal-header > .btn-icon,
+  .panel-header .btn-close {
+    flex-shrink: 0;
+    width: 2.1rem;
+    height: 2.1rem;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--app-border);
+    border-radius: 8px;
+    background: var(--app-surface);
+    color: var(--app-text-muted);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+
+    &:hover:not(:disabled) { background: var(--app-surface-3); color: var(--app-text); }
+    &:focus-visible { outline: 2px solid var(--app-primary); outline-offset: 2px; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+}

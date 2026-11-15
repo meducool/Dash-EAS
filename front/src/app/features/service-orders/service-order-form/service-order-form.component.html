@@ -1,7 +1,7 @@
 <div class="form-container">
   <div class="form-header">
     <h2>{{ isEditing ? 'Modifier l\'intervention' : 'Nouvelle intervention' }}</h2>
-    <button class="btn-icon" (click)="onCancel()">✕</button>
+    <button type="button" class="btn-icon" (click)="onCancel()" aria-label="Fermer" title="Fermer">✕</button>
   </div>
 
   <form (ngSubmit)="onSubmit()" #orderForm="ngForm">

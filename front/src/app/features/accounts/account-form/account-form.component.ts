@@ -18,6 +18,12 @@ export class AccountFormComponent implements OnInit {
   form!: FormGroup;
   isEdit = signal(false);
 
+  readonly types = [
+    { value: 'cash', icon: '💵', label: 'Caisse', hint: 'Espèces' },
+    { value: 'bank', icon: '🏦', label: 'Banque', hint: 'Compte bancaire' },
+    { value: 'person', icon: '👤', label: 'Personne', hint: 'Avance, associé' },
+  ];
+
   constructor(private fb: FormBuilder) {}
 
   ngOnInit(): void {

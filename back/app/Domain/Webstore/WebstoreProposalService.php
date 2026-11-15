@@ -277,7 +277,7 @@ class WebstoreProposalService
             'current' => $current,
             'proposed' => [
                 'sku' => $product->reference,
-                'name' => $info['label'],
+                'name' => $this->siteName($product, $info['label']),
                 'type' => $product->type,
                 'brand' => $product->brand?->name,
                 'description' => $product->description,
@@ -296,6 +296,44 @@ class WebstoreProposalService
             ] + $this->availability($f),
             'alerts' => $this->alerts($price, $current, null),
         ];
+    }
+
+    /**
+     * Name of a product created on the shop, written like the site's own products:
+     * "Pneu Continental EcoContact 6 235/55 R19 101T". Other articles keep the POS label.
+     */
+    public function siteName(Product $product, string $fallback): string
+    {
+        $t = $product->tyre;
+        if ($product->type !== 'tyre' || ! $t || ! $t->tire_width || ! $t->tire_diameter) {
+            return $fallback;
+        }
+        $num = fn ($v) => rtrim(rtrim(number_format((float) $v, 2, '.', ''), '0'), '.');
+        $dimension = $num($t->tire_width).($t->tire_height ? '/'.$num($t->tire_height) : '').' R'.$num($t->tire_diameter);
+
+        return trim(preg_replace('/\s+/u', ' ', implode(' ', array_filter([
+            'Pneu',
+            $this->brandLabel($product->brand?->name),
+            $product->profile,
+            $dimension,
+            trim(($t->tire_load_index ?? '').($t->tire_speed_index ?? '')),
+            $t->tire_reinforced ? 'XL' : null,
+            $t->tire_runflat ? 'RunFlat' : null,
+        ]))));
+    }
+
+    /** "CONTINENTAL" → "Continental", "BF GOODRICH" → "BF Goodrich"; a brand already in mixed case is kept. */
+    private function brandLabel(?string $brand): ?string
+    {
+        $brand = trim((string) $brand);
+        if ($brand === '' || $brand !== mb_strtoupper($brand)) {
+            return $brand ?: null;
+        }
+
+        return implode(' ', array_map(
+            fn ($word) => mb_strlen($word) <= 3 ? $word : mb_convert_case($word, MB_CASE_TITLE),
+            preg_split('/\s+/u', $brand),
+        ));
     }
 
     /**

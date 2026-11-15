@@ -335,11 +335,11 @@
 </section>
 
 @if (isEditModalOpen()) {
-  <div class="modal-overlay" (click)="closeEditModal()">
+  <div class="modal-overlay">
     <div class="modal-container" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>Modifier fournisseur</h2>
-        <button class="btn-icon" type="button" (click)="closeEditModal()" [disabled]="saving()">✕</button>
+        <button type="button" class="btn-icon" (click)="closeEditModal()" [disabled]="saving()" aria-label="Fermer" title="Fermer">✕</button>
       </div>
       <div class="modal-body">
         <app-supplier-form

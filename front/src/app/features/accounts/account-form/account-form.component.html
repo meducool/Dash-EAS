@@ -1,50 +1,66 @@
-<div class="modal-overlay" (click)="onCancel()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
+<!-- Closes only with ✕ or « Annuler ». Style: features/_form-modal.scss -->
+<div class="modal-overlay">
+  <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="acc-title">
     <div class="modal-header">
-      <h2>{{ isEdit() ? '✏️ Modifier' : '➕ Nouveau' }} Compte</h2>
-      <button (click)="onCancel()" class="btn-close">✕</button>
+      <h2 id="acc-title">{{ isEdit() ? '✏️ Modifier le compte' : '➕ Nouveau compte' }}</h2>
+      <button type="button" (click)="onCancel()" class="btn-close" aria-label="Fermer" title="Fermer">✕</button>
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="modal-body">
-      <div class="form-row">
-        <div class="form-group">
-          <label for="acc-name">Nom du compte *</label>
-          <input type="text" id="acc-name" formControlName="name" placeholder="ex: Caisse principale" />
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="modal-form">
+      <div class="modal-body">
+        <p class="section-title">Type de compte *</p>
+        <div class="choice-cards" role="radiogroup" aria-label="Type de compte">
+          @for (t of types; track t.value) {
+            <label class="choice-card" [class.active]="form.get('type')?.value === t.value">
+              <input type="radio" formControlName="type" [value]="t.value" />
+              <span class="choice-icon">{{ t.icon }}</span>
+              {{ t.label }}
+              <small>{{ t.hint }}</small>
+            </label>
+          }
         </div>
-        <div class="form-group">
-          <label for="acc-type">Type *</label>
-          <select id="acc-type" formControlName="type">
-            <option value="cash">💵 Caisse</option>
-            <option value="bank">🏦 Banque</option>
-            <option value="person">👤 Personne</option>
-          </select>
-        </div>
-      </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="acc-balance">Solde initial (DH) *</label>
-          <input type="number" id="acc-balance" formControlName="initial_balance" step="0.01" />
-          <small class="text-muted">Le solde actuel = solde initial + transactions.</small>
-        </div>
-        <div class="form-group" style="display: flex; align-items: center; margin-top: 1.5rem;">
-          <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-            <input type="checkbox" formControlName="is_active" style="width: auto; height: auto;" />
-            Compte actif
-          </label>
-        </div>
-      </div>
+        <p class="section-title">Informations</p>
+        <div class="form-grid">
+          <div class="form-group span-2">
+            <label for="acc-name">Nom du compte *</label>
+            <input type="text" id="acc-name" formControlName="name" placeholder="Ex : Caisse principale, CIH, Ahmed…"
+                   [class.invalid]="form.get('name')?.invalid && form.get('name')?.touched" />
+            @if (form.get('name')?.invalid && form.get('name')?.touched) {
+              <span class="field-error">Nom requis</span>
+            }
+          </div>
 
-      <div class="form-group">
-        <label for="acc-desc">Description</label>
-        <textarea id="acc-desc" formControlName="description" rows="2" placeholder="Notes..."></textarea>
+          <div class="form-group">
+            <label for="acc-balance">Solde initial *</label>
+            <div class="amount-field" [class.invalid]="form.get('initial_balance')?.invalid && form.get('initial_balance')?.touched">
+              <input type="number" id="acc-balance" formControlName="initial_balance" step="0.01" inputmode="decimal" />
+              <span class="amount-unit">DH</span>
+            </div>
+            <span class="field-hint">Solde actuel = solde initial + transactions.</span>
+          </div>
+
+          <div class="form-group">
+            <span class="form-label-spacer" aria-hidden="true">&nbsp;</span>
+            <label class="switch">
+              <input type="checkbox" formControlName="is_active" />
+              <span class="switch-track" aria-hidden="true"></span>
+              Compte actif
+            </label>
+            <span class="field-hint">Un compte inactif n'est plus proposé dans les transferts.</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="acc-desc">Description</label>
+          <textarea id="acc-desc" formControlName="description" rows="2" placeholder="Notes…"></textarea>
+        </div>
       </div>
 
       <div class="modal-footer">
+        <span class="required-hint">* champs obligatoires</span>
         <button type="button" (click)="onCancel()" class="btn btn-cancel">Annuler</button>
-        <button type="submit" [disabled]="form.invalid" class="btn btn-submit">
-          {{ isEdit() ? 'Mettre à jour' : 'Ajouter' }}
-        </button>
+        <button type="submit" [disabled]="form.invalid" class="btn btn-submit">{{ isEdit() ? 'Mettre à jour' : 'Ajouter' }}</button>
       </div>
     </form>
   </div>

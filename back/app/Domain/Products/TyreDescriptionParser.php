@@ -16,7 +16,7 @@ class TyreDescriptionParser
 {
     /** 205/55R16, 205/55 ZR16, 225/45ZR18, 195/70R15C, LT265/70R17, 31x10.50R15, 205/55-16 */
     // LT / P prefix only as a word of its own start ("P195/65R15"), never the last letter of a brand ("…P 195/65R15").
-    private const DIMENSION = '/(?<![\d.,])(?:(?<![\p{L}\d])(?:LT|P))?\s*(\d{2,3}(?:[.,]\d{1,2})?)\s*[\/xX]\s*(\d{1,3}(?:[.,]\d{1,2})?)\s*(?:Z?R|-)\s*F?\s*(\d{2}(?:[.,]\d)?)\s*C?\b/i';
+    public const DIMENSION = '/(?<![\d.,])(?:(?<![\p{L}\d])(?:LT|P))?\s*(\d{2,3}(?:[.,]\d{1,2})?)\s*[\/xX]\s*(\d{1,3}(?:[.,]\d{1,2})?)\s*(?:Z?R|-)\s*F?\s*(\d{2}(?:[.,]\d)?)\s*C?\b/i';
 
     /** 104H, 91V, 112/110R, 95 Y — right after the dimension. */
     private const LOAD_SPEED = '/^\s*(\d{2,3})(?:\/\d{2,3})?\s*([A-HJ-NP-WYZ]|ZR)\b/i';

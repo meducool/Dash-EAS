@@ -1,3 +1,4 @@
+@use '../../_modal-shell' as shell;
 // ── Design tokens ─────────────────────────────────────────────────────────────
 $_red:      var(--app-primary);
 $_text: var(--app-text);
@@ -343,3 +344,6 @@ $_shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
   .detail-grid { grid-template-columns: 1fr; }
   .modal-content { max-height: 95vh; }
 }
+
+// Shared window look (accent, header, ✕ button) — features/_modal-shell.scss
+@include shell.modal-shell();

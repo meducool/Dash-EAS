@@ -445,11 +445,11 @@
 </section>
 
 @if (isEditModalOpen()) {
-  <div class="modal-overlay" (click)="closeEditModal()">
+  <div class="modal-overlay">
     <div class="modal-container" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>Modifier Client</h2>
-        <button class="btn-icon" type="button" (click)="closeEditModal()" [disabled]="saving()">✕</button>
+        <button type="button" class="btn-icon" (click)="closeEditModal()" [disabled]="saving()" aria-label="Fermer" title="Fermer">✕</button>
       </div>
       <div class="modal-body">
         <app-client-form [client]="profile()?.client ?? null" (save)="saveClient($event)" (cancel)="closeEditModal()"></app-client-form>
@@ -459,11 +459,11 @@
 }
 
 @if (showSaleForm()) {
-  <div class="modal-overlay" (click)="closeSaleForm()">
+  <div class="modal-overlay">
     <div class="modal-container modal-container--wide" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>Nouvelle vente — {{ profile()?.client?.name }}</h2>
-        <button class="btn-icon" type="button" (click)="closeSaleForm()">✕</button>
+        <button type="button" class="btn-icon" (click)="closeSaleForm()" aria-label="Fermer" title="Fermer">✕</button>
       </div>
       <div class="modal-body">
         <app-sale-form

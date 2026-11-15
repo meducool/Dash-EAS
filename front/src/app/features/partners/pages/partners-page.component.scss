@@ -1,2 +1,5 @@
 @use '../../_page-layout' as layout;
 @include layout.page-layout();
+
+// Partner form: a narrow window instead of the full-width one.
+.modal-container.modal-form-window { width: min(680px, 95vw); }

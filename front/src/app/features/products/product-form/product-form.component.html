@@ -71,6 +71,7 @@
                   [disabled]="!formData.description?.trim()"
                   title="Remplace les caractéristiques par celles lues dans la description">↻ Remplir depuis la description</button>
           <span class="autofill-note" *ngIf="autofillNote()" role="status">{{ autofillNote() }}</span>
+          <span class="autofill-note" *ngIf="!autofillNote()">Les indices de charge et de vitesse sont ajoutés à la description à l'enregistrement s'ils n'y figurent pas.</span>
         </div>
       </div>
     </div>

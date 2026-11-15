@@ -1,53 +1,77 @@
-<div class="modal-overlay" (click)="onCancel()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
+<!-- Closes only with ✕ or « Annuler ». Style: features/_form-modal.scss -->
+<div class="modal-overlay">
+  <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="tf-title">
     <div class="modal-header">
-      <h2>🔄 Nouveau Transfert</h2>
-      <button (click)="onCancel()" class="btn-close">✕</button>
+      <h2 id="tf-title">🔄 Nouveau transfert</h2>
+      <button type="button" (click)="onCancel()" class="btn-close" aria-label="Fermer" title="Fermer">✕</button>
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="modal-body">
-      <div class="form-row">
-        <div class="form-group">
-          <label for="tf-source">De (Compte source) *</label>
-          <select id="tf-source" formControlName="source_account_id">
-            <option value="">-- Sélectionner --</option>
-            @for (acc of activeAccounts; track acc.id) {
-              <option [value]="acc.id">{{ acc.name }} ({{ acc.current_balance }} DH)</option>
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="modal-form">
+      <div class="modal-body">
+        <p class="section-title">Comptes</p>
+        <div class="route-grid">
+          <div class="form-group">
+            <label for="tf-source">De *</label>
+            <select id="tf-source" formControlName="source_account_id" [class.invalid]="sameAccount">
+              <option value="">— Compte source —</option>
+              @for (acc of activeAccounts; track acc.id) {
+                <option [value]="acc.id">{{ acc.name }}</option>
+              }
+            </select>
+            @if (sourceAccount; as src) {
+              <span class="balance-line">Solde : <strong>{{ src.current_balance | number:'1.2-2' }} DH</strong></span>
             }
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="tf-dest">Vers (Compte destination) *</label>
-          <select id="tf-dest" formControlName="destination_account_id">
-            <option value="">-- Sélectionner --</option>
-            @for (acc of activeAccounts; track acc.id) {
-              <option [value]="acc.id">{{ acc.name }} ({{ acc.current_balance }} DH)</option>
+          </div>
+
+          <button type="button" class="route-swap" (click)="swap()" title="Inverser les comptes" aria-label="Inverser les comptes">⇄</button>
+
+          <div class="form-group">
+            <label for="tf-dest">Vers *</label>
+            <select id="tf-dest" formControlName="destination_account_id" [class.invalid]="sameAccount">
+              <option value="">— Compte destination —</option>
+              @for (acc of activeAccounts; track acc.id) {
+                <option [value]="acc.id">{{ acc.name }}</option>
+              }
+            </select>
+            @if (destinationAccount; as dst) {
+              <span class="balance-line">Solde : <strong>{{ dst.current_balance | number:'1.2-2' }} DH</strong></span>
             }
-          </select>
+          </div>
         </div>
-      </div>
+        @if (sameAccount) {
+          <p class="field-error">Le compte source et le compte de destination doivent être différents.</p>
+        }
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="tf-amount">Montant (DH) *</label>
-          <input type="number" id="tf-amount" formControlName="amount" step="0.01" min="0.01" />
+        <p class="section-title">Transfert</p>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="tf-amount">Montant *</label>
+            <div class="amount-field" [class.invalid]="form.get('amount')?.invalid && form.get('amount')?.touched">
+              <input type="number" id="tf-amount" formControlName="amount" step="0.01" min="0.01" placeholder="0,00" inputmode="decimal" />
+              <span class="amount-unit">DH</span>
+            </div>
+            @if (form.get('amount')?.invalid && form.get('amount')?.touched) {
+              <span class="field-error">Montant requis (supérieur à 0)</span>
+            } @else if (exceedsBalance) {
+              <span class="warn-line">⚠️ Plus que le solde du compte source.</span>
+            }
+          </div>
+          <div class="form-group">
+            <label for="tf-date">Date *</label>
+            <input type="date" id="tf-date" formControlName="date" [class.invalid]="form.get('date')?.invalid && form.get('date')?.touched" />
+          </div>
         </div>
-        <div class="form-group">
-          <label for="tf-date">Date *</label>
-          <input type="date" id="tf-date" formControlName="date" />
-        </div>
-      </div>
 
-      <div class="form-group">
-        <label for="tf-desc">Description</label>
-        <textarea id="tf-desc" formControlName="description" rows="2" placeholder="Ex: Transfert de caisse vers banque..."></textarea>
+        <div class="form-group">
+          <label for="tf-desc">Description</label>
+          <textarea id="tf-desc" formControlName="description" rows="2" placeholder="Ex : versement de la caisse à la banque…"></textarea>
+        </div>
       </div>
 
       <div class="modal-footer">
+        <span class="required-hint">* champs obligatoires</span>
         <button type="button" (click)="onCancel()" class="btn btn-cancel">Annuler</button>
-        <button type="submit" [disabled]="form.invalid" class="btn btn-submit">
-          Effectuer le transfert
-        </button>
+        <button type="submit" [disabled]="form.invalid || sameAccount" class="btn btn-submit">Effectuer le transfert</button>
       </div>
     </form>
   </div>

@@ -1,3 +1,4 @@
+@use '../../_modal-shell' as shell;
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -589,3 +590,6 @@
   .viewer-prev { left: 1.5rem; }
   .viewer-next { right: 1.5rem; }
 }
+
+// Shared window look (accent, header, ✕ button) — features/_modal-shell.scss
+@include shell.modal-shell();

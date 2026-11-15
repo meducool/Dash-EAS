@@ -215,11 +215,11 @@
   </div>
 </div>
 
-<div class="modal-overlay" *ngIf="isModalOpen()" (click)="closeModal()">
-  <div class="modal-container" (click)="$event.stopPropagation()">
+<div class="modal-overlay" *ngIf="isModalOpen()">
+  <div class="modal-container modal-md" role="dialog" aria-modal="true">
     <div class="modal-header">
       <h2>{{ selectedClient() ? 'Modifier Client' : 'Nouveau Client' }}</h2>
-      <button class="btn-icon" type="button" (click)="closeModal()" [disabled]="saving()">X</button>
+      <button type="button" class="btn-icon" (click)="closeModal()" [disabled]="saving()" aria-label="Fermer" title="Fermer">✕</button>
     </div>
     <div class="modal-body">
       <app-client-form [client]="selectedClient()" (save)="saveClient($event)" (cancel)="closeModal()"></app-client-form>

@@ -221,7 +221,7 @@
   <div class="nested-modal" role="dialog" aria-label="Nouveau produit">
     <div class="nested-header">
       <h3>Nouveau produit</h3>
-      <button type="button" class="btn-icon" title="Fermer" (click)="closeProductCreate()">✕</button>
+      <button type="button" class="btn-icon" (click)="closeProductCreate()" aria-label="Fermer" title="Fermer">✕</button>
     </div>
     <div class="nested-body">
       <p class="stock-create-error" *ngIf="productCreateError()">{{ productCreateError() }}</p>

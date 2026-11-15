@@ -141,11 +141,12 @@
   </div>
 </div>
 
-<div class="modal-overlay" *ngIf="showForm()" (click)="closeForm()">
-  <div class="modal-container" (click)="$event.stopPropagation()">
+<!-- Closes only with ✕ or « Annuler »: a click outside never loses what was typed. -->
+<div class="modal-overlay" *ngIf="showForm()">
+  <div class="modal-container modal-form-window" role="dialog" aria-modal="true" aria-labelledby="brand-form-title">
     <div class="modal-header">
-      <h2>{{ editingBrand() ? 'Modifier la marque' : 'Nouvelle marque' }}</h2>
-      <button class="btn-icon" (click)="closeForm()">&#10005;</button>
+      <h2 id="brand-form-title">{{ editingBrand() ? '✏️ Modifier la marque' : '🏭 Nouvelle marque' }}</h2>
+      <button type="button" class="btn-icon" (click)="closeForm()" aria-label="Fermer" title="Fermer">✕</button>
     </div>
     <div class="modal-body">
       <app-brand-form
@@ -164,7 +165,7 @@
         <h2 id="profiles-title">Profils de pneus</h2>
         <p class="modal-subtitle">{{ pb.name }}</p>
       </div>
-      <button class="btn-icon" type="button" (click)="closeProfiles()" aria-label="Fermer">&#10005;</button>
+      <button type="button" class="btn-icon" (click)="closeProfiles()" aria-label="Fermer" title="Fermer">✕</button>
     </div>
     <div class="modal-body">
       <form class="profile-add" *ngIf="canEditProfiles" (ngSubmit)="addProfile()">

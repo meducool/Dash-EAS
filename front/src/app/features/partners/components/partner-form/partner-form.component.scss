@@ -1,0 +1,147 @@
+/* Partner form — two columns, tokens only (light + dark). */
+
+.pf { display: flex; flex-direction: column; gap: 1rem; }
+
+.pf-section {
+  padding: 1rem 1.1rem 0.25rem;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface-2);
+}
+
+.pf-title {
+  margin: 0 0 0.85rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-text-subtle);
+}
+
+.pf-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 1rem;
+}
+
+.pf-wide { grid-column: 1 / -1; }
+
+.pf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  margin-bottom: 0.85rem;
+
+  label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--app-text-muted);
+  }
+
+  input,
+  select {
+    width: 100%;
+    min-height: 2.5rem;
+    padding: 0.5rem 0.75rem;
+    border: 1.5px solid var(--app-border-strong);
+    border-radius: 8px;
+    background: var(--app-surface);
+    color: var(--app-text);
+    font: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.18s, box-shadow 0.18s;
+
+    &:focus {
+      border-color: var(--app-primary);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 14%, transparent);
+    }
+
+    &::placeholder { color: var(--app-text-subtle); }
+    &.invalid { border-color: var(--app-danger); }
+  }
+}
+
+.pf-error { font-size: 0.75rem; color: var(--app-danger-text); }
+
+/* Price with its unit inside the field. */
+.pf-money {
+  display: flex;
+  border: 1.5px solid var(--app-border-strong);
+  border-radius: 8px;
+  background: var(--app-surface);
+  overflow: hidden;
+  transition: border-color 0.18s, box-shadow 0.18s;
+
+  &:focus-within {
+    border-color: var(--app-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 14%, transparent);
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    border: none !important;
+    box-shadow: none !important;
+    font-variant-numeric: tabular-nums;
+  }
+
+  span {
+    display: flex;
+    align-items: center;
+    padding: 0 0.75rem;
+    border-left: 1px solid var(--app-border);
+    background: var(--app-surface-2);
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--app-text-muted);
+  }
+}
+
+.pf-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--app-border);
+}
+
+.pf-hint { margin-right: auto; font-size: 0.75rem; color: var(--app-text-subtle); }
+
+.pf-btn {
+  min-height: 2.4rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s, opacity 0.15s;
+
+  &:focus-visible { outline: 2px solid var(--app-primary); outline-offset: 2px; }
+}
+
+.pf-btn-cancel {
+  border: 1px solid var(--app-border-strong);
+  background: var(--app-surface);
+  color: var(--app-text-muted);
+
+  &:hover { background: var(--app-surface-3); color: var(--app-text); }
+}
+
+.pf-btn-save {
+  border: none;
+  background: var(--app-primary);
+  color: #fff;
+
+  &:hover:not(:disabled) { box-shadow: 0 4px 12px color-mix(in srgb, var(--app-primary) 35%, transparent); }
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
+}
+
+@media (max-width: 560px) {
+  .pf-grid { grid-template-columns: 1fr; }
+  .pf-hint { display: none; }
+  .pf-actions .pf-btn { flex: 1; }
+}

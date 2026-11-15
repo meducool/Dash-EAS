@@ -58,9 +58,9 @@ $_radius-md: 12px;
   &.full-width { grid-column: 1 / -1; }
 
   label {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     font-weight: 600;
-    color: $_label;
+    color: $_muted;
     letter-spacing: 0.01em;
   }
 
@@ -71,7 +71,8 @@ $_radius-md: 12px;
   input[type='date'],
   select,
   textarea {
-    padding: 0.55rem 0.8rem;
+    min-height: 2.5rem;
+    padding: 0.5rem 0.8rem;
     border: 1.5px solid $_border2;
     border-radius: $_radius-sm;
     font-size: 0.9rem;
@@ -84,8 +85,11 @@ $_radius-md: 12px;
     &:focus {
       outline: none;
       border-color: $_red;
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 10%, transparent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 14%, transparent);
     }
+
+    // A required field left empty, once visited.
+    &.ng-invalid.ng-touched { border-color: var(--app-danger); }
   }
 
   textarea { resize: vertical; }

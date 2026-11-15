@@ -1,4 +1,4 @@
-<div class="panel-overlay" (click)="close()"></div>
+<div class="panel-overlay"></div>
 <div class="payment-panel">
 
   <div class="panel-header">
@@ -9,7 +9,7 @@
         <p class="panel-subtitle">{{ purchase.supplier?.name || 'Fournisseur' }} — Achat #{{ purchase.id }}</p>
       </div>
     </div>
-    <button class="btn-close" (click)="close()">✕</button>
+    <button type="button" class="btn-close" (click)="close()" aria-label="Fermer" title="Fermer">✕</button>
   </div>
 
   <div class="panel-body" *ngIf="!loading(); else loadingTpl">

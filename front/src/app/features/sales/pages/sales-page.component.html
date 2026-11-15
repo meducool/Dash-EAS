@@ -330,7 +330,7 @@
   <div class="modal-container" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h2>{{ editingSale() ? 'Modifier la vente' : 'Nouvelle vente' }}</h2>
-      <button class="btn-icon" (click)="closeForm()">✕</button>
+      <button type="button" class="btn-icon" (click)="closeForm()" aria-label="Fermer" title="Fermer">✕</button>
     </div>
     <div class="modal-body">
       <app-sale-form

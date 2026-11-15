@@ -93,3 +93,6 @@
 
 .profile-code--missing { color: var(--app-text-subtle); font-weight: 400; }
 .profile-code-input { flex: 0 0 6.5rem !important; max-width: 6.5rem; }
+
+// Brand form: a narrow window instead of the full-width one.
+.modal-container.modal-form-window { width: min(620px, 95vw); }

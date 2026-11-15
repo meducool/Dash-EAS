@@ -1,49 +1,58 @@
-<form (ngSubmit)="onSubmit()" #form="ngForm" class="form-container">
-  <div class="form-section">
-    <h3 class="section-title">Informations</h3>
-    <div class="form-grid">
-      <div class="form-control">
-        <label>Nom du Partenaire *</label>
-        <input type="text" name="name" [(ngModel)]="formData.name" required placeholder="Ex: Garage Atlas">
+<form (ngSubmit)="onSubmit()" #form="ngForm" class="pf">
+  <section class="pf-section">
+    <h3 class="pf-title">Informations</h3>
+    <div class="pf-grid">
+      <div class="pf-field pf-wide">
+        <label for="pf-name">Nom du partenaire *</label>
+        <input id="pf-name" type="text" name="name" [(ngModel)]="formData.name" required placeholder="Ex : Garage Atlas" #name="ngModel"
+               [class.invalid]="name.invalid && name.touched">
+        <span class="pf-error" *ngIf="name.invalid && name.touched">Nom requis</span>
       </div>
-      <div class="form-control">
-        <label>Ville</label>
-        <select name="city" [(ngModel)]="formData.city">
+      <div class="pf-field">
+        <label for="pf-city">Ville</label>
+        <select id="pf-city" name="city" [(ngModel)]="formData.city">
           <option value="">— Sélectionner —</option>
           <option *ngFor="let c of cities" [value]="c">{{ c }}</option>
         </select>
       </div>
-      <div class="form-control">
-        <label>Téléphone</label>
-        <input type="text" name="phone" [(ngModel)]="formData.phone" placeholder="Numéro fixe">
+      <div class="pf-field">
+        <label for="pf-address">Adresse</label>
+        <input id="pf-address" type="text" name="address" [(ngModel)]="formData.address" placeholder="Rue, quartier…">
       </div>
-      <div class="form-control">
-        <label>Mobile</label>
-        <input type="text" name="mobile" [(ngModel)]="formData.mobile" placeholder="Numéro mobile">
+      <div class="pf-field">
+        <label for="pf-phone">Téléphone</label>
+        <input id="pf-phone" type="tel" name="phone" [(ngModel)]="formData.phone" placeholder="05 22 00 00 00" inputmode="tel">
       </div>
-      <div class="form-control full-width">
-        <label>Adresse</label>
-        <input type="text" name="address" [(ngModel)]="formData.address" placeholder="Adresse complète">
-      </div>
-    </div>
-  </div>
-
-  <div class="form-section">
-    <h3 class="section-title">Tarification des Services</h3>
-    <div class="form-grid">
-      <div class="form-control">
-        <label>Montage + Equilibrage (DH/pneu)</label>
-        <input type="number" name="montage_price" [(ngModel)]="formData.montage_price" step="0.01" min="0" placeholder="Ex: 50.00">
-      </div>
-      <div class="form-control">
-        <label>Parallélisme (DH)</label>
-        <input type="number" name="alignment_price" [(ngModel)]="formData.alignment_price" step="0.01" min="0" placeholder="Ex: 150.00">
+      <div class="pf-field">
+        <label for="pf-mobile">Mobile</label>
+        <input id="pf-mobile" type="tel" name="mobile" [(ngModel)]="formData.mobile" placeholder="06 00 00 00 00" inputmode="tel">
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="form-actions">
-    <button type="button" class="btn btn-secondary" (click)="cancel.emit()">Annuler</button>
-    <button type="submit" class="btn btn-primary" [disabled]="!form.valid">Enregistrer</button>
+  <section class="pf-section">
+    <h3 class="pf-title">Tarification des services</h3>
+    <div class="pf-grid">
+      <div class="pf-field">
+        <label for="pf-montage">Montage + équilibrage</label>
+        <div class="pf-money">
+          <input id="pf-montage" type="number" name="montage_price" [(ngModel)]="formData.montage_price" step="0.01" min="0" placeholder="50,00" inputmode="decimal">
+          <span>DH / pneu</span>
+        </div>
+      </div>
+      <div class="pf-field">
+        <label for="pf-alignment">Parallélisme</label>
+        <div class="pf-money">
+          <input id="pf-alignment" type="number" name="alignment_price" [(ngModel)]="formData.alignment_price" step="0.01" min="0" placeholder="150,00" inputmode="decimal">
+          <span>DH</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="pf-actions">
+    <span class="pf-hint">* champ obligatoire</span>
+    <button type="button" class="pf-btn pf-btn-cancel" (click)="cancel.emit()">Annuler</button>
+    <button type="submit" class="pf-btn pf-btn-save" [disabled]="!form.valid">Enregistrer</button>
   </div>
 </form>

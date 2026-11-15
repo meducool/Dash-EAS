@@ -150,7 +150,7 @@
           <span class="action-badge" [class]="actionClass(log.action)">{{ actionLabel(log.action) }}</span>
           <strong>{{ log.entity_label }}</strong>
         </div>
-        <button class="btn-close" (click)="closeDetail()">✕</button>
+        <button type="button" class="btn-close" (click)="closeDetail()" aria-label="Fermer" title="Fermer">✕</button>
       </div>
 
       <div class="detail-modal-meta">

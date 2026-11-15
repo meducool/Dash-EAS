@@ -1,3 +1,4 @@
+@use '../../_modal-shell' as shell;
 // ── Design tokens ─────────────────────────────────────────────────────────────
 $_red:      var(--app-primary);
 $_text: var(--app-text);
@@ -439,3 +440,6 @@ $_border2: var(--app-border-strong);
     .btn { width: 100%; justify-content: center; }
   }
 }
+
+// Shared window look (accent, header, ✕ button) — features/_modal-shell.scss
+@include shell.modal-shell();

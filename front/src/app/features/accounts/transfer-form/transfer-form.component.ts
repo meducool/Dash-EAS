@@ -1,12 +1,12 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DecimalPipe } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Account, TransferPayload } from '../../../core/models/account.model';
 
 @Component({
   selector: 'app-transfer-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, DecimalPipe],
   templateUrl: './transfer-form.component.html',
   styleUrls: ['./transfer-form.component.scss']
 })
@@ -20,8 +20,6 @@ export class TransferFormComponent implements OnInit {
   constructor(private fb: FormBuilder) {}
 
   ngOnInit(): void {
-    const activeAccounts = this.accounts.filter(a => a.is_active);
-
     this.form = this.fb.group({
       source_account_id: ['', [Validators.required]],
       destination_account_id: ['', [Validators.required]],
@@ -39,11 +37,39 @@ export class TransferFormComponent implements OnInit {
     return this.accounts.filter(a => a.is_active);
   }
 
-  onSubmit(): void {
-    if (this.form.invalid) return;
+  private find(id: unknown): Account | null {
+    return id ? this.accounts.find((a) => String(a.id) === String(id)) ?? null : null;
+  }
 
-    if (this.form.value.source_account_id === this.form.value.destination_account_id) {
-      alert("Le compte source et le compte de destination doivent être différents.");
+  get sourceAccount(): Account | null {
+    return this.find(this.form.get('source_account_id')?.value);
+  }
+
+  get destinationAccount(): Account | null {
+    return this.find(this.form.get('destination_account_id')?.value);
+  }
+
+  /** Same account on both sides: shown under the fields, submit disabled. */
+  get sameAccount(): boolean {
+    const src = this.form.get('source_account_id')?.value;
+    return !!src && String(src) === String(this.form.get('destination_account_id')?.value);
+  }
+
+  /** More than the source balance: only a warning (a balance can go negative). */
+  get exceedsBalance(): boolean {
+    const amount = Number(this.form.get('amount')?.value);
+    const src = this.sourceAccount;
+    return !!src && amount > 0 && amount > Number(src.current_balance);
+  }
+
+  swap(): void {
+    const src = this.form.get('source_account_id')?.value;
+    this.form.patchValue({ source_account_id: this.form.get('destination_account_id')?.value, destination_account_id: src });
+  }
+
+  onSubmit(): void {
+    if (this.form.invalid || this.sameAccount) {
+      this.form.markAllAsTouched();
       return;
     }
 

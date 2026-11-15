@@ -78,11 +78,11 @@
   </div>
 </div>
 
-<div class="modal-overlay" *ngIf="showForm()" (click)="closeForm()">
+<div class="modal-overlay" *ngIf="showForm()">
   <div class="modal-container modal-lg" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h2>{{ editingRole() ? 'Modifier le Rôle' : 'Nouveau Rôle' }}</h2>
-      <button class="btn-icon" (click)="closeForm()">X</button>
+      <button type="button" class="btn-icon" (click)="closeForm()" aria-label="Fermer" title="Fermer">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
@@ -127,11 +127,11 @@
   </div>
 </div>
 
-<div class="modal-overlay" *ngIf="showPermissionForm()" (click)="closePermissionForm()">
+<div class="modal-overlay" *ngIf="showPermissionForm()">
   <div class="modal-container" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h2>Nouvelle Permission</h2>
-      <button class="btn-icon" (click)="closePermissionForm()">X</button>
+      <button type="button" class="btn-icon" (click)="closePermissionForm()" aria-label="Fermer" title="Fermer">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-group">

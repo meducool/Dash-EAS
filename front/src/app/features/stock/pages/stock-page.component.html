@@ -236,7 +236,7 @@
   </div>
 </div>
 
-<div class="modal-overlay" *ngIf="showEditModal()" (click)="closeEditModal()">
+<div class="modal-overlay" *ngIf="showEditModal()">
   <div class="modal-container correction-modal" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div>
@@ -246,7 +246,7 @@
           <span *ngIf="editingStock()?.product?.brand?.name">— {{ editingStock()?.product?.brand?.name }}</span>
         </p>
       </div>
-      <button class="btn-icon" type="button" (click)="closeEditModal()">✕</button>
+      <button type="button" class="btn-icon" (click)="closeEditModal()" aria-label="Fermer" title="Fermer">✕</button>
     </div>
 
     <div class="modal-body">
@@ -339,7 +339,7 @@
           <span *ngIf="selectedStock()?.product?.profile">— {{ selectedStock()?.product?.profile }}</span>
         </p>
       </div>
-      <button class="btn-icon" type="button" (click)="closeMovementsModal()">✕</button>
+      <button type="button" class="btn-icon" (click)="closeMovementsModal()" aria-label="Fermer" title="Fermer">✕</button>
     </div>
 
     <div class="modal-body">

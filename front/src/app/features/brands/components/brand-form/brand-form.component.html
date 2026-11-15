@@ -1,37 +1,51 @@
-<form (ngSubmit)="onSubmit()" #form="ngForm" class="form-container">
+<form (ngSubmit)="onSubmit()" #form="ngForm" class="bf">
+  <section class="bf-section">
+    <h3 class="bf-title">Informations</h3>
 
-  <div class="form-section">
-    <h3>Informations</h3>
-    <div class="form-grid">
-      <div class="form-control">
-        <label>Nom *</label>
-        <input type="text" name="name" [(ngModel)]="formData.name" required placeholder="Ex: MICHELIN">
+    <div class="bf-layout">
+      <!-- Logo: square preview + button -->
+      <div class="bf-logo">
+        <span class="bf-label">Logo</span>
+        <label class="bf-logo-box" for="bf-logo-input" title="Choisir une image">
+          @if (logoPreview(); as src) {
+            <img [src]="src" alt="Aperçu du logo">
+          } @else {
+            <span class="bf-logo-empty">🏷️<br>Aucun logo</span>
+          }
+        </label>
+        <input id="bf-logo-input" class="bf-file" type="file" accept="image/*" (change)="onFileChange($event)">
+        <label class="bf-logo-btn" for="bf-logo-input">{{ logoPreview() ? 'Changer le logo' : 'Choisir un logo' }}</label>
+        @if (logoName()) { <span class="bf-file-name" [title]="logoName()">{{ logoName() }}</span> }
       </div>
 
-      <div class="form-control">
-        <label for="brand_code">Code (références)</label>
-        <input type="text" id="brand_code" name="code" [(ngModel)]="formData.code" maxlength="10"
-               pattern="[A-Za-z0-9]*" placeholder="Ex: M, GT, BFG" autocomplete="off">
-        <small class="field-hint">Début des références des pneus de la marque, ex. <strong>GT</strong>205601692H-SYN.</small>
-      </div>
+      <div class="bf-fields">
+        <div class="bf-field">
+          <label for="bf-name">Nom *</label>
+          <input id="bf-name" type="text" name="name" [(ngModel)]="formData.name" required placeholder="Ex : MICHELIN" #name="ngModel"
+                 [class.invalid]="name.invalid && name.touched">
+          @if (name.invalid && name.touched) { <span class="bf-error">Nom requis</span> }
+        </div>
 
-      <div class="form-control">
-        <label>Logo</label>
-        <input type="file" accept="image/*" (change)="onFileChange($event)">
-        <img *ngIf="logoPreview" [src]="logoPreview" alt="Aperçu" class="logo-preview">
-      </div>
+        <div class="bf-field">
+          <label for="brand_code">Code (références)</label>
+          <input type="text" id="brand_code" name="code" [(ngModel)]="formData.code" maxlength="10"
+                 pattern="[A-Za-z0-9]*" placeholder="Ex : M, GT, BFG" autocomplete="off" #code="ngModel"
+                 [class.invalid]="code.invalid && code.touched">
+          <small class="bf-hint">Début des références des pneus de la marque, ex. <strong>GT</strong>205601692H-SYN. Lettres et chiffres uniquement.</small>
+        </div>
 
-      <div class="form-control checkbox-inline">
-        <label>
+        <label class="bf-switch">
           <input type="checkbox" name="is_active" [(ngModel)]="formData.is_active">
-          Actif
+          <span class="bf-switch-track" aria-hidden="true"></span>
+          <span>Marque active</span>
         </label>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="form-actions">
-    <button type="button" class="btn btn-secondary" (click)="cancel.emit()">Annuler</button>
-    <button type="submit" class="btn btn-primary" [disabled]="!form.valid">Enregistrer</button>
+  <div class="bf-actions">
+    <span class="bf-hint-required">* champ obligatoire</span>
+    <button type="button" class="bf-btn bf-btn-cancel" (click)="cancel.emit()">Annuler</button>
+    <button type="submit" class="bf-btn bf-btn-save" [disabled]="!form.valid">Enregistrer</button>
   </div>
 </form>

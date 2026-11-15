@@ -1,23 +1,214 @@
-.checkbox-inline {
+/* Brand form — logo on the left, fields on the right. Tokens only (light + dark). */
+
+.bf { display: flex; flex-direction: column; gap: 1rem; }
+
+.bf-section {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface-2);
+}
+
+.bf-title {
+  margin: 0 0 0.9rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-text-subtle);
+}
+
+.bf-layout {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 1.25rem;
+}
+
+/* ── Logo ── */
+.bf-logo { display: flex; flex-direction: column; align-items: stretch; gap: 0.4rem; min-width: 0; }
+
+.bf-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--app-text-muted);
+}
+
+.bf-logo-box {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  padding: 0.6rem;
+  border: 2px dashed var(--app-border-strong);
+  border-radius: 10px;
+  background: var(--app-surface);
+  cursor: pointer;
+  transition: border-color 0.15s;
+
+  &:hover { border-color: var(--app-primary); }
+
+  img { max-width: 100%; max-height: 100%; object-fit: contain; }
+}
+
+.bf-logo-empty { font-size: 0.75rem; line-height: 1.6; text-align: center; color: var(--app-text-subtle); }
+
+/* Native file input hidden: the box and the button are its labels. */
+.bf-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+
+  &:focus-visible + .bf-logo-btn { outline: 2px solid var(--app-primary); outline-offset: 2px; }
+}
+
+.bf-logo-btn {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 8px;
+  background: var(--app-surface);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--app-text);
+  cursor: pointer;
+
+  &:hover { background: var(--app-surface-3); }
+}
+
+.bf-file-name {
+  overflow: hidden;
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--app-text-subtle);
+}
+
+/* ── Fields ── */
+.bf-fields { display: flex; flex-direction: column; gap: 0.9rem; min-width: 0; }
+
+.bf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
 
   label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    font-weight: 500;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--app-text-muted);
+  }
+
+  input {
+    width: 100%;
+    min-height: 2.5rem;
+    padding: 0.5rem 0.75rem;
+    border: 1.5px solid var(--app-border-strong);
+    border-radius: 8px;
+    background: var(--app-surface);
+    color: var(--app-text);
+    font: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.18s, box-shadow 0.18s;
+
+    &:focus {
+      border-color: var(--app-primary);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-primary) 14%, transparent);
+    }
+
+    &::placeholder { color: var(--app-text-subtle); }
+    &.invalid { border-color: var(--app-danger); }
   }
 }
 
-.logo-preview {
-  margin-top: 0.5rem;
-  max-width: 120px;
-  max-height: 60px;
-  object-fit: contain;
-  border-radius: 4px;
-  border: 1px solid var(--app-border);
+.bf-hint { font-size: 0.75rem; line-height: 1.4; color: var(--app-text-subtle); }
+.bf-error { font-size: 0.75rem; color: var(--app-danger-text); }
+
+/* ── Active switch ── */
+.bf-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--app-text);
+  cursor: pointer;
+
+  input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 }
 
-.field-hint { display: block; margin-top: 0.25rem; font-size: 0.75rem; color: var(--app-text-subtle); }
+.bf-switch-track {
+  position: relative;
+  flex-shrink: 0;
+  width: 2.4rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  background: var(--app-border-strong);
+  transition: background 0.18s;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0.15rem;
+    left: 0.15rem;
+    width: 1.05rem;
+    height: 1.05rem;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    transition: transform 0.18s;
+  }
+}
+
+.bf-switch input:checked + .bf-switch-track { background: var(--app-success); }
+.bf-switch input:checked + .bf-switch-track::after { transform: translateX(1.05rem); }
+.bf-switch input:focus-visible + .bf-switch-track { outline: 2px solid var(--app-primary); outline-offset: 2px; }
+
+/* ── Actions ── */
+.bf-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--app-border);
+}
+
+.bf-hint-required { margin-right: auto; font-size: 0.75rem; color: var(--app-text-subtle); }
+
+.bf-btn {
+  min-height: 2.4rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s, opacity 0.15s;
+
+  &:focus-visible { outline: 2px solid var(--app-primary); outline-offset: 2px; }
+}
+
+.bf-btn-cancel {
+  border: 1px solid var(--app-border-strong);
+  background: var(--app-surface);
+  color: var(--app-text-muted);
+
+  &:hover { background: var(--app-surface-3); color: var(--app-text); }
+}
+
+.bf-btn-save {
+  border: none;
+  background: var(--app-primary);
+  color: #fff;
+
+  &:hover:not(:disabled) { box-shadow: 0 4px 12px color-mix(in srgb, var(--app-primary) 35%, transparent); }
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
+}
+
+@media (max-width: 560px) {
+  .bf-layout { grid-template-columns: 1fr; }
+  .bf-logo-box { width: 140px; align-self: center; }
+  .bf-hint-required { display: none; }
+  .bf-actions .bf-btn { flex: 1; }
+}

@@ -1,3 +1,4 @@
+@use '../../../_modal-shell' as shell;
 // ── Design tokens (matches supplier-detail-page.component.scss) ───────────────
 $primary:      var(--app-primary);
 $danger-bg:    rgba(239, 68, 68, 0.10);
@@ -329,3 +330,6 @@ $radius-md: 12px;
 @media (max-width: 640px) {
   .form-grid { grid-template-columns: 1fr; }
 }
+
+// Shared window look (accent, header, ✕ button) — features/_modal-shell.scss
+@include shell.modal-shell();

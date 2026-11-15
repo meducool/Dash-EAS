@@ -417,11 +417,11 @@
   }
 
   @if (settlingTransaction(); as st) {
-    <div class="modal-overlay" (click)="closeSettle()">
+    <div class="modal-overlay">
       <div class="modal-container settle-modal" role="dialog" aria-labelledby="settle-title" (click)="$event.stopPropagation()">
         <div class="modal-header">
           <h2 id="settle-title">Valider avant l'échéance</h2>
-          <button type="button" class="btn-icon" (click)="closeSettle()" [disabled]="settling()" aria-label="Fermer">✕</button>
+          <button type="button" class="btn-icon" (click)="closeSettle()" [disabled]="settling()" aria-label="Fermer" title="Fermer">✕</button>
         </div>
         <div class="modal-body">
           <dl class="settle-summary">

@@ -112,11 +112,11 @@
   </div>
 </div>
 
-<div class="modal-overlay" *ngIf="showForm()" (click)="closeForm()">
-  <div class="modal-container" (click)="$event.stopPropagation()">
+<div class="modal-overlay" *ngIf="showForm()">
+  <div class="modal-container modal-form-window" role="dialog" aria-modal="true">
     <div class="modal-header">
       <h2>{{ editingCarrier() ? 'Modifier Transporteur' : 'Nouveau Transporteur' }}</h2>
-      <button class="btn-icon" (click)="closeForm()">X</button>
+      <button type="button" class="btn-icon" (click)="closeForm()" aria-label="Fermer" title="Fermer">✕</button>
     </div>
     <div class="modal-body">
       <app-carrier-form [carrier]="editingCarrier()" (save)="onFormSubmit($event)" (cancel)="closeForm()"></app-carrier-form>

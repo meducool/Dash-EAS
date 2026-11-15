@@ -111,3 +111,50 @@ export function parseTyreDescription(text: string | null | undefined, brands: { 
 
   return result;
 }
+
+export interface TyreDescriptionFields {
+  width?: number | null;
+  height?: number | null;
+  diameter?: number | null;
+  loadIndex?: string | null;
+  speedIndex?: string | null;
+  brand?: string | null;
+  profile?: string | null;
+}
+
+/**
+ * Makes sure a tyre description carries its load and speed indexes:
+ * "MICHELIN 215/45R16 PRIMACY 3" + 91 / W → "MICHELIN 215/45R16 91W PRIMACY 3".
+ * - indexes already written (wherever, e.g. "91 W") → unchanged;
+ * - a dimension in the text → the indexes go right after it;
+ * - no readable dimension, or load numbers already after it → unchanged (to check by hand);
+ * - empty → "BRAND 215/45R16 91W PROFILE".
+ * Nothing changes when the product has no load or speed index.
+ */
+export function withTyreIndexes(text: string | null | undefined, t: TyreDescriptionFields): string {
+  const desc = (text ?? '').trim();
+  const load = (t.loadIndex ?? '').toString().trim();
+  const speed = (t.speedIndex ?? '').toString().trim().toUpperCase();
+  if (!load || !speed) return desc;
+  // Indexes that cannot be right ("107WW", "16PR") are never written.
+  if (!/^\d{2,3}(?:\/\d{2,3})?$/.test(load) || !/^[A-HJ-NP-WYZ]$/.test(speed)) return desc;
+  const indexes = `${load}${speed}`;
+  const dimension = t.width && t.diameter ? `${t.width}${t.height ? '/' + t.height : ''}R${t.diameter}` : '';
+
+  if (!desc) {
+    return [t.brand, dimension, indexes, t.profile].filter((part) => part && String(part).trim()).join(' ').toUpperCase();
+  }
+
+  const parsed = parseTyreDescription(desc);
+  if (parsed.loadIndex && parsed.speedIndex) return desc;
+  // Indexes written further in the text ("… 8PR PT825 107/105R"): left as typed.
+  const first = escapeRegExp(load.split('/')[0]);
+  if (new RegExp(`(?<![\\d/])${first}(?:/\\d{2,3})?\\s*[A-HJ-NP-WYZ]\\b`, 'i').test(desc)) return desc;
+
+  const dim = DIMENSION.exec(desc);
+  if (!dim) return desc;
+  const end = dim.index + dim[0].length;
+  const after = desc.slice(end);
+  if (/^\s*\d{2,3}(?:\/\d{2,3})?\b/.test(after)) return desc;
+  return `${desc.slice(0, end).trimEnd()} ${indexes} ${after.trimStart()}`.trim();
+}

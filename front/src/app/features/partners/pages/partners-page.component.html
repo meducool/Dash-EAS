@@ -129,11 +129,12 @@
   </div>
 </div>
 
-<div class="modal-overlay" *ngIf="showForm()" (click)="closeForm()">
-  <div class="modal-container" (click)="$event.stopPropagation()">
+<!-- Closes only with ✕ or « Annuler »: a click outside never loses what was typed. -->
+<div class="modal-overlay" *ngIf="showForm()">
+  <div class="modal-container modal-form-window" role="dialog" aria-modal="true" aria-labelledby="partner-form-title">
     <div class="modal-header">
-      <h2>{{ editingPartner() ? 'Modifier Partenaire' : 'Nouveau Partenaire' }}</h2>
-      <button class="btn-icon" (click)="closeForm()">X</button>
+      <h2 id="partner-form-title">{{ editingPartner() ? '✏️ Modifier le partenaire' : '🤝 Nouveau partenaire' }}</h2>
+      <button type="button" class="btn-icon" (click)="closeForm()" aria-label="Fermer" title="Fermer">✕</button>
     </div>
     <div class="modal-body">
       <app-partner-form [partner]="editingPartner()" (save)="onFormSubmit($event)" (cancel)="closeForm()"></app-partner-form>

@@ -1,8 +1,8 @@
-<div class="modal-overlay" (click)="close()">
+<div class="modal-overlay">
   <div class="modal-container" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h2>Retour fournisseur — Achat #{{ purchase.id }}</h2>
-      <button class="btn-icon" (click)="close()">✕</button>
+      <button type="button" class="btn-icon" (click)="close()" aria-label="Fermer" title="Fermer">✕</button>
     </div>
 
     <div class="modal-body" *ngIf="!loading(); else loadingTpl">

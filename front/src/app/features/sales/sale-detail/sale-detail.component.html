@@ -13,7 +13,7 @@
       <div class="modal-actions">
         <button class="btn btn-primary btn-sm" (click)="openPrint()">🖨️ Imprimer</button>
         <button class="btn btn-secondary btn-sm no-print" *ngIf="authService.hasPermission('create shipment-changes')" (click)="openShipmentAddForm()">📦 Demander une modification</button>
-        <button class="btn-close" (click)="close.emit()">✕</button>
+        <button type="button" class="btn-close" (click)="close.emit()" aria-label="Fermer" title="Fermer">✕</button>
       </div>
     </div>
 
@@ -256,11 +256,11 @@
   (closed)="printDoc.set(null)"
 />
 
-<div class="modal-overlay" *ngIf="showShipmentForm()" (click)="closeShipmentForm()">
+<div class="modal-overlay" *ngIf="showShipmentForm()">
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h2>{{ editingShipmentRequest() ? 'Modifier la demande' : 'Nouvelle demande de modification' }}</h2>
-      <button class="btn-close" (click)="closeShipmentForm()">✕</button>
+      <button type="button" class="btn-close" (click)="closeShipmentForm()" aria-label="Fermer" title="Fermer">✕</button>
     </div>
     <app-shipment-change-form
       [sale]="sale"

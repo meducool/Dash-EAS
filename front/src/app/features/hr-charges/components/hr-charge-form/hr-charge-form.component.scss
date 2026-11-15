@@ -1,4 +1,5 @@
 @use '../../../_variables' as *;
+@use '../../../_modal-shell' as shell;
 
 /* ---------- Modal Overlay ---------- */
 .modal-overlay {
@@ -211,3 +212,6 @@
 @media (max-width: 640px) {
   .modal-content { max-height: 95vh; }
 }
+
+// Shared window look (accent, header, ✕ button) — features/_modal-shell.scss
+@include shell.modal-shell();

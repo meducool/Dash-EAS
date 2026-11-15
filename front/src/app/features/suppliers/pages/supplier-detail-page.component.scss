@@ -1,3 +1,4 @@
+@use '../../_modal-shell' as shell;
 // ── Design tokens ─────────────────────────────────────────────────────────────
 $primary:       var(--app-primary);
 $primary-dark: color-mix(in srgb, var(--app-primary) 85%, #000);
@@ -597,3 +598,6 @@ h1 {
   .supplier-avatar { width: 48px; height: 48px; font-size: 1.25rem; }
   h1 { font-size: 1.25rem; }
 }
+
+// Shared window look (accent, header, ✕ button) — features/_modal-shell.scss
+@include shell.modal-shell();

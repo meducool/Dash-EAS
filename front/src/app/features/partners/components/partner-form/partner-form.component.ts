@@ -9,7 +9,7 @@ import { CityService } from '../../../../core/services/city.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './partner-form.component.html',
-  styleUrls: ['../../../sales/sale-form/sale-form.component.scss']
+  styleUrls: ['./partner-form.component.scss']
 })
 export class PartnerFormComponent implements OnInit {
   @Input() partner: Partner | null = null;

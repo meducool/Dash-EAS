@@ -244,9 +244,12 @@
 </div>
 
 <!-- Modal Formulaire -->
-<div *ngIf="showForm()" class="modal-overlay" (click)="closeForm()">
+<div *ngIf="showForm()" class="modal-overlay">
   <div class="modal-container" (click)="$event.stopPropagation()">
-    <div *ngIf="loadingEdit()" class="loading-state">Chargement…</div>
+    <div *ngIf="loadingEdit()" class="loading-state">
+      Chargement…
+      <button type="button" class="btn btn-secondary btn-sm" (click)="closeForm()">Fermer</button>
+    </div>
     <app-service-order-form
       *ngIf="!loadingEdit()"
       [serviceOrder]="editingOrder()"

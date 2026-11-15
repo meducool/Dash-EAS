@@ -95,7 +95,7 @@
         <div class="modal-title-group">
           <h2 class="modal-title">📈 Snapshot du {{ fmtDate(selectedSnapshot()!.snapshot_date) }}</h2>
         </div>
-        <button class="btn-icon" (click)="closeDetail()">✕</button>
+        <button type="button" class="btn-icon" (click)="closeDetail()" aria-label="Fermer" title="Fermer">✕</button>
       </div>
 
       <div class="modal-tabs">

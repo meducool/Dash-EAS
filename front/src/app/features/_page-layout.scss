@@ -701,6 +701,7 @@ $_danger:    var(--app-danger);
     backdrop-filter: blur(2px);
   }
 
+  // Form windows close only with ✕ / « Annuler » (no click handler on the overlay).
   .modal-container {
     background: $_surface;
     border-radius: var(--app-radius-lg);
@@ -709,20 +710,51 @@ $_danger:    var(--app-danger);
     max-height: 90vh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
     box-shadow: var(--app-shadow-lg);
     border: 1px solid $_border;
+    border-top: 4px solid var(--app-primary);
+    animation: modal-in 0.22s ease;
+
+    // Widths for short forms (a long form keeps the wide window).
+    &.modal-form-window { width: min(680px, 95vw); }
+    &.modal-md { width: min(880px, 95vw); }
+  }
+
+  @keyframes modal-in {
+    from { transform: translateY(14px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
   }
 
   .modal-header {
-    padding: 1.1rem 1.5rem;
+    flex-shrink: 0;
+    padding: 1rem 1.5rem;
     border-bottom: 1px solid $_border;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: $_surface-2;
-    border-radius: var(--app-radius-lg) var(--app-radius-lg) 0 0;
+    gap: 1rem;
+    background: $_surface;
 
-    h2 { margin: 0; font-size: 1.05rem; color: $_text; font-weight: 700; }
+    h2 { margin: 0; font-size: 1.1rem; color: $_text; font-weight: 700; }
+
+    // Close button: a clear square, same as the transaction / account windows.
+    > .btn-icon {
+      flex-shrink: 0;
+      width: 2.1rem;
+      height: 2.1rem;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid $_border;
+      border-radius: 8px;
+      background: $_surface;
+      color: $_muted;
+      font-size: 1rem;
+
+      &:hover { background: var(--app-surface-3); color: $_text; }
+    }
   }
 
   .modal-body { padding: 1.5rem; overflow-y: auto; flex: 1; }
@@ -780,8 +812,10 @@ $_danger:    var(--app-danger);
 
     .btn-page { padding: 0.3rem 0.55rem; font-size: 0.78rem; }
 
-    .modal-overlay { padding: 0.5rem; }
-    .modal-container { max-height: 95vh; }
+    // Phone: the window opens from the bottom of the screen.
+    .modal-overlay { padding: 0; align-items: flex-end; }
+    .modal-container { width: 100%; max-width: none; max-height: 94vh; border-radius: var(--app-radius-lg) var(--app-radius-lg) 0 0; }
+    .modal-container.modal-form-window, .modal-container.modal-md { width: 100%; }
     .modal-header { padding: 0.875rem 1.25rem; h2 { font-size: 1rem; } }
     .modal-body { padding: 1rem; }
     .modal-footer { padding: 0.875rem 1.25rem; }
