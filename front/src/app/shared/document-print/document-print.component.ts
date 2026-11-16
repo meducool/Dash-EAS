@@ -5,6 +5,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { PrintService } from '../../core/services/print.service';
 import { CompanySettings } from '../../features/settings/models/company-settings.model';
+import { amountInWords } from '../../core/utils/amount-in-words';
 
 export type DocumentType = 'sale' | 'purchase' | 'service_order';
 
@@ -91,6 +92,31 @@ export class DocumentPrintComponent implements OnInit {
       service_order: "FICHE D'INTERVENTION",
     };
     return titles[this.document.type] ?? 'DOCUMENT';
+  }
+
+  /** « Trois mille dirhams » — the net amount written in words. */
+  amountWords(): string {
+    return amountInWords(this.document.net_amount);
+  }
+
+  /** Total quantity of the lines (number of articles). */
+  totalQty(): number {
+    return this.document.lines.reduce((sum, l) => sum + (Number(l.qty) || 0), 0);
+  }
+
+  /** PAYE / PAYÉ / PARTIEL / NON PAYE → paid | partial | unpaid. */
+  paymentTone(): 'paid' | 'partial' | 'unpaid' | null {
+    const s = (this.document.payment_status ?? '').toUpperCase().replace(/É/g, 'E').trim();
+    if (s === 'PAYE') return 'paid';
+    if (s === 'PARTIEL') return 'partial';
+    if (s === 'NON PAYE') return 'unpaid';
+    return null;
+  }
+
+  paymentLabel(): string {
+    const labels = { paid: 'Payé', partial: 'Partiellement payé', unpaid: 'Non payé' } as const;
+    const tone = this.paymentTone();
+    return tone ? labels[tone] : (this.document.payment_status ?? '');
   }
 
   hasDiscounts(): boolean {

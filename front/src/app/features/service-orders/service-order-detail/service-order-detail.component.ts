@@ -57,7 +57,7 @@ export class ServiceOrderDetailComponent implements OnChanges {
     const lines: PrintLine[] = (this.serviceOrder.items || []).map(item => {
       if (item.item_type === 'part') {
         return {
-          label: item.product_name || `Pièce #${item.product_id}`,
+          label: item.product_print_name || item.product_name || `Pièce #${item.product_id}`,
           reference: item.product_reference || undefined,
           qty: item.quantity ?? 1,
           unit: 'pièce',

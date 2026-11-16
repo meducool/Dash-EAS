@@ -13,6 +13,8 @@ export interface ServiceItem {
   product_id?: number | null;
   product_name?: string | null;
   product_reference?: string | null;
+  /** « Pneu Matador Hectorra 5 205/50 R17 93Y » for a tyre (detail view only). */
+  product_print_name?: string | null;
   quantity?: number;
   unit_price?: number;
   purchase_price?: number;

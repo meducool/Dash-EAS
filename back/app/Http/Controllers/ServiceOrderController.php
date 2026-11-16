@@ -58,7 +58,7 @@ class ServiceOrderController extends Controller
     {
         $serviceOrder->load([
             'commercial',
-            'items.product' => fn ($q) => $q->with('service')->withSum('stocks', 'quantity'),
+            'items.product' => fn ($q) => $q->with(['service', 'tyre', 'brand'])->withSum('stocks', 'quantity'),
             'payments',
             'clientRecord',
             'vehicle',

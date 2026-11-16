@@ -64,11 +64,14 @@
             <tbody>
               <tr *ngFor="let item of purchase.items">
                 <td class="col-produit">
-                  <span class="badge badge-primary mr-1" *ngIf="getProduct(item)?.brand">{{ getProduct(item)!.brand!.name }}</span>
-                  <button class="product-link fw-medium" type="button" (click)="openProductView(item)" *ngIf="getProduct(item); else plainRef" title="Voir le produit">{{ getProduct(item)?.reference || 'Produit #' + item.product_id }}</button>
-                  <ng-template #plainRef><span class="fw-medium">{{ 'Produit #' + item.product_id }}</span></ng-template>
-                  <span class="text-muted ml-1" *ngIf="getProduct(item)?.tyre?.tire_width">{{ getProduct(item)!.tyre!.tire_width }}/{{ getProduct(item)!.tyre!.tire_height }}R{{ getProduct(item)!.tyre!.tire_diameter }}</span>
-                  <span class="text-muted ml-1" *ngIf="getProduct(item)?.profile">— {{ getProduct(item)!.profile }}</span>
+                  <div class="product-cell">
+                    <button class="product-name" type="button" (click)="openProductView(item)" *ngIf="getProduct(item); else plainName" title="Voir le produit">{{ productTitle(item) }}</button>
+                    <ng-template #plainName><span class="product-name product-name--plain">{{ productTitle(item) }}</span></ng-template>
+                    <div class="product-meta" *ngIf="getProduct(item)?.reference || getProduct(item)?.tyre?.tire_marking">
+                      <span class="ref-chip" *ngIf="getProduct(item)?.reference">{{ getProduct(item)!.reference }}</span>
+                      <span class="meta-tag" *ngIf="getProduct(item)?.tyre?.tire_marking">{{ getProduct(item)!.tyre!.tire_marking }}</span>
+                    </div>
+                  </div>
                 </td>
                 <td>{{ item.quantity }}</td>
                 <td>{{ item.unit_price | number:'1.2-2' }}</td>

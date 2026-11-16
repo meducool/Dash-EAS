@@ -3,8 +3,13 @@
 
     <div class="modal-header">
       <div class="header-title">
-        <span class="badge" [class.badge-tyre]="isTyre" [class.badge-part]="isPart" [class.badge-service]="isService">{{ typeLabel() }}</span>
-        <h2>{{ product.profile || product.reference || ('Produit #' + product.id) }}</h2>
+        <h2 [title]="displayName">{{ displayName }}</h2>
+        <div class="header-meta">
+          <span class="badge" [class.badge-tyre]="isTyre" [class.badge-part]="isPart" [class.badge-service]="isService">{{ typeLabel() }}</span>
+          <span class="header-ref" *ngIf="product.reference">{{ product.reference }}</span>
+          <span class="badge" [class.badge-active]="product.is_active" [class.badge-inactive]="!product.is_active">{{ product.is_active ? 'Actif' : 'Inactif' }}</span>
+          <span class="header-stock" *ngIf="!isService && !stockLoading()" [class.header-stock--empty]="totalStock <= 0">{{ totalStock }} en stock</span>
+        </div>
       </div>
       <button class="btn-icon" (click)="close.emit()" title="Fermer">✕</button>
     </div>

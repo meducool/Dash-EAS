@@ -9,6 +9,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ProductImage, ProductImageList, ProductPurchaseHistory, ProductService } from '../../../core/services/product.service';
 import { PHOTO_TYPES, shrinkImage } from '../../../core/utils/image-resize';
 import { firstValueFrom } from 'rxjs';
+import { tyreSiteName } from '../../../core/utils/print-line-name';
 
 @Component({
   selector: 'app-product-detail',
@@ -233,6 +234,12 @@ export class ProductDetailComponent implements OnInit {
     if (event.key === 'Escape') { event.stopPropagation(); this.closeViewer(); }
     else if (event.key === 'ArrowLeft') this.stepViewer(-1);
     else if (event.key === 'ArrowRight') this.stepViewer(1);
+  }
+
+  /** « Pneu Michelin Pilot Sport 5 225/45 R17 94Y » for a tyre, like on the online shop. */
+  get displayName(): string {
+    const p = this.product;
+    return tyreSiteName(p) || p?.profile || p?.reference || `Produit #${p?.id}`;
   }
 
   get isTyre(): boolean { return this.product?.type === 'tyre'; }

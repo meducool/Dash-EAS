@@ -388,3 +388,96 @@
 
 .existing-item { display: inline-block; margin: 0 0.5rem 0 0.25rem; }
 .existing-meta { margin-left: 0.25rem; font-size: 0.72rem; opacity: 0.85; }
+
+// ── Inventaire: fixed columns, headers aligned with their values ────────────
+.inventory-section {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface);
+}
+
+.inventory-header {
+  h3 { font-size: 1rem; }
+
+  .stock-total {
+    padding: 0.12rem 0.55rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--app-success) 14%, transparent);
+    font-size: 0.75rem;
+    font-weight: 700;
+
+    &--empty {
+      background: color-mix(in srgb, var(--app-danger) 12%, transparent);
+      color: var(--app-danger-text);
+    }
+  }
+}
+
+.inventory-table-wrap { background: var(--app-surface); }
+
+.inventory-table {
+  table-layout: fixed;
+  min-width: 38rem;
+
+  .inv-col-depot   { width: 18%; }
+  .inv-col-zone    { width: 12%; }
+  .inv-col-origin  { width: 14%; }
+  .inv-col-dot     { width: 11%; }
+  .inv-col-qty     { width: 10%; }
+  .inv-col-price   { width: 16%; }
+  .inv-col-actions { width: 6.5rem; }
+
+  th, td { padding: 0.6rem 0.75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  th.text-center, td.text-center { text-align: center; }
+  th.text-right, td.text-right { text-align: right; }
+
+  .edit-row td { padding: 0.35rem 0.4rem; overflow: visible; }
+}
+
+.inv-depot { font-weight: 600; }
+.inv-empty { color: var(--app-text-subtle); }
+
+.inv-qty {
+  display: inline-block;
+  min-width: 2rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-success) 14%, transparent);
+
+  &.inv-qty-zero { background: color-mix(in srgb, var(--app-danger) 12%, transparent); }
+}
+
+.inv-price {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+
+  small { color: var(--app-text-subtle); font-weight: 500; }
+}
+
+.inventory-table .actions-cell {
+  white-space: nowrap;
+
+  .btn-icon-sm {
+    width: 1.9rem;
+    height: 1.9rem;
+    margin: 0 0.1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--app-border);
+    border-radius: 7px;
+    background: var(--app-surface);
+    font-size: 0.8rem;
+
+    &:hover { transform: none; background: var(--app-surface-3); }
+  }
+}
+
+.inv-none {
+  margin: 0;
+  padding: 1.25rem;
+  text-align: center;
+  color: var(--app-text-subtle);
+  font-size: 0.85rem;
+}

@@ -13,6 +13,7 @@ import { ShipmentChangePrintComponent } from '../../shipment-changes/components/
 import { ShipmentChangeRequest, ShipmentChangeRequestPayload } from '../../shipment-changes/models/shipment-change.model';
 import { ShipmentChangeStatus } from '../../../core/constants/status.constants';
 import { isTypingTarget } from '../../../core/utils/detail-navigator';
+import { printLineName, tyreSiteName } from '../../../core/utils/print-line-name';
 
 @Component({
   selector: 'app-sale-detail',
@@ -158,9 +159,7 @@ export class SaleDetailComponent implements OnInit, OnChanges {
     const lines: PrintLine[] = (this.sale.items || []).map(item => {
       const product = this.getProduct(item);
       return {
-        label: this.printLabel(product, item.product_name || `Produit #${item.product_id}`),
-        reference: this.printReference(product),
-        details: this.printDetails(product),
+        ...printLineName(product, item.product_name || `Produit #${item.product_id}`),
         qty: item.quantity,
         unit_price: Number(item.selling_price ?? item.unit_price ?? 0),
         discount: Number(item.discount || 0),
@@ -220,6 +219,14 @@ export class SaleDetailComponent implements OnInit, OnChanges {
     return this.creditLimit > 0 && this.outstandingBalance > this.creditLimit;
   }
 
+  /** « Pneu Continental EcoContact 6 235/55 R19 101T » for a tyre, else the article's name. */
+  productTitle(item: any): string {
+    const product = this.getProduct(item);
+    // Tyre without dimensions: brand + profile; part / service: its name (profile column).
+    const brandProfile = product?.type === 'tyre' ? [product.brand?.name, product.profile].filter(Boolean).join(' ') : (product?.profile ?? '');
+    return tyreSiteName(product) || brandProfile || product?.reference || item.product_name || `Produit #${item.product_id}`;
+  }
+
   getProduct(item: any): any {
     return item.linkedProduct || item.linked_product || item.product;
   }
@@ -236,33 +243,7 @@ export class SaleDetailComponent implements OnInit, OnChanges {
     window.open(`/products?id=${product.id}&edit=1`, '_blank', 'noopener');
   }
 
-  private printLabel(product: any, fallback: string): string {
-    if (product?.type !== 'tyre') return product?.reference || fallback;
-    const parts: string[] = [];
-    if (product.brand?.name) parts.push(product.brand.name);
-    if (product.profile) parts.push(product.profile);
-    return parts.join(' ') || product?.reference || fallback;
-  }
 
-  private printReference(product: any): string | undefined {
-    if (product?.type !== 'tyre') return product?.profile || undefined;
-    const t = product?.tyre;
-    if (t?.tire_width && t?.tire_height && t?.tire_diameter) {
-      return `${t.tire_width}/${t.tire_height}R${t.tire_diameter}`;
-    }
-    return undefined;
-  }
-
-  private printDetails(product: any): string | undefined {
-    if (product?.type !== 'tyre') return undefined;
-    const t = product?.tyre;
-    if (!t) return undefined;
-    const parts: string[] = [];
-    if (t.tire_load_index) parts.push(t.tire_load_index);
-    if (t.tire_speed_index) parts.push(t.tire_speed_index);
-    if (t.tire_marking) parts.push(t.tire_marking);
-    return parts.length ? parts.join(' · ') : undefined;
-  }
 
   lineTotal(item: any): number {
     if (item.total != null) {
