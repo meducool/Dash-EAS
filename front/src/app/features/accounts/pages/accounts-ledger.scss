@@ -1,0 +1,241 @@
+// Registre paginé « Transactions du compte » of the account detail page.
+// Kept apart from accounts-page.component.scss (component style budget).
+.ledger-card { scroll-margin-top: 5rem; }
+
+.ledger-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid var(--app-border);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--app-primary) 5%, var(--app-surface)) 0%, var(--app-surface) 100%);
+}
+
+.ledger-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+
+  h3 { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--app-text); }
+}
+
+.ledger-count {
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-primary) 12%, transparent);
+  color: var(--app-primary-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ledger-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--app-text-muted);
+  font-size: 0.8rem;
+
+  select {
+    height: 2rem;
+    padding: 0 1.6rem 0 0.6rem;
+    border: 1px solid var(--app-border);
+    border-radius: 8px;
+    background-color: var(--app-surface);
+    color: var(--app-text);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:focus-visible { outline: 2px solid var(--app-primary); outline-offset: 1px; }
+  }
+}
+
+.table-responsive.is-loading {
+  opacity: 0.55;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+.ledger-table {
+  thead th {
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    padding-top: 0.7rem;
+    padding-bottom: 0.7rem;
+  }
+
+  tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--app-surface-2) 45%, transparent); }
+  tbody tr:hover td { background: color-mix(in srgb, var(--app-primary) 6%, transparent); }
+
+  .date-cell {
+    line-height: 1.2;
+
+    .date-main { display: block; color: var(--app-text); font-weight: 600; }
+    .date-day { display: block; color: var(--app-text-subtle); font-size: 0.7rem; text-transform: capitalize; }
+  }
+
+  .amount-cell span { font-size: 0.875rem; }
+
+  .category-cell { color: var(--app-text-muted); }
+}
+
+.method-chip {
+  display: inline-block;
+  padding: 0.18rem 0.55rem;
+  border: 1px solid var(--app-border);
+  border-radius: 6px;
+  background: var(--app-surface-2);
+  color: var(--app-text);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.ledger-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid var(--app-border);
+  background: var(--app-surface-2);
+}
+
+.ledger-range {
+  color: var(--app-text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.ledger-hint { color: var(--app-text-subtle); }
+
+.ledger-pages {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.pg-btn {
+  min-width: 2.1rem;
+  height: 2.1rem;
+  padding: 0 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+  &:hover:not(:disabled):not(.active) {
+    border-color: var(--app-primary);
+    color: var(--app-primary-text);
+  }
+
+  &.active {
+    border-color: var(--app-primary);
+    background: var(--app-primary);
+    color: #fff;
+    cursor: default;
+  }
+
+  &:disabled:not(.active) { opacity: 0.45; cursor: not-allowed; }
+  &:focus-visible { outline: 2px solid var(--app-primary); outline-offset: 2px; }
+}
+
+.pg-gap {
+  min-width: 1.4rem;
+  text-align: center;
+  color: var(--app-text-subtle);
+}
+
+@media (max-width: 600px) {
+  .ledger-header { padding: 0.8rem 1rem; }
+  .ledger-size { width: 100%; }
+  .ledger-pager { flex-direction: column; align-items: stretch; padding: 0.75rem 1rem; }
+  .ledger-range { text-align: center; }
+  .ledger-hint { display: none; }
+  .ledger-pages { justify-content: center; }
+  .pg-label { display: none; }
+}
+
+// ── Column layout: fixed widths, the description takes the rest ─────────────
+.ledger-table.table {
+  table-layout: fixed;
+  min-width: 82rem;
+
+  .col-date     { width: 8rem; }
+  .col-amount   { width: 9.5rem; }
+  .col-type     { width: 7rem; }
+  .col-method   { width: 7.5rem; }
+  .col-category { width: 11rem; }
+  .col-actions  { width: 19.5rem; }
+
+  th, td { width: auto; padding: 0.65rem 0.85rem; }
+
+  // Amount right-aligned, then a clear gap before the type badge.
+  th:nth-child(2), td.amount-cell { text-align: right; padding-right: 1.5rem; }
+
+  td:first-child, th:first-child { padding-left: 1.1rem; }
+
+  .category-cell {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .desc-col {
+    min-width: 0;
+    line-height: 1.35;
+    color: var(--app-text);
+  }
+
+  th.actions-col { text-align: right; padding-right: 1.1rem; }
+
+  td.actions-cell {
+    padding-right: 1.1rem;
+    white-space: normal;
+  }
+}
+
+.ledger-table td.actions-cell {
+  // Buttons stay on the right, wrapping on a second line when space runs out.
+  > * { margin-top: 0.15rem; margin-bottom: 0.15rem; }
+}
+
+// ── One line per row ─────────────────────────────────────────────────────────
+.ledger-table.table {
+  .col-date    { width: 9.5rem; }
+  .col-actions { width: 21rem; }
+
+  th, td,
+  .desc-col,
+  td.actions-cell { white-space: nowrap; }
+
+  td { padding-top: 0.55rem; padding-bottom: 0.55rem; }
+
+  // Date and weekday side by side: « 16/11/2026 lun. »
+  .date-cell .date-main,
+  .date-cell .date-day { display: inline; }
+  .date-cell .date-day { margin-left: 0.35rem; }
+
+  // Long descriptions are cut with « … », full text in the tooltip.
+  .desc-col {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  td.actions-cell > * { margin-top: 0; margin-bottom: 0; }
+}

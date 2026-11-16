@@ -86,76 +86,153 @@
       </div>
     </div>
 
-    <div class="card table-card mt-4" *ngIf="pendingTransactions().length > 0">
-      <div class="card-header border-bottom p-3">
-        <h3 class="m-0">⏳ Paiements à venir</h3>
-      </div>
-      <div class="table-responsive">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Date échéance</th>
-              <th>Montant</th>
-              <th>Type</th>
-              <th>Méthode</th>
-              <th>Catégorie</th>
-              <th class="desc-col">Description</th>
-              <th class="actions-col">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let t of pendingTransactions()" class="pending-row">
-              <td class="date-cell">{{ t.date | date:'dd/MM/yyyy' }} <span class="badge badge-pending">À venir</span></td>
-              <td class="amount-cell">
-                <span [class.amount-income]="t.type === 'income'" [class.amount-expense]="t.type === 'expense'">
-                  {{ t.type === 'expense' ? '-' : '+' }}{{ t.amount | number:'1.2-2' }} DH
+    <div class="card table-card mt-4 pending-block" *ngIf="pendingTransactions().length > 0">
+      <!-- The whole header folds / unfolds the section (choice kept in this browser). -->
+      <button type="button" class="card-header p-3 pending-block-header" [class.border-bottom]="!pendingCollapsed()"
+        (click)="togglePending()" [attr.aria-expanded]="!pendingCollapsed()" aria-controls="account-pending-body"
+        [title]="pendingCollapsed() ? 'Afficher les paiements à venir' : 'Masquer les paiements à venir'">
+        <span class="pending-block-title">
+          <span class="pending-block-chevron" [class.folded]="pendingCollapsed()" aria-hidden="true">⌄</span>
+          <span class="pending-block-heading">⏳ Paiements à venir</span>
+          <span class="pending-block-count">{{ pendingTotal().count }} opération{{ pendingTotal().count > 1 ? 's' : '' }}</span>
+        </span>
+        <span class="pending-block-total" [class.positive]="pendingTotal().total > 0" [class.negative]="pendingTotal().total < 0">
+          {{ pendingTotal().total < 0 ? '-' : pendingTotal().total > 0 ? '+' : '' }}{{ (pendingTotal().total < 0 ? -pendingTotal().total : pendingTotal().total) | number:'1.2-2' }} DH
+        </span>
+      </button>
+
+      <div id="account-pending-body" *ngIf="!pendingCollapsed()">
+
+        <!-- Same month cards as Cash Flow: current month, next, the one after, total. -->
+        <div class="pending-cards">
+          <div *ngFor="let c of pendingCards(); trackBy: trackMonth" class="pending-card tone-{{ c.tone }}">
+            <span class="pc-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span>
+            <div class="pc-body">
+              <div class="pc-line">
+                <strong class="pc-title">{{ c.title }}</strong>
+                <span class="month-tag" *ngIf="c.tag">{{ c.tag }}</span>
+              </div>
+              <div class="pc-line">
+                <span class="pc-count">{{ c.items.length }} opération{{ c.items.length > 1 ? 's' : '' }}</span>
+                <span class="pc-amount" [class.positive]="c.total > 0" [class.negative]="c.total < 0">
+                  {{ c.total < 0 ? '-' : c.total > 0 ? '+' : '' }}{{ (c.total < 0 ? -c.total : c.total) | number:'1.2-2' }} DH
                 </span>
-              </td>
-              <td>
-                <span class="badge" [class.badge-income]="t.type === 'income'" [class.badge-expense]="t.type === 'expense'">
-                  {{ t.type === 'income' ? 'Revenu' : 'Dépense' }}
+              </div>
+            </div>
+          </div>
+          <div class="pending-card tone-total">
+            <span class="pc-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 7.5 12 12l9-4.5L12 3Z"/><path d="m3 12 9 4.5 9-4.5M3 16.5 12 21l9-4.5"/></svg></span>
+            <div class="pc-body">
+              <div class="pc-line"><strong class="pc-title">Total à venir</strong></div>
+              <div class="pc-line">
+                <span class="pc-count">{{ pendingTotal().count }} opération{{ pendingTotal().count > 1 ? 's' : '' }}</span>
+                <span class="pc-amount" [class.positive]="pendingTotal().total > 0" [class.negative]="pendingTotal().total < 0">
+                  {{ pendingTotal().total < 0 ? '-' : pendingTotal().total > 0 ? '+' : '' }}{{ (pendingTotal().total < 0 ? -pendingTotal().total : pendingTotal().total) | number:'1.2-2' }} DH
                 </span>
-              </td>
-              <td>{{ t.method || '—' }}</td>
-              <td>{{ t.category || '—' }}</td>
-              <td class="desc-col">{{ t.description }}</td>
-              <td class="actions-cell">
-                <button
-                  *ngIf="t.purchase_payment_id"
-                  (click)="openPaymentView(t)"
-                  class="btn-icon"
-                  title="Voir le détail du paiement"
-                >👁️</button>
-                <button
-                  *ngIf="t.sale_payment_id"
-                  (click)="openSalePaymentView(t)"
-                  class="btn-icon"
-                  title="Voir le détail du paiement"
-                >👁️</button>
-                <ng-container *ngIf="canDeposit(t)">
-                  <ng-container *ngIf="!t.deposited_at">
-                    <button class="btn-deposit" type="button" (click)="openDeposit(t, 'deposit')" title="Verser ce chèque à la banque">🏦 Verser</button>
-                    <button class="btn-deposit btn-deposit--ghost" type="button" (click)="openDeposit(t, 'mark')" title="Déjà versé par un transfert saisi à la main">Déjà versé</button>
-                  </ng-container>
-                  <span class="deposited-badge" *ngIf="t.deposited_at" [title]="t.deposited_from_account_id ? 'Versé depuis ' + (depositedFromName(t) || 'un autre compte') : 'Marqué comme déjà versé'">
-                    ✓ Versé le {{ t.deposited_at | date:'dd/MM/yyyy' }}<ng-container *ngIf="depositedFromName(t) as from"> · de {{ from }}</ng-container>
-                    <button class="deposited-undo" type="button" (click)="cancelDeposit(t)"
-                      [disabled]="cancellingDepositId() === t.id" title="Annuler le versement" aria-label="Annuler le versement">↩</button>
-                  </span>
-                </ng-container>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table pending-table">
+            <thead>
+              <tr>
+                <th>Date échéance</th>
+                <th>Montant</th>
+                <th>Type</th>
+                <th>Méthode</th>
+                <th>Catégorie</th>
+                <th class="desc-col">Description</th>
+                <th class="actions-col">Actions</th>
+              </tr>
+            </thead>
+            <!-- Each due month is its own group, folded / unfolded by its header. -->
+            <tbody *ngFor="let m of pendingMonths(); trackBy: trackMonth" class="month-group tone-{{ m.tone }}">
+              <tr class="month-row">
+                <td colspan="7">
+                  <button type="button" class="month-toggle" (click)="toggleMonth(m.key)"
+                    [attr.aria-expanded]="!collapsedMonths().has(m.key)">
+                    <span class="month-chevron" [class.folded]="collapsedMonths().has(m.key)" aria-hidden="true">⌄</span>
+                    <span class="month-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span>
+                    <strong class="month-title">{{ m.title }}<ng-container *ngIf="m.tone === 'current'"> (Mois courant)</ng-container></strong>
+                    <span class="month-count">({{ m.items.length }} opération{{ m.items.length > 1 ? 's' : '' }})</span>
+                    <span class="month-tag" *ngIf="m.tone === 'current' || m.tone === 'overdue'">{{ m.tag }}</span>
+                    <span class="month-total" [class.positive]="m.total > 0" [class.negative]="m.total < 0">
+                      {{ m.total < 0 ? '-' : m.total > 0 ? '+' : '' }}{{ (m.total < 0 ? -m.total : m.total) | number:'1.2-2' }} DH
+                    </span>
+                  </button>
+                </td>
+              </tr>
+              <ng-container *ngIf="!collapsedMonths().has(m.key)">
+                <tr *ngFor="let t of m.items" class="pending-row" [class.income-row]="t.type === 'income'" [class.expense-row]="t.type === 'expense'">
+                  <td class="date-cell">{{ t.date | date:'dd/MM/yyyy' }} </td>
+                  <td class="amount-cell">
+                    <span [class.amount-income]="t.type === 'income'" [class.amount-expense]="t.type === 'expense'">
+                      {{ t.type === 'expense' ? '-' : '+' }}{{ t.amount | number:'1.2-2' }} DH
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge" [class.badge-income]="t.type === 'income'" [class.badge-expense]="t.type === 'expense'">
+                      {{ t.type === 'income' ? 'Revenu' : 'Dépense' }}
+                    </span>
+                  </td>
+                  <td>{{ t.method || '—' }}</td>
+                  <td>{{ t.category || '—' }}</td>
+                  <td class="desc-col">{{ t.description }}</td>
+                  <td class="actions-cell">
+                    <button
+                      *ngIf="t.purchase_payment_id"
+                      (click)="openPaymentView(t)"
+                      class="btn-icon"
+                      title="Voir le détail du paiement"
+                    >👁️</button>
+                    <button
+                      *ngIf="t.sale_payment_id"
+                      (click)="openSalePaymentView(t)"
+                      class="btn-icon"
+                      title="Voir le détail du paiement"
+                    >👁️</button>
+                    <ng-container *ngIf="canDeposit(t)">
+                      <ng-container *ngIf="!t.deposited_at">
+                        <button class="btn-deposit" type="button" (click)="openDeposit(t, 'deposit')" title="Verser ce chèque à la banque">🏦 Verser</button>
+                        <button class="btn-deposit btn-deposit--ghost" type="button" (click)="openDeposit(t, 'mark')" title="Déjà versé par un transfert saisi à la main">Déjà versé</button>
+                      </ng-container>
+                      <span class="deposited-badge" *ngIf="t.deposited_at" [title]="t.deposited_from_account_id ? 'Versé depuis ' + (depositedFromName(t) || 'un autre compte') : 'Marqué comme déjà versé'">
+                        ✓ Versé le {{ t.deposited_at | date:'dd/MM/yyyy' }}<ng-container *ngIf="depositedFromName(t) as from"> · de {{ from }}</ng-container>
+                        <button class="deposited-undo" type="button" (click)="cancelDeposit(t)"
+                          [disabled]="cancellingDepositId() === t.id" title="Annuler le versement" aria-label="Annuler le versement">↩</button>
+                      </span>
+                    </ng-container>
+                  </td>
+                </tr>
+              </ng-container>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <div class="card table-card mt-4">
-      <div class="card-header border-bottom p-3">
-        <h3 class="m-0">Transactions du compte</h3>
+    <div class="card table-card mt-4 ledger-card" id="account-transactions">
+      <div class="ledger-header">
+        <div class="ledger-title">
+          <h3>Transactions du compte</h3>
+          <span class="ledger-count" *ngIf="totalSettled() > 0">{{ totalSettled() | number }} écriture{{ totalSettled() > 1 ? 's' : '' }}</span>
+        </div>
+        <label class="ledger-size">
+          <span>Afficher</span>
+          <select [ngModel]="perPage()" (ngModelChange)="changePerPage($event)" aria-label="Lignes par page">
+            <option *ngFor="let n of perPageOptions" [ngValue]="n">{{ n }}</option>
+          </select>
+          <span>par page</span>
+        </label>
       </div>
-      <div class="table-responsive">
-        <table class="table">
+      <div class="table-responsive" [class.is-loading]="loadingTransactions() && settledTransactions().length > 0">
+        <table class="table ledger-table">
+          <colgroup>
+            <col class="col-date"><col class="col-amount"><col class="col-type"><col class="col-method">
+            <col class="col-category"><col><col class="col-actions">
+          </colgroup>
           <thead>
             <tr>
               <th>Date</th>
@@ -168,11 +245,14 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngIf="loadingTransactions()">
-              <td colspan="7" class="text-center py-4">Chargement...</td>
+            <tr *ngIf="loadingTransactions() && settledTransactions().length === 0">
+              <td colspan="7" class="empty-state"><span class="spinner"></span>Chargement…</td>
             </tr>
             <tr *ngFor="let t of settledTransactions()" [class.income-row]="t.type === 'income'" [class.expense-row]="t.type === 'expense'">
-              <td class="date-cell">{{ t.date | date:'dd/MM/yyyy' }}</td>
+              <td class="date-cell">
+                <span class="date-main">{{ t.date | date:'dd/MM/yyyy' }}</span>
+                <span class="date-day">{{ weekday(t.date) }}</span>
+              </td>
               <td class="amount-cell">
                 <span [class.amount-income]="t.type === 'income'" [class.amount-expense]="t.type === 'expense'">
                   {{ t.type === 'expense' ? '-' : '+' }}{{ t.amount | number:'1.2-2' }} DH
@@ -183,9 +263,9 @@
                   {{ t.type === 'income' ? 'Revenu' : 'Dépense' }}
                 </span>
               </td>
-              <td>{{ t.method || '—' }}</td>
-              <td>{{ t.category || '—' }}</td>
-              <td class="desc-col">{{ t.description }}</td>
+              <td><span class="method-chip" *ngIf="t.method; else noValue">{{ t.method }}</span></td>
+              <td class="category-cell">{{ t.category || '—' }}</td>
+              <td class="desc-col" [title]="t.description || ''">{{ t.description }}</td>
               <td class="actions-cell">
                 <button
                   *ngIf="t.purchase_payment_id"
@@ -218,7 +298,24 @@
           </tbody>
         </table>
       </div>
+
+      <nav class="ledger-pager" *ngIf="totalSettled() > 0" aria-label="Pages des transactions">
+        <div class="ledger-range">
+          {{ rangeStart() | number }} – {{ rangeEnd() | number }} sur {{ totalSettled() | number }}
+          <span class="ledger-hint" *ngIf="lastPage() > 1">· les plus anciennes sont sur les dernières pages</span>
+        </div>
+        <div class="ledger-pages" *ngIf="lastPage() > 1">
+          <button type="button" class="pg-btn pg-nav" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1 || loadingTransactions()" aria-label="Page précédente" title="Page précédente">‹ <span class="pg-label">Précédent</span></button>
+          <ng-container *ngFor="let p of pageItems()">
+            <span class="pg-gap" *ngIf="p === null">…</span>
+            <button *ngIf="p !== null" type="button" class="pg-btn" [class.active]="p === currentPage()"
+              [attr.aria-current]="p === currentPage() ? 'page' : null" [disabled]="loadingTransactions()" (click)="goToPage(p)">{{ p }}</button>
+          </ng-container>
+          <button type="button" class="pg-btn pg-nav" (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === lastPage() || loadingTransactions()" aria-label="Page suivante" title="Page suivante (plus anciennes)"><span class="pg-label">Suivant</span> ›</button>
+        </div>
+      </nav>
     </div>
+    <ng-template #noValue>—</ng-template>
   </ng-container>
 
   <div class="modal-overlay" *ngIf="depositCheque() as dc">

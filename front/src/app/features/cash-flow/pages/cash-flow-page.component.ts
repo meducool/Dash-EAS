@@ -18,44 +18,12 @@ import { PurchasePaymentDetailComponent } from '../../purchases/components/purch
 import { SalePaymentDetailComponent } from '../../sales/components/sale-payment-detail/sale-payment-detail.component';
 import { TransactionCategoryService } from '../../transaction-categories/data-access/transaction-category.service';
 import { TransactionCategory } from '../../transaction-categories/models/transaction-category.model';
-import { monthKey, monthKeyFromToday, monthOffset, monthTitle } from '../../../core/utils/due-period';
-
-/** Colour family of a month: current, next, the one after, any later one — or already past. */
-export type PendingTone = 'overdue' | 'current' | 'next' | 'after' | 'later';
-
-export interface PendingMonth {
-  key: string;
-  title: string;
-  /** "Mois courant", "Mois prochain", "Mois suivant", "En retard" — null for later months. */
-  tag: string | null;
-  tone: PendingTone;
-  items: Transaction[];
-  /** Signed: income adds, expense subtracts. */
-  total: number;
-}
-
-const MONTH_TAGS: Record<PendingTone, string | null> = {
-  overdue: 'En retard',
-  current: 'Mois courant',
-  next: 'Mois prochain',
-  after: 'Mois suivant',
-  later: null,
-};
-
-function toneOf(offset: number): PendingTone {
-  if (offset < 0) return 'overdue';
-  return (['current', 'next', 'after'] as const)[offset] ?? 'later';
-}
+import { PendingMonth, groupPendingByMonth, pendingMonthCards, pendingTotals } from '../../../core/utils/pending-months';
 
 /** Today as `YYYY-MM-DD` in the browser's time zone (toISOString() would use UTC). */
 function localToday(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function signedAmount(t: Transaction): number {
-  const amount = Number(t.amount) || 0;
-  return t.type === 'expense' ? -amount : amount;
 }
 
 @Component({
@@ -99,42 +67,12 @@ export class CashFlowPageComponent implements OnInit {
   collapsedMonths = signal<ReadonlySet<string>>(new Set());
 
   /** Upcoming transactions grouped by due month, latest month first, latest date first. */
-  pendingMonths = computed<PendingMonth[]>(() => {
-    const groups = new Map<string, Transaction[]>();
-    for (const t of this.pendingTransactions()) {
-      const key = monthKey(t.date) ?? '0000-00';
-      groups.set(key, [...(groups.get(key) ?? []), t]);
-    }
-
-    return [...groups.entries()]
-      .sort(([a], [b]) => b.localeCompare(a))
-      .map(([key, items]) => {
-        const tone = toneOf(monthOffset(key));
-        return {
-          key,
-          title: monthTitle(key),
-          tag: MONTH_TAGS[tone],
-          tone,
-          items: [...items].sort((a, b) => b.date.localeCompare(a.date)),
-          total: items.reduce((sum, t) => sum + signedAmount(t), 0),
-        };
-      });
-  });
+  pendingMonths = computed<PendingMonth<Transaction>[]>(() => groupPendingByMonth(this.pendingTransactions()));
 
   /** The three cards: current month, next month, the one after — shown even when empty. */
-  pendingCards = computed<PendingMonth[]>(() =>
-    [0, 1, 2].map((offset) => {
-      const key = monthKeyFromToday(offset);
-      const tone = toneOf(offset);
-      const group = this.pendingMonths().find((m) => m.key === key);
-      return group ?? { key, title: monthTitle(key), tag: MONTH_TAGS[tone], tone, items: [], total: 0 };
-    }),
-  );
+  pendingCards = computed<PendingMonth<Transaction>[]>(() => pendingMonthCards(this.pendingMonths()));
 
-  pendingTotal = computed(() => {
-    const items = this.pendingTransactions();
-    return { count: items.length, total: items.reduce((sum, t) => sum + signedAmount(t), 0) };
-  });
+  pendingTotal = computed(() => pendingTotals(this.pendingTransactions()));
 
   toggleMonth(key: string): void {
     this.collapsedMonths.update((set) => {

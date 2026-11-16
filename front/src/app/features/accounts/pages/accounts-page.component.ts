@@ -9,6 +9,7 @@ import { TransferFormComponent } from '../transfer-form/transfer-form.component'
 import { CashFlowService } from '../../../core/services/cash-flow.service';
 import { Transaction, TransactionSummary } from '../../../core/models/transaction.model';
 import { AutoRefreshControlComponent } from '../../../shared/auto-refresh-control/auto-refresh-control.component';
+import { PendingMonth, groupPendingByMonth, pendingMonthCards, pendingTotals } from '../../../core/utils/pending-months';
 import { PurchasePaymentDetailComponent } from '../../purchases/components/purchase-payment-detail/purchase-payment-detail.component';
 import { SalePaymentDetailComponent } from '../../sales/components/sale-payment-detail/sale-payment-detail.component';
 
@@ -18,12 +19,30 @@ function localToday(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+const PENDING_COLLAPSED_KEY = 'accounts_pending_collapsed';
+
+function readPendingCollapsed(): boolean {
+  // Closed by default; open only when the user opened it last time.
+  try { return localStorage.getItem(PENDING_COLLAPSED_KEY) !== '0'; } catch { return true; }
+}
+
+const WEEKDAYS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+
+const PER_PAGE_KEY = 'accounts_transactions_per_page';
+
+function readPerPage(): number {
+  try {
+    const n = Number(localStorage.getItem(PER_PAGE_KEY));
+    return [25, 50, 100].includes(n) ? n : 50;
+  } catch { return 50; }
+}
+
 @Component({
   selector: 'app-accounts-page',
   standalone: true,
   imports: [CommonModule, FormsModule, AccountFormComponent, TransferFormComponent, AutoRefreshControlComponent, PurchasePaymentDetailComponent, SalePaymentDetailComponent],
   templateUrl: './accounts-page.component.html',
-  styleUrls: ['./accounts-page.component.scss']
+  styleUrls: ['./accounts-page.component.scss', './accounts-ledger.scss']
 })
 export class AccountsPageComponent implements OnInit {
   viewingPaymentId = signal<number | null>(null);
@@ -36,23 +55,95 @@ export class AccountsPageComponent implements OnInit {
   editingAccount = signal<Account | null>(null);
 
   selectedAccount = signal<Account | null>(null);
-  accountTransactions = signal<Transaction[]>([]);
   accountSummary = signal<TransactionSummary>({ income: 0, expenses: 0, balance: 0, pending_income: 0, pending_expense: 0 });
   loadingTransactions = signal(false);
 
-  pendingTransactions = computed(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    return this.accountTransactions().filter(t =>
-      (t.method === 'Chèque' || t.method === 'Effet') && t.date > today
-    );
+  /** Cheques / bills of the account not due yet (loaded apart, never paged). */
+  pendingTransactions = signal<Transaction[]>([]);
+
+  /** Upcoming cheques / bills of the account by due month (same view as Cash Flow). */
+  pendingMonths = computed<PendingMonth<Transaction>[]>(() => groupPendingByMonth(this.pendingTransactions()));
+  /** Current month, next one, the one after — shown even when empty. */
+  pendingCards = computed<PendingMonth<Transaction>[]>(() => pendingMonthCards(this.pendingMonths()));
+  pendingTotal = computed(() => pendingTotals(this.pendingTransactions()));
+  /** « Paiements à venir » folded by the user — remembered in this browser only. */
+  pendingCollapsed = signal(readPendingCollapsed());
+
+  togglePending(): void {
+    const folded = !this.pendingCollapsed();
+    this.pendingCollapsed.set(folded);
+    try { localStorage.setItem(PENDING_COLLAPSED_KEY, folded ? '1' : '0'); } catch { /* storage blocked: kept for this visit */ }
+  }
+
+  /** Month groups the user folded (by `YYYY-MM` key). */
+  collapsedMonths = signal<ReadonlySet<string>>(new Set());
+
+  toggleMonth(key: string): void {
+    this.collapsedMonths.update((set) => {
+      const next = new Set(set);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
+  }
+
+  trackMonth(_: number, m: PendingMonth): string {
+    return m.key;
+  }
+
+  /** Settled transactions of the current page (most recent first). */
+  settledTransactions = signal<Transaction[]>([]);
+
+  // ── Pagination of « Transactions du compte » ───────────────────────────
+  readonly perPageOptions = [25, 50, 100] as const;
+  currentPage = signal(1);
+  lastPage = signal(1);
+  totalSettled = signal(0);
+  perPage = signal(readPerPage());
+
+  /** « 26 – 50 sur 312 » */
+  rangeStart = computed(() => (this.totalSettled() === 0 ? 0 : (this.currentPage() - 1) * this.perPage() + 1));
+  rangeEnd = computed(() => Math.min(this.currentPage() * this.perPage(), this.totalSettled()));
+
+  /** Page numbers with gaps: 1 … 4 5 6 … 20 (null = gap). */
+  pageItems = computed<(number | null)[]>(() => {
+    const last = this.lastPage();
+    const current = this.currentPage();
+    const wanted = new Set([1, last, current - 1, current, current + 1].filter((p) => p >= 1 && p <= last));
+    if (current <= 3) [2, 3, 4].forEach((p) => p <= last && wanted.add(p));
+    if (current >= last - 2) [last - 1, last - 2, last - 3].forEach((p) => p >= 1 && wanted.add(p));
+    const sorted = [...wanted].sort((a, b) => a - b);
+    const items: (number | null)[] = [];
+    sorted.forEach((p, i) => {
+      if (i > 0 && p - sorted[i - 1] > 1) items.push(null);
+      items.push(p);
+    });
+    return items;
   });
 
-  settledTransactions = computed(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    return this.accountTransactions().filter(t =>
-      !((t.method === 'Chèque' || t.method === 'Effet') && t.date > today)
-    );
-  });
+  goToPage(page: number): void {
+    const account = this.selectedAccount();
+    if (!account || page < 1 || page > this.lastPage() || page === this.currentPage()) return;
+    this.currentPage.set(page);
+    this.loadSettled(account);
+    document.getElementById('account-transactions')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /** « lun. », « mar. »… from a `YYYY-MM-DD` date (read as a local date). */
+  weekday(date: string | null | undefined): string {
+    const [y, m, d] = (date ?? '').slice(0, 10).split('-').map(Number);
+    if (!y || !m || !d) return '';
+    return WEEKDAYS[new Date(y, m - 1, d).getDay()];
+  }
+
+  changePerPage(value: string | number): void {
+    const size = Number(value);
+    if (!this.perPageOptions.includes(size as 25 | 50 | 100)) return;
+    this.perPage.set(size);
+    try { localStorage.setItem(PER_PAGE_KEY, String(size)); } catch { /* storage blocked */ }
+    this.currentPage.set(1);
+    const account = this.selectedAccount();
+    if (account) this.loadSettled(account);
+  }
 
   // ── Versement des chèques en banque ──────────────────────────────────────
   // Each received cheque / effet of the account can be deposited in one click:
@@ -270,6 +361,9 @@ export class AccountsPageComponent implements OnInit {
 
   viewAccount(account: Account) {
     this.selectedAccount.set(account);
+    this.currentPage.set(1);
+    this.settledTransactions.set([]);
+    this.pendingTransactions.set([]);
     this.loadAccountTransactions(account);
   }
 
@@ -294,19 +388,44 @@ export class AccountsPageComponent implements OnInit {
   }
 
   loadAccountTransactions(account: Account) {
-    this.loadingTransactions.set(true);
-    const filter = { account_id: account.id.toString(), per_page: '100' };
+    const filter = { account_id: account.id.toString() };
 
-    this.cashFlowService.getTransactions(filter).subscribe({
-      next: (res) => {
-        this.accountTransactions.set(res.data);
-        this.loadingTransactions.set(false);
-      },
-      error: () => this.loadingTransactions.set(false)
+    this.loadSettled(account);
+
+    this.cashFlowService.getTransactions({ ...filter, status: 'pending', page: '1', per_page: '500' }).subscribe({
+      next: (res) => this.pendingTransactions.set(res.data),
+      error: () => this.pendingTransactions.set([]),
     });
 
     this.cashFlowService.getSummary(filter).subscribe(summary => {
       this.accountSummary.set(summary);
+    });
+  }
+
+  /** One page of the settled transactions; stays on the same page after a refresh. */
+  private loadSettled(account: Account): void {
+    this.loadingTransactions.set(true);
+    this.cashFlowService.getTransactions({
+      account_id: account.id.toString(),
+      status: 'settled',
+      page: this.currentPage().toString(),
+      per_page: this.perPage().toString(),
+    }).subscribe({
+      next: (res) => {
+        if (this.selectedAccount()?.id !== account.id) return;
+        // The page asked for no longer exists (lines moved away): show the last one.
+        if (res.data.length === 0 && res.current_page > 1 && res.last_page < res.current_page) {
+          this.currentPage.set(Math.max(1, res.last_page));
+          this.loadSettled(account);
+          return;
+        }
+        this.settledTransactions.set(res.data);
+        this.currentPage.set(res.current_page);
+        this.lastPage.set(Math.max(1, res.last_page));
+        this.totalSettled.set(res.total);
+        this.loadingTransactions.set(false);
+      },
+      error: () => this.loadingTransactions.set(false),
     });
   }
 }

@@ -1,4 +1,5 @@
 @use '../../_page-layout' as layout;
+@use '../../_pending-months' as pending;
 @include layout.page-layout();
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -375,3 +376,45 @@ $_shadow-md: 0 1px 3px rgba(15, 23, 42, 0.05), 0 4px 12px rgba(15, 23, 42, 0.08)
   color: var(--app-danger-text);
   font-size: 0.82rem;
 }
+
+// Paiements à venir : same month cards and groups as Cash Flow — features/_pending-months.scss
+@include pending.pending-months();
+
+// Clickable header: folds / unfolds the upcoming payments.
+.pending-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover { background: var(--app-surface-2); }
+  &:focus-visible { outline: 2px solid var(--app-primary); outline-offset: -2px; }
+}
+.pending-block-title { display: inline-flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.pending-block-chevron {
+  display: inline-block;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--app-text-muted);
+  transition: transform 0.15s;
+  &.folded { transform: rotate(-90deg); }
+}
+.pending-block-heading { font-size: 1rem; font-weight: 700; color: var(--app-text); }
+.pending-block-count { font-size: 0.8rem; color: var(--app-text-muted); font-weight: 600; }
+.pending-block-total {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  &.positive { color: var(--app-success-text); }
+  &.negative { color: var(--app-danger-text); }
+}
+
