@@ -14,6 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
+        $middleware->api(append: [
+            \App\Http\Middleware\EnsurePasswordChanged::class,
+            \App\Http\Middleware\LimitPerPage::class,
+        ]);
         $middleware->redirectGuestsTo(fn (Request $request) => $request->expectsJson() || $request->is('api/*')
             ? null
             : '/api/login');

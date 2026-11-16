@@ -46,7 +46,7 @@
 
               <div class="media-actions">
                 <label class="btn btn-secondary media-upload">
-                  <input type="file" accept="image/*" (change)="onLogoSelected($event)" hidden />
+                  <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" (change)="onLogoSelected($event)" hidden />
                   Choisir un logo
                 </label>
                 <button type="button" class="btn btn-danger" *ngIf="logoUrl()" (click)="removeLogo()">
@@ -72,7 +72,7 @@
 
               <div class="media-actions">
                 <label class="btn btn-secondary media-upload">
-                  <input type="file" accept="image/*,.ico" (change)="onFaviconSelected($event)" hidden />
+                  <input type="file" accept="image/png,image/jpeg,image/webp,.ico" (change)="onFaviconSelected($event)" hidden />
                   Choisir un favicon
                 </label>
                 <button type="button" class="btn btn-danger" *ngIf="faviconUrl()" (click)="removeFavicon()">
