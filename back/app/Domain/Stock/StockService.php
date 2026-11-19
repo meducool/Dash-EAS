@@ -124,7 +124,9 @@ class StockService
      */
     public function summary(array $filters = []): array
     {
-        $query = $this->buildStockQuery($filters);
+        // Aggregates must not carry the list's ORDER BY: MariaDB (ONLY_FULL_GROUP_BY)
+        // rejects "SUM(...) ... ORDER BY quantity" with error 1140.
+        $query = $this->buildStockQuery($filters)->reorder();
 
         return [
             'total_articles' => (clone $query)->count(),
